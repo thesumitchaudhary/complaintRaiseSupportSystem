@@ -11,24 +11,30 @@ const router = express.Router();
 
 router.post("/create", async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const { name, email, password, confirmedPassword, phone } = req.body;
 
-        if (!name || !email || !password) {
-            return res.status(401).json({ success: false, message: "name,email,password is missing" });
+        if (!name || !email || !password || !phone) {
+            return res.status(401).json({ success: false, message: "name,email,password and phone is missing" });
+        }
+
+        if (password != confirmedPassword) {
+            return res.status(401).json({ success: false, message: "hey the password is not match" });
         }
 
         const existingUser = await userModel.findOne({ email });
         if (existingUser) {
-            return res.status(400).json({ success: false, message: "user is already registered" })
+            return res.status(400).json({ success: false, message: "user is already registered" });
         }
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
+        const code = Math.floor(10000 + Math.random() * 99999);
 
         const user = await userModel.create({
             name,
             email,
             password: hashedPassword,
+            verificationCode: code,
         });
 
 

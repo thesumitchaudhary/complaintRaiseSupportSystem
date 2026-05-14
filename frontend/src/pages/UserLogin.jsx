@@ -7,6 +7,7 @@ import { toast } from "react-hot-toast";
 
 const UserLogin = ({ closeUserLogin }) => {
   const [isLogin, setIsLogin] = useState(true);
+  const [register, setRegister] = useState(false);
 
   // Login state
   const [email, setEmail] = useState("");
@@ -16,6 +17,8 @@ const UserLogin = ({ closeUserLogin }) => {
   const [name, setName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
+  const [regConfirmedPassword, setRegConfirmedPassword] = useState("");
+  const [code, setCode] = useState("");
 
   const [error, setError] = useState(null);
 
@@ -167,7 +170,7 @@ const UserLogin = ({ closeUserLogin }) => {
                         disabled={loading}
                         className="mt-1 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        {loading ? <Loader2/> : "LOGIN"}
+                        {loading ? <Loader2 /> : "LOGIN"}
                       </button>
 
                       <p className="text-center text-sm text-slate-500">
@@ -239,6 +242,42 @@ const UserLogin = ({ closeUserLogin }) => {
                           value={regPassword}
                           onChange={(e) => setRegPassword(e.target.value)}
                           placeholder="Create A Password"
+                          className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-0"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="regPassword"
+                          className="mb-2 block text-sm font-medium text-slate-700"
+                        >
+                          Confimed Password
+                        </label>
+                        <input
+                          id="regPassword"
+                          type="password"
+                          value={regPassword}
+                          onChange={(e) => setRegPassword(e.target.value)}
+                          placeholder="Create A Confimed Password"
+                          className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-0"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="regPassword"
+                          className="mb-2 block text-sm font-medium text-slate-700"
+                        >
+                          OTP
+                        </label>
+                        <input
+                          id="otp"
+                          type="opt"
+                          value={regPassword}
+                          onChange={(e) => setRegPassword(e.target.value)}
+                          placeholder="Enter otp"
                           className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-0"
                           required
                         />

@@ -6,9 +6,37 @@ import { sendConfirmEmailTemplate } from "../template/sendConfirmEmailTemplate.j
 
 import { sendTicketRaisedEmailToAdminTemplate } from "../template/sendTicketRaisedEmailToAdminTemplate.js";
 
-import { sendTicketStatusTemplate } from "../template/sendTicketStatusTemplate.js"
+import { sendTicketStatusTemplate } from "../template/sendTicketStatusTemplate.js";
+
+import { sendEmailVerificationCodeTemplate } from "../template/sendEmailVerificationCodeTemplate.js"
 
 dotenv.config();
+
+const sendverificationCodeMail = async (email, verficationCode) => {
+    try {
+
+        const template =
+            typeof sendEmailVerificationCodeTemplate === "function"
+                ? sendEmailVerificationCodeTemplate()
+                : String(sendEmailVerificationCodeTemplate);
+
+        const html = template
+            .replace("{email}", email)
+            .replace("{verficationCode}", verficationCode);
+
+        const info = await transporter.sendMail({
+            from: `"Support System" <${process.env.EMAIL_USER}>`,
+            to: email,
+            subject,
+            text: message,
+            html,
+        });
+
+
+    } catch (err) {
+        console.error("Error while sending user mail:", err);
+    }
+};
 
 const sendMail = async (email, name, subject, message) => {
     try {
@@ -31,7 +59,6 @@ const sendMail = async (email, name, subject, message) => {
             html,
         });
 
-        console.log("User mail sent:", info.messageId);
 
     } catch (err) {
         console.error("Error while sending user mail:", err);
@@ -60,7 +87,6 @@ const sendAdminMail = async (email, name, subject, message) => {
             html,
         });
 
-        console.log("Admin mail sent:", info.messageId);
 
     } catch (err) {
         console.error("Error while sending admin mail:", err);
@@ -90,7 +116,6 @@ const sendStatusUpdateMail = async (name, email, subject, message, status) => {
             html,
         });
 
-        console.log("Status update mail sent to user:", info.messageId);
 
     } catch (err) {
         console.error("Error while sending status update mail:", err);

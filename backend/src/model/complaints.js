@@ -1,6 +1,4 @@
-// models/Complaint.js
-
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const complaintSchema = new mongoose.Schema(
   {

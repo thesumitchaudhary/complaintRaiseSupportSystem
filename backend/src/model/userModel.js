@@ -1,6 +1,8 @@
+import mongoose from "mongoose";
+
 const userSchema = new mongoose.Schema(
   {
-    fullname: String,
+    name: String,
 
     email: {
       type: String,
@@ -8,7 +10,7 @@ const userSchema = new mongoose.Schema(
     },
 
     password: String,
-    
+
     phone: String,
 
     address: String,
@@ -19,6 +21,9 @@ const userSchema = new mongoose.Schema(
       default: "user",
     },
 
+    verificationCode: String,
+    verified_at: Date,
+
     // only for employee
     service: [String],
   },
@@ -26,3 +31,5 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+export default mongoose.model("user", userSchema);
