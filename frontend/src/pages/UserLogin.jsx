@@ -1,11 +1,17 @@
 import { useState } from "react";
 import { X, Loader2, Eye, EyeOff } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
-import { registerUser, userLogin, verifyEmail } from "../services/user";
+import {
+  forgotPasswordRequest,
+  registerUser,
+  userLogin,
+  verifyEmail,
+} from "../services/user";
 import { toast } from "react-hot-toast";
 
-const UserLogin = ({ closeUserLogin, theme}) => {
+const UserLogin = ({ closeUserLogin, theme }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [register, setRegister] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -77,6 +83,18 @@ const UserLogin = ({ closeUserLogin, theme}) => {
     },
   });
 
+  const forgotPasswordMutation = useMutation({
+    mutationFn: forgotPasswordRequest,
+    onSuccess: () => {
+      toast.success("Password reset link sent to your email");
+    },
+    onError: (err) => {
+      setError(err.response?.data?.message || err.message || "Failed to send reset link");
+      toast.error(err.response?.data?.message || "Failed to send reset link");
+      console.error("Forgot password error", err);
+    },
+  });
+
   const handleLoginSubmit = (e) => {
     e.preventDefault();
     setError(null);
@@ -112,10 +130,22 @@ const UserLogin = ({ closeUserLogin, theme}) => {
     setPassword("");
   };
 
+  const handleForgotPassword = () => {
+    setError(null);
+
+    if (!email) {
+      toast.error("Please enter your email first");
+      return;
+    }
+
+    forgotPasswordMutation.mutate({ email });
+  };
+
   const loading =
     loginMutation.isPending ||
     registerMutation.isPending ||
-    verifyMutation.isPending;
+    verifyMutation.isPending ||
+    forgotPasswordMutation.isPending;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-md">
@@ -216,7 +246,7 @@ const UserLogin = ({ closeUserLogin, theme}) => {
                           {showLoginPassowrd ? (
                             <button
                               type="button"
-                              className={`${theme ? "text-black": "text-black"}`}
+                              className={`${theme ? "text-black" : "text-black"}`}
                               onClick={() => setShowLoginPassword(false)}
                             >
                               <Eye />
@@ -224,7 +254,7 @@ const UserLogin = ({ closeUserLogin, theme}) => {
                           ) : (
                             <button
                               type="button"
-                              className={`${theme ? "text-black": "text-black"}`}
+                              className={`${theme ? "text-black" : "text-black"}`}
                               onClick={() => setShowLoginPassword(true)}
                             >
                               <EyeOff />
@@ -232,9 +262,16 @@ const UserLogin = ({ closeUserLogin, theme}) => {
                           )}
                         </div>
                       </div>
-                          <div>
-                            <button>forgot password</button>
-                          </div>
+                      <div>
+                        <button
+                          type="button"
+                          onClick={handleForgotPassword}
+                          disabled={loading}
+                          className="text-left text-xs text-blue-400 transition hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Forgot password?
+                        </button>
+                      </div>
                       <button
                         type="submit"
                         disabled={loading}

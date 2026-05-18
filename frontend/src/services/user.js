@@ -66,6 +66,46 @@ export const userLogin = async ({ email, password }) => {
   }
 };
 
+export const forgotPasswordRequest = async ({ email } = {}) => {
+  if (!email) {
+    const err = new Error("Email is required");
+    err.status = 400;
+    throw err;
+  }
+
+  try {
+    const response = await api.post("/forgotPassword", { email });
+    return response.data;
+  } catch (error) {
+    console.error("Forgot password request failed:", {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+    throw error;
+  }
+};
+
+export const resetPassword = async ({ email, token, newPassword } = {}) => {
+  if (!email || !token || !newPassword) {
+    const err = new Error("email, token and newPassword are required");
+    err.status = 400;
+    throw err;
+  }
+
+  try {
+    const response = await api.post("/resetPassword", { email, token, newPassword });
+    return response.data;
+  } catch (error) {
+    console.error("Reset password failed:", {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+    throw error;
+  }
+};
+
 export const userLogout = async () => {
   try {
     const response = await api.get("/user/logout");

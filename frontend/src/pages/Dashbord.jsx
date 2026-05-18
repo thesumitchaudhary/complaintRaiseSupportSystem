@@ -6,6 +6,7 @@ import {
   User,
   EllipsisVertical,
   Loader2,
+  Link,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -24,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "react-hot-toast";
+import { Link as Links} from "react-router-dom";
 
 const Dashbord = () => {
   const [theme, setTheme] = useState(false);
@@ -71,7 +73,7 @@ const Dashbord = () => {
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }) => updateComplaint(id, { status }),
     onSuccess: () => {
-      toast.success("complaint status updated successfully")
+      toast.success("complaint status updated successfully");
     },
     onError: (error) => {
       console.log(error);
@@ -81,7 +83,7 @@ const Dashbord = () => {
   const deleteComplaintMutation = useMutation({
     mutationFn: deleteComplaint,
     onSuccess: () => {
-      toast.success("complaint deleted successfully")
+      toast.success("complaint deleted successfully");
     },
     onError: (error) => {
       console.log(error);
@@ -119,7 +121,22 @@ const Dashbord = () => {
           </button>
         </div>
       </header>
-      <section className="p-5">
+      <main className="flex">
+        <section>
+          <div className="flex flex-col">
+            <Links to={"/"}>home</Links>
+            <Links to={"/"}>users</Links>
+            <Links to={"/"}>raised complaints</Links>
+            <Links to={"/"}>add employee</Links>
+            <Links to={"/"}>assign   task</Links>
+          </div>
+          <div></div>
+        </section>
+        <section>
+          <div></div>
+        </section>
+      </main>
+      {/* <section className="p-5">
         <table
           className={`w-full border-collapse ${theme ? "bg-white text-black" : "bg-white text-black"}`}
         >
@@ -231,7 +248,7 @@ const Dashbord = () => {
             )}
           </tbody>
         </table>
-      </section>
+      </section> */}
     </div>
   );
 };

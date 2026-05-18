@@ -24,6 +24,9 @@ const userSchema = new mongoose.Schema(
     verificationCode: String,
     verified_at: Date,
 
+    resetPasswordToken: String,
+    resetPasswordExpires: Date,
+
     // only for employee
     service: [String],
   },
