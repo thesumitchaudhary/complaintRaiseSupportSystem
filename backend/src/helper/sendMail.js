@@ -8,27 +8,21 @@ import { sendTicketRaisedEmailToAdminTemplate } from "../template/sendTicketRais
 
 import { sendTicketStatusTemplate } from "../template/sendTicketStatusTemplate.js";
 
-import { sendEmailVerificationCodeTemplate } from "../template/sendEmailVerificationCodeTemplate.js"
+import { sendEmailVerificationCodeTemplate as renderEmailVerificationCodeTemplate } from "../template/sendEmailVerificationCodeTemplate.js";
+
+import { sendWelcomeEmailTemplate as renderWelcomeEmailTemplate } from "../template/sendWelcomeEmailTemplate.js";
 
 dotenv.config();
 
-const sendverificationCodeMail = async (email, verficationCode) => {
+const sendEmailVerificationCodeTemplate = async ({ name, email, verificationCode }) => {
     try {
+        const html = renderEmailVerificationCodeTemplate(verificationCode);
 
-        const template =
-            typeof sendEmailVerificationCodeTemplate === "function"
-                ? sendEmailVerificationCodeTemplate()
-                : String(sendEmailVerificationCodeTemplate);
-
-        const html = template
-            .replace("{email}", email)
-            .replace("{verficationCode}", verficationCode);
-
-        const info = await transporter.sendMail({
+        await transporter.sendMail({
             from: `"Support System" <${process.env.EMAIL_USER}>`,
             to: email,
-            subject,
-            text: message,
+            subject: "Verify your email address",
+            text: `Hi ${name}, your verification code is ${verificationCode}.`,
             html,
         });
 
@@ -37,6 +31,25 @@ const sendverificationCodeMail = async (email, verficationCode) => {
         console.error("Error while sending user mail:", err);
     }
 };
+
+const sendWelcomeMailTemplate = async (email, name) => {
+    try {
+        const html = renderWelcomeEmailTemplate(name);
+
+        await transporter.sendMail({
+            from: `"Support System" <${process.env.EMAIL_USER}>`,
+            to: email,
+            subject: "Welcome to Support Desk",
+            text: `Welcome to Support Desk, ${name}. Your account is now verified.`,
+            html,
+        });
+
+
+    } catch (err) {
+        console.error("Error while sending user mail:", err);
+    }
+};
+
 
 const sendMail = async (email, name, subject, message) => {
     try {
@@ -122,4 +135,4 @@ const sendStatusUpdateMail = async (name, email, subject, message, status) => {
     }
 };
 
-export { sendMail, sendAdminMail, sendStatusUpdateMail };
+export { sendMail, sendAdminMail, sendStatusUpdateMail, sendEmailVerificationCodeTemplate, sendWelcomeMailTemplate };

@@ -1,7 +1,7 @@
 import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import adminModel from "../model/adminModel.js";
+import userModel from "../model/userModel.js";
 
 const router = express.Router();
 
@@ -13,7 +13,7 @@ router.post("/login", async (req, res) => {
             return res.status(400).json({ success: false, message: "Email and Password are required" });
         }
 
-        const admin = await adminModel.findOne({ email: email });
+        const admin = await userModel.findOne({ email: email });
         // const admin = await adminModel.findOne({ email: email.trim() });
 
         if (!admin) {

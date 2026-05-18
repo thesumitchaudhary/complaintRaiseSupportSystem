@@ -1,10 +1,10 @@
 import api from "../lib/api";
 
 export const registerUser = async (payload = {}) => {
-  const { name, email, password } = payload;
+  const { name, email, password, confirmedPassword } = payload;
 
-  if (!name || !email || !password) {
-    const err = new Error("Missing required user fields: name, email, password");
+  if (!name || !email || !password || !confirmedPassword) {
+    const err = new Error("Missing required user fields: name, email, password, confirmedPassword");
     err.status = 400;
     throw err;
   }
@@ -13,7 +13,8 @@ export const registerUser = async (payload = {}) => {
     const response = await api.post("/user/create", {
       name,
       email,
-      password
+      password,
+      confirmedPassword
     })
     return response.data;
   } catch (error) {
@@ -25,6 +26,26 @@ export const registerUser = async (payload = {}) => {
     throw error;
   }
 }
+
+export const verifyEmail = async ({ code } = {}) => {
+  if (!code) {
+    const err = new Error("Verification code is required");
+    err.status = 400;
+    throw err;
+  }
+
+  try {
+    const response = await api.post("/user/verifyEmail", { code });
+    return response.data;
+  } catch (error) {
+    console.error("Email verification failed:", {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+    throw error;
+  }
+};
 
 export const userLogin = async ({ email, password }) => {
   try {

@@ -1,13 +1,16 @@
 import { useState } from "react";
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
-import { registerUser, userLogin } from "../services/user";
+import { registerUser, userLogin, verifyEmail } from "../services/user";
 import { toast } from "react-hot-toast";
 
-const UserLogin = ({ closeUserLogin }) => {
+const UserLogin = ({ closeUserLogin, theme}) => {
   const [isLogin, setIsLogin] = useState(true);
   const [register, setRegister] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmedPassword, setShowConfirmedPassword] = useState(false);
+  const [showLoginPassowrd, setShowLoginPassword] = useState(false);
 
   // Login state
   const [email, setEmail] = useState("");
@@ -18,7 +21,7 @@ const UserLogin = ({ closeUserLogin }) => {
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [regConfirmedPassword, setRegConfirmedPassword] = useState("");
-  const [code, setCode] = useState("");
+  const [OTP, setOTP] = useState("");
 
   const [error, setError] = useState(null);
 
@@ -39,8 +42,12 @@ const UserLogin = ({ closeUserLogin }) => {
   const registerMutation = useMutation({
     mutationFn: registerUser,
     onSuccess: () => {
-      toast.success("Login successful");
-      navigate("/userDashboard");
+      toast.success("Register successful");
+      setRegister(true);
+      setOTP("");
+      setTimeout(() => {
+        toast.success("now verify your email code");
+      }, 1000);
     },
     onError: (err) => {
       setError(
@@ -48,6 +55,25 @@ const UserLogin = ({ closeUserLogin }) => {
       );
       toast.error("something wrong");
       console.error("Register error", err);
+    },
+  });
+
+  const verifyMutation = useMutation({
+    mutationFn: verifyEmail,
+    onSuccess: () => {
+      toast.success("Email verified successfully");
+      setRegister(false);
+      navigate("/userDashboard");
+      setOTP("");
+      setRegPassword("");
+      setRegConfirmedPassword("");
+    },
+    onError: (err) => {
+      setError(
+        err.response?.data?.message || err.message || "Verification failed",
+      );
+      toast.error(err.response?.data?.message || "Verification failed");
+      console.error("Verify error", err);
     },
   });
 
@@ -60,19 +86,42 @@ const UserLogin = ({ closeUserLogin }) => {
   const handleRegisterSubmit = (e) => {
     e.preventDefault();
     setError(null);
-    registerMutation.mutate({ name, email: regEmail, password: regPassword });
+
+    if (register) {
+      if (!OTP) {
+        toast.error("Please enter the verification code");
+        return;
+      }
+
+      verifyMutation.mutate({ code: OTP });
+      return;
+    }
+
+    if (regPassword != regConfirmedPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+    registerMutation.mutate({
+      name,
+      email: regEmail,
+      password: regPassword,
+      confirmedPassword: regConfirmedPassword,
+    });
     setName("");
     setEmail("");
     setPassword("");
   };
 
-  const loading = loginMutation.isPending || registerMutation.isPending;
+  const loading =
+    loginMutation.isPending ||
+    registerMutation.isPending ||
+    verifyMutation.isPending;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-md">
       <div onClick={closeUserLogin} className="absolute inset-0" />
 
-      <div className="relative w-full max-w-5xl overflow-hidden rounded-[28px] bg-white shadow-[0_25px_80px_rgba(15,23,42,0.28)] ring-1 ring-black/5 max-h-[88vh]">
+      <div className="relative w-full max-w-5xl overflow-hidden rounded-[28px] bg-white shadow-[0_25px_80px_rgba(15,23,42,0.28)] ring-1 ring-black/5 max-h-[88vh] h-[88vh]">
         <button
           onClick={closeUserLogin}
           className="absolute right-4 top-4 z-10 rounded-full bg-slate-900/80 p-2 text-white transition hover:bg-slate-900"
@@ -81,7 +130,7 @@ const UserLogin = ({ closeUserLogin }) => {
           <X size={18} />
         </button>
 
-        <div className="grid lg:grid-cols-[0.95fr_1.05fr]">
+        <div className="grid lg:grid-cols-[0.95fr_1.05fr] h-full">
           <section className="flex flex-col justify-between bg-gradient-to-br from-blue-600 via-blue-700 to-sky-800 px-7 py-8 text-white sm:px-8 sm:py-10 lg:px-10 lg:py-10">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.35em] text-white/75">
@@ -99,7 +148,7 @@ const UserLogin = ({ closeUserLogin }) => {
             </div>
           </section>
 
-          <section className="flex flex-col bg-white px-6 py-7 sm:px-8 sm:py-8 lg:px-10 lg:py-9">
+          <section className="flex flex-col bg-white px-6 py-7 sm:px-8 sm:py-8 lg:px-10 lg:py-9 h-full">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="mt-2 text-2xl font-semibold text-slate-900 sm:text-3xl">
@@ -114,7 +163,7 @@ const UserLogin = ({ closeUserLogin }) => {
               </div>
             )}
 
-            <div className="mt-5 overflow-hidden">
+            <div className="mt-5 flex-1 overflow-x-hidden">
               <div
                 className="flex w-[200%] transition-transform duration-500 ease-in-out"
                 style={{
@@ -154,17 +203,38 @@ const UserLogin = ({ closeUserLogin }) => {
                             Password
                           </label>
                         </div>
-                        <input
-                          id="password"
-                          type="password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          placeholder="Enter Your Password"
-                          className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-0"
-                          required
-                        />
+                        <div className="flex">
+                          <input
+                            id="password"
+                            type={showLoginPassowrd ? "text" : "password"}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Enter Your Password"
+                            className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-0"
+                            required
+                          />
+                          {showLoginPassowrd ? (
+                            <button
+                              type="button"
+                              className={`${theme ? "text-black": "text-black"}`}
+                              onClick={() => setShowLoginPassword(false)}
+                            >
+                              <Eye />
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className={`${theme ? "text-black": "text-black"}`}
+                              onClick={() => setShowLoginPassword(true)}
+                            >
+                              <EyeOff />
+                            </button>
+                          )}
+                        </div>
                       </div>
-
+                          <div>
+                            <button>forgot password</button>
+                          </div>
                       <button
                         type="submit"
                         disabled={loading}
@@ -188,7 +258,7 @@ const UserLogin = ({ closeUserLogin }) => {
                 </div>
 
                 <div className="w-1/2 pl-0 sm:pl-3">
-                  <div className="rounded-[24px] border border-slate-200 bg-white px-1 py-1 shadow-sm sm:px-0 sm:py-0">
+                  <div className="rounded-[24px] border border-slate-200 bg-white px-1 py-1 shadow-sm sm:px-0 sm:py-0 max-h-[64vh] overflow-y-auto">
                     <form
                       onSubmit={handleRegisterSubmit}
                       className="flex flex-col gap-3 px-3 pb-4 sm:px-5"
@@ -236,15 +306,34 @@ const UserLogin = ({ closeUserLogin }) => {
                         >
                           Password
                         </label>
-                        <input
-                          id="regPassword"
-                          type="password"
-                          value={regPassword}
-                          onChange={(e) => setRegPassword(e.target.value)}
-                          placeholder="Create A Password"
-                          className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-0"
-                          required
-                        />
+                        <div className="flex">
+                          <input
+                            id="regPassword"
+                            type={showPassword ? "text" : "password"}
+                            value={regPassword}
+                            onChange={(e) => setRegPassword(e.target.value)}
+                            placeholder="Create A Password"
+                            className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-0"
+                            required
+                          />
+                          {showPassword ? (
+                            <button
+                              type="button"
+                              className={`${theme ? "text-black" : "text-black"}`}
+                              onClick={() => setShowPassword(false)}
+                            >
+                              <Eye />
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className={`${theme ? "text-black" : "text-black"}`}
+                              onClick={() => setShowPassword(true)}
+                            >
+                              <EyeOff />
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       <div>
@@ -254,42 +343,76 @@ const UserLogin = ({ closeUserLogin }) => {
                         >
                           Confimed Password
                         </label>
-                        <input
-                          id="regPassword"
-                          type="password"
-                          value={regPassword}
-                          onChange={(e) => setRegPassword(e.target.value)}
-                          placeholder="Create A Confimed Password"
-                          className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-0"
-                          required
-                        />
+                        <div className="flex">
+                          <input
+                            id="regPassword"
+                            type={showConfirmedPassword ? "text" : "password"}
+                            value={regConfirmedPassword}
+                            onChange={(e) =>
+                              setRegConfirmedPassword(e.target.value)
+                            }
+                            placeholder="Confimed Password"
+                            className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-0"
+                            required
+                          />
+                          {showConfirmedPassword ? (
+                            <button
+                              type="button"
+                              className={`${theme ? "text-black" : "text-black"}`}
+                              onClick={() => setShowConfirmedPassword(false)}
+                            >
+                              <Eye />
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className={`${theme ? "text-black" : "text-black"}`}
+                              onClick={() => setShowConfirmedPassword(true)}
+                            >
+                              <EyeOff />
+                            </button>
+                          )}
+                        </div>
                       </div>
+                      {register ? (
+                        <div>
+                          <label
+                            htmlFor="regPassword"
+                            className="mb-2 block text-sm font-medium text-slate-700"
+                          >
+                            OTP
+                          </label>
+                          <input
+                            id="otp"
+                            type="number"
+                            value={OTP}
+                            onChange={(e) => setOTP(e.target.value)}
+                            placeholder="Enter otp"
+                            className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-0"
+                            required
+                          />
+                        </div>
+                      ) : (
+                        <p></p>
+                      )}
 
-                      <div>
-                        <label
-                          htmlFor="regPassword"
-                          className="mb-2 block text-sm font-medium text-slate-700"
+                      {register ? (
+                        <button
+                          type="submit"
+                          disabled={loading}
+                          className="mt-1 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          OTP
-                        </label>
-                        <input
-                          id="otp"
-                          type="opt"
-                          value={regPassword}
-                          onChange={(e) => setRegPassword(e.target.value)}
-                          placeholder="Enter otp"
-                          className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-0"
-                          required
-                        />
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="mt-1 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {loading ? "Please wait..." : "REGISTER"}
-                      </button>
+                          {loading ? "Please wait..." : "VERIFY CODE"}
+                        </button>
+                      ) : (
+                        <button
+                          type="submit"
+                          disabled={loading}
+                          className="mt-1 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {loading ? "Please wait..." : "REGISTER"}
+                        </button>
+                      )}
 
                       <p className="text-center text-sm text-slate-500">
                         Already have an account?{" "}

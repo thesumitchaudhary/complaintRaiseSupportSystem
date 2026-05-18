@@ -26,12 +26,14 @@ const Home = () => {
   const highlights = [
     {
       title: "24/7 Live Support",
-      description: "Round-the-clock assistance for all your queries and concerns.",
+      description:
+        "Round-the-clock assistance for all your queries and concerns.",
       icon: Clock4,
     },
     {
       title: "Secure & Trusted",
-      description: "Your data and conversations are protected with strong security.",
+      description:
+        "Your data and conversations are protected with strong security.",
       icon: ShieldCheck,
     },
     {
@@ -41,7 +43,8 @@ const Home = () => {
     },
     {
       title: "Continuous Improvement",
-      description: "Insights and tracking help us improve service quality every day.",
+      description:
+        "Insights and tracking help us improve service quality every day.",
       icon: TrendingUp,
     },
   ];
@@ -192,7 +195,9 @@ const Home = () => {
                   >
                     <div
                       className={`inline-flex rounded-lg p-2 ${
-                        theme ? "bg-blue-900/40 text-blue-200" : "bg-blue-100 text-blue-700"
+                        theme
+                          ? "bg-blue-900/40 text-blue-200"
+                          : "bg-blue-100 text-blue-700"
                       }`}
                     >
                       <Icon size={18} />
@@ -214,7 +219,9 @@ const Home = () => {
 
         <footer
           className={`mt-10 rounded-2xl border p-5 sm:p-6 ${
-            theme ? "border-gray-700 bg-gray-900/70" : "border-gray-200 bg-white"
+            theme
+              ? "border-gray-700 bg-gray-900/70"
+              : "border-gray-200 bg-white"
           }`}
         >
           <section className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -225,8 +232,8 @@ const Home = () => {
                   theme ? "text-gray-300" : "text-gray-600"
                 }`}
               >
-                Your trusted partner for exceptional customer support and service
-                excellence.
+                Your trusted partner for exceptional customer support and
+                service excellence.
               </p>
             </article>
 
@@ -278,7 +285,13 @@ const Home = () => {
       {openAdminLogin && <AdminLogin onClose={onClose} />}
 
       {/* User Login Modal */}
-      {openUserLogin && <UserLogin closeUserLogin={closeUserLogin} />}
+      {openUserLogin && (
+        <UserLogin
+          closeUserLogin={closeUserLogin}
+          theme={theme}
+          setTheme={setTheme}
+        />
+      )}
     </div>
   );
 };

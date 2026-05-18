@@ -5,16 +5,17 @@ import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import authMiddleware from "../middleware/authMiddleware.js";
+import { sendEmailVerificationCodeTemplate, sendWelcomeMailTemplate } from "../helper/sendMail.js";
 
 dotenv.config()
 const router = express.Router();
 
 router.post("/create", async (req, res) => {
     try {
-        const { name, email, password, confirmedPassword, phone } = req.body;
+        const { name, email, password, confirmedPassword } = req.body;
 
-        if (!name || !email || !password || !phone) {
-            return res.status(401).json({ success: false, message: "name,email,password and phone is missing" });
+        if (!name || !email || !password || !confirmedPassword) {
+            return res.status(401).json({ success: false, message: "name, email, password and confirmedPassword are required" });
         }
 
         if (password != confirmedPassword) {
@@ -28,7 +29,7 @@ router.post("/create", async (req, res) => {
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
-        const code = Math.floor(10000 + Math.random() * 99999);
+        const code = Math.floor(100000 + Math.random() * 99999);
 
         const user = await userModel.create({
             name,
@@ -37,14 +38,45 @@ router.post("/create", async (req, res) => {
             verificationCode: code,
         });
 
-
         const token = jwt.sign({ id: user._id, name: user.name, email: user.email }, process.env.JWT_SECRET);
         res.cookie("token", token, { httpOnly: true });
 
+        await sendEmailVerificationCodeTemplate({ name: user.name, email: user.email, verificationCode: user.verificationCode });
 
         res.status(201).json({ success: true, message: "user created successfully", result: { id: user._id, name: user.name, email: user.email } })
     } catch (error) {
         res.status(500).json({ success: false, message: "Internal server Error", result: error.message });
+    }
+})
+
+router.post("/verifyEmail", async (req, res) => {
+    try {
+        const { code } = req.body;
+
+        if (code) {
+            const user = await userModel.findOne({
+                verificationCode: code
+            })
+            if (!user) {
+                return res.status(400).json({ success: false, message: "Invalid or Expired Code" })
+            }
+            user.verified_at = Date.now();
+            user.verificationCode = undefined;
+            await user.save();
+            await sendWelcomeMailTemplate(user.email, user.name);
+            return res.status(200).json({ success: true, message: "Email verified successfully", result: { id: user._id, name: user.name, email: user.email } });
+        } else if (email) {
+            const user = await userModel.findOne({ email });
+
+            if (!user) {
+                return res.status(400).json({ success: false, message: "Email not found" });
+            }
+            return res.status(200).json({ success: true, message: "Email exists", user });
+        }
+        return res.status(400).json({ success: false, message: "Email or code required" });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, message: "Internal server Error", result: error.message })
     }
 })
 

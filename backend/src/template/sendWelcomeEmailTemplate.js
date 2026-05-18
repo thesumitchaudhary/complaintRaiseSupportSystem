@@ -1,4 +1,3 @@
-
 const escapeHtml = (value) =>
     String(value)
         .replace(/&/g, "&amp;")
@@ -7,8 +6,8 @@ const escapeHtml = (value) =>
         .replace(/\"/g, "&quot;")
         .replace(/'/g, "&#39;");
 
-export const Verification_Email_Template = (verificationCode = "") => {
-    const safeVerificationCode = escapeHtml(String(verificationCode).trim());
+export const Welcome_Email_Template = (userName = "User") => {
+    const safeUserName = escapeHtml(String(userName).trim());
 
     return `
 <!DOCTYPE html>
@@ -16,7 +15,7 @@ export const Verification_Email_Template = (verificationCode = "") => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Support Desk Email Verification</title>
+    <title>Welcome to Support Desk</title>
 
     <style>
         body{
@@ -37,7 +36,7 @@ export const Verification_Email_Template = (verificationCode = "") => {
         }
 
         .header{
-            background:#2563eb;
+            background:#16a34a;
             color:#ffffff;
             text-align:center;
             padding:25px;
@@ -45,7 +44,7 @@ export const Verification_Email_Template = (verificationCode = "") => {
 
         .header h1{
             margin:0;
-            font-size:28px;
+            font-size:30px;
         }
 
         .content{
@@ -54,31 +53,26 @@ export const Verification_Email_Template = (verificationCode = "") => {
             line-height:1.8;
         }
 
-        .content p{
-            margin-bottom:16px;
-        }
-
-        .verification-code{
-            background:#eff6ff;
-            border:2px dashed #2563eb;
-            color:#2563eb;
-            font-size:28px;
-            font-weight:bold;
+        .welcome-box{
+            background:#ecfdf5;
+            border:2px solid #16a34a;
+            color:#166534;
             text-align:center;
-            padding:15px;
+            padding:18px;
             border-radius:8px;
-            letter-spacing:4px;
             margin:25px 0;
+            font-size:22px;
+            font-weight:bold;
         }
 
-        .info-box{
+        .feature-box{
             background:#f9fafb;
-            border-left:4px solid #2563eb;
+            border-left:4px solid #16a34a;
             padding:15px;
             border-radius:5px;
             margin-top:20px;
-            font-size:14px;
             color:#6b7280;
+            font-size:14px;
         }
 
         .footer{
@@ -102,34 +96,39 @@ export const Verification_Email_Template = (verificationCode = "") => {
     <div class="container">
 
         <div class="header">
-            <h1>Support Desk</h1>
+            <h1>Welcome 🎉</h1>
         </div>
 
         <div class="content">
 
-            <p>Hello,</p>
+            <p>Hello <span class="highlight">${safeUserName}</span>,</p>
 
             <p>
                 Welcome to <span class="highlight">Support Desk</span>.
-                To continue using our ticket management and complaint support system,
-                please verify your email address using the verification code below.
+                Your account has been successfully created and verified.
             </p>
 
-            <div class="verification-code">
-                ${safeVerificationCode}
+            <div class="welcome-box">
+                Your Support System is Ready
             </div>
 
             <p>
-                This code will expire shortly for security reasons.
+                You can now:
             </p>
 
-            <div class="info-box">
-                If you did not create an account or request this verification,
-                please ignore this email.
+            <ul>
+                <li>Create and manage support tickets</li>
+                <li>Track complaint status in real time</li>
+                <li>Communicate with the support team</li>
+                <li>Receive important ticket updates</li>
+            </ul>
+
+            <div class="feature-box">
+                For security reasons, never share your account credentials with anyone.
             </div>
 
             <p style="margin-top:25px;">
-                Thank you,<br/>
+                Thank you for joining us,<br/>
                 <strong>Support Desk Team</strong>
             </p>
 
@@ -146,5 +145,4 @@ export const Verification_Email_Template = (verificationCode = "") => {
 `;
 };
 
-export const sendEmailVerificationCodeTemplate = (verificationCode = "") => Verification_Email_Template(verificationCode);
-
+export const sendWelcomeEmailTemplate = (userName = "User") => Welcome_Email_Template(userName);
