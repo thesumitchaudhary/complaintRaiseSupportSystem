@@ -1,5 +1,5 @@
 import express from "express";
-import ticketModel from "../model/ticketModel.js";
+import complaints from "../model/complaints.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
@@ -22,7 +22,7 @@ router.post("/raiseTickets", authMiddleware, async (req, res) => {
             return res.status(404).json({ success: false, message: "User not found" });
         }
 
-        const createdTicket = await ticketModel.create({ userId: userId, name, email, subject, message });
+        const createdTicket = await complaints.create({ userId: userId, name, email, subject, message });
 
         await sendMail(email, name, subject, message);
         await sendAdminMail(email, name, subject, message);
@@ -115,7 +115,7 @@ router.post("/resetPassword", async (req, res) => {
 
 router.get("/tickets", authMiddleware, async (req, res) => {
     try {
-        const tickets = await ticketModel.find().sort({ createdAt: -1 });
+        const tickets = await complaints.find().sort({ createdAt: -1 });
         return res.status(200).json({ success: true, result: tickets });
     } catch (error) {
         return res.status(500).json({ success: false, message: "Failed to fetch tickets" });
@@ -129,7 +129,7 @@ router.put("/tickets/:id", authMiddleware, async (req, res) => {
         const { status } = req.body;
         const ticketId = req.params.id;
 
-        const updatedTicket = await ticketModel
+        const updatedTicket = await complaints
             .findByIdAndUpdate(
                 ticketId,
                 { status },
@@ -171,7 +171,7 @@ router.delete("/tickets/:id", authMiddleware, async (req, res) => {
     try {
         const ticketId = req.params.id;
 
-        const deletedTicket = await ticketModel.findByIdAndDelete(ticketId);
+        const deletedTicket = await complaints.findByIdAndDelete(ticketId);
 
         if (!deletedTicket) {
             return res.status(404).json({ success: false, message: "Ticket not found" });

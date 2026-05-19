@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { NavMain } from "@/components/nav-main";
 import { NavProjects } from "@/components/nav-projects";
 import { NavUser } from "@/components/nav-user";
-import {toast} from "react-hot-toast";
 import { TeamSwitcher } from "@/components/team-switcher";
 import {
   Sidebar,
@@ -171,7 +170,7 @@ const data = {
   ],
 };
 
-export function AppSidebar({ ...props }) {
+export function EmployeeAppSidebar({ ...props }) {
   const navigate = useNavigate();
   const { data: complaintsData } = useQuery({
     queryKey: ["showRaisedTicked"],
@@ -202,7 +201,7 @@ export function AppSidebar({ ...props }) {
         {/* <NavProjects projects={data.projects} /> */}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} onLogout={()=> logoutMutation.mutate()} />
+        <NavUser user={data.user} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
