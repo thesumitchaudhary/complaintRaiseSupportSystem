@@ -5,25 +5,26 @@ import crypto from "crypto";
 import bcrypt from "bcrypt";
 import { sendMail, sendAdminMail, sendStatusUpdateMail, sendForgotPasswordMail } from "../helper/sendMail.js"
 import userModel from "../model/userModel.js";
+import { authorizedRoles } from "../middleware/authorizedRoles.js";
 
 const router = express.Router();
 
-router.post("/raiseTickets", authMiddleware, async (req, res) => {
+router.post("/raiseTickets", authMiddleware, authorizedRoles("user"), async (req, res) => {
     try {
-        const userId = req.user.id;
-        const { name, email, subject, message } = req.body || {};
+        const customerId = req.user.id;
+        const { name, email, subject, message, serviceType } = req.body || {};
 
-        if (!name || !email || !subject || !message) {
-            return res.status(400).json({ success: false, message: "name, email, subject, and message are mandatory" });
+        if (!name || !email || !subject || !message || !serviceType) {
+            return res.status(400).json({ success: false, message: "name, email, subject, message, and serviceType are mandatory" });
         }
 
-        const user = await userModel.findOne({ _id: userId });
+        const user = await userModel.findOne({ _id: customerId });
         if (!user) {
             return res.status(404).json({ success: false, message: "User not found" });
         }
 
-        const createdTicket = await complaints.create({ userId: userId, name, email, subject, message });
-
+        const createdTicket = await complaints.create({ customerId: customerId, name, email, subject, message, serviceType });
+       
         await sendMail(email, name, subject, message);
         await sendAdminMail(email, name, subject, message);
 

@@ -1,6 +1,6 @@
 import express from "express";
 import userModel from "../model/userModel.js";
-import ticketModel from "../model/ticketModel.js";
+import complaints from "../model/complaints.js";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
@@ -38,7 +38,7 @@ router.post("/create", async (req, res) => {
             verificationCode: code,
         });
 
-        const token = jwt.sign({ id: user._id, name: user.name, email: user.email }, process.env.JWT_SECRET);
+        const token = jwt.sign({ id: user._id, name: user.name, email: user.email, role: user.role }, process.env.JWT_SECRET);
         res.cookie("token", token, { httpOnly: true });
 
         await sendEmailVerificationCodeTemplate({ name: user.name, email: user.email, verificationCode: user.verificationCode });
@@ -104,7 +104,7 @@ router.post("/login", async (req, res) => {
             return res.status(500).json({ success: false, message: 'Server configuration error' });
         }
 
-        const token = jwt.sign({ id: user._id, name: user.name, email: user.email }, jwtSecret);
+        const token = jwt.sign({ id: user._id, name: user.name, email: user.email, role: user.role }, jwtSecret);
         const cookieOptions = { httpOnly: true, sameSite: 'lax' };
         res.cookie("token", token, cookieOptions);
 
@@ -121,14 +121,14 @@ router.post("/login", async (req, res) => {
 
 router.get("/ticketDetails", authMiddleware, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const customerId = req.user.id;
 
-        const user = await userModel.findById(userId);
+        const user = await userModel.findById(customerId);
         if (!user) {
             return res.status(404).json({ success: false, message: "User not found" });
         }
 
-        const tickets = await ticketModel.find({ userId }).sort({ createdAt: -1 });
+        const tickets = await complaints.find({ customerId }).sort({ createdAt: -1 });
 
         return res.status(200).json({ success: true, message: "tickets show successfully", result: tickets });
     } catch (error) {

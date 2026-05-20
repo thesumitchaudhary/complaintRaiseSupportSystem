@@ -31,7 +31,7 @@ router.post("/login", async (req, res) => {
             return res.status(500).json({ success: false, message: "JWT secret not configured" });
         }
 
-        const token = jwt.sign({ id: admin._id, email: admin.email }, jwtSecret, { expiresIn: '1d' });
+        const token = jwt.sign({ id: admin._id, email: admin.email, role: admin.role || 'admin' }, jwtSecret, { expiresIn: '1d' });
 
         res.cookie("token", token, {
             httpOnly: true,

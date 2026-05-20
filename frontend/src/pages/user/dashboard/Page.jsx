@@ -16,11 +16,13 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "../../../components/ui/sidebar";
-import {  getRaisedComplaint } from "../../../services/user";
+import { getRaisedComplaint } from "../../../services/user";
 import { useQuery } from "@tanstack/react-query";
+import { RaiseComplaintModal } from "../../../components/RaiseComplaintModal";
 
 export default function Page() {
   const [theme, setTheme] = useState(false);
+  const [complaintModalOpen, setComplaintModalOpen] = useState(false);
 
   const toggleTheme = () => {
     setTheme(!theme);
@@ -47,6 +49,8 @@ export default function Page() {
     queryKey: ["showRaisedTicked"],
     queryFn: getRaisedComplaint,
   });
+
+  // console.log(data)
 
   return (
     <div
@@ -106,125 +110,24 @@ export default function Page() {
           <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
             <div className="flex justify-between">
               <div>All Complaints</div>
-              <button>Raise New Complaint</button>
+              <button
+                onClick={() => setComplaintModalOpen(true)}
+                className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                  theme
+                    ? "bg-blue-600 text-white hover:bg-blue-700"
+                    : "bg-blue-500 text-white hover:bg-blue-600"
+                }`}
+              >
+                Raise New Complaint
+              </button>
             </div>
             <div className="flex gap-5 flex-wrap">
-              <article className="border-black border-3">
-                <h4>subject</h4>
-                <p>message</p>
-                <p>status</p>
-                <div className="flex gap-3">
-                  <span className="text-xs">Raised Date</span>
-                  <span className="text-xs">accepted Date</span>
-                  <span className="text-xs">start Date</span>
-                </div>
-              </article>
-              <article className="border-black border-3">
-                <h4>subject</h4>
-                <p>message</p>
-                <p>status</p>
-                <div className="flex gap-3">
-                  <span className="text-xs">Raised Date</span>
-                  <span className="text-xs">accepted Date</span>
-                  <span className="text-xs">start Date</span>
-                </div>
-              </article>
-              <article className="border-black border-3">
-                <h4>subject</h4>
-                <p>message</p>
-                <p>status</p>
-                <div className="flex gap-3">
-                  <span className="text-xs">Raised Date</span>
-                  <span className="text-xs">accepted Date</span>
-                  <span className="text-xs">start Date</span>
-                </div>
-              </article>
-              <article className="border-black border-3">
-                <h4>subject</h4>
-                <p>message</p>
-                <p>status</p>
-                <div className="flex gap-3">
-                  <span className="text-xs">Raised Date</span>
-                  <span className="text-xs">accepted Date</span>
-                  <span className="text-xs">start Date</span>
-                </div>
-              </article>
-              <article className="border-black border-3">
-                <h4>subject</h4>
-                <p>message</p>
-                <p>status</p>
-                <div className="flex gap-3">
-                  <span className="text-xs">Raised Date</span>
-                  <span className="text-xs">accepted Date</span>
-                  <span className="text-xs">start Date</span>
-                </div>
-              </article>
-              <article className="border-black border-3">
-                <h4>subject</h4>
-                <p>message</p>
-                <p>status</p>
-                <div className="flex gap-3">
-                  <span className="text-xs">Raised Date</span>
-                  <span className="text-xs">accepted Date</span>
-                  <span className="text-xs">start Date</span>
-                </div>
-              </article>
-              <article className="border-black border-3">
-                <h4>subject</h4>
-                <p>message</p>
-                <p>status</p>
-                <div className="flex gap-3">
-                  <span className="text-xs">Raised Date</span>
-                  <span className="text-xs">accepted Date</span>
-                  <span className="text-xs">start Date</span>
-                </div>
-              </article>
-              <article className="border-black border-3">
-                <h4>subject</h4>
-                <p>message</p>
-                <p>status</p>
-                <div className="flex gap-3">
-                  <span className="text-xs">Raised Date</span>
-                  <span className="text-xs">accepted Date</span>
-                  <span className="text-xs">start Date</span>
-                </div>
-              </article>
-              <article className="border-black border-3">
-                <h4>subject</h4>
-                <p>message</p>
-                <p>status</p>
-                <div className="flex gap-3">
-                  <span className="text-xs">Raised Date</span>
-                  <span className="text-xs">accepted Date</span>
-                  <span className="text-xs">start Date</span>
-                </div>
-              </article>
-              <article className="border-black border-3">
-                <h4>subject</h4>
-                <p>message</p>
-                <p>status</p>
-                <div className="flex gap-3">
-                  <span className="text-xs">Raised Date</span>
-                  <span className="text-xs">accepted Date</span>
-                  <span className="text-xs">start Date</span>
-                </div>
-              </article>
-              <article className="border-black border-3">
-                <h4>subject</h4>
-                <p>message</p>
-                <p>status</p>
-                <div className="flex gap-3">
-                  <span className="text-xs">Raised Date</span>
-                  <span className="text-xs">accepted Date</span>
-                  <span className="text-xs">start Date</span>
-                </div>
-              </article>
-              <article className="border-black border-3">
+              <article className="">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {data?.result?.map((ticket) => (
                     <div
                       key={ticket._id}
-                      className={`rounded-lg shadow-sm hover:shadow-lg transition p-6 ${cardThemeClasses}`}
+                      className={`rounded-lg shadow-sm hover:shadow-lg transition p-6 `}
                     >
                       <div className="flex justify-between items-start">
                         <div>
@@ -250,6 +153,7 @@ export default function Page() {
                       <p className="mt-3 text-sm leading-relaxed whitespace-pre-line opacity-90">
                         {ticket.message}
                       </p>
+                      {/* <p>{ticket.)</p> */}
                     </div>
                   ))}
                 </div>
@@ -258,6 +162,11 @@ export default function Page() {
           </div>
         </SidebarInset>
       </SidebarProvider>
+      <RaiseComplaintModal
+        open={complaintModalOpen}
+        onOpenChange={setComplaintModalOpen}
+        theme={theme}
+      />
     </div>
   );
 }

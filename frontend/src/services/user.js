@@ -121,10 +121,10 @@ export const userLogout = async () => {
 };
 
 export const createTicket = async (payload = {}) => {
-  const { name, email, subject, message } = payload;
+  const { name, email, subject, message, serviceType } = payload;
 
-  if (!name || !email || !subject || !message) {
-    const err = new Error("Missing required ticket fields: name, email, subject, message");
+  if (!name || !email || !subject || !message || !serviceType) {
+    const err = new Error("Missing required ticket fields: name, email, subject, message, serviceType");
     err.status = 400;
     throw err;
   }
@@ -135,6 +135,7 @@ export const createTicket = async (payload = {}) => {
       email,
       subject,
       message,
+      serviceType,
     });
     return response.data;
   } catch (error) {

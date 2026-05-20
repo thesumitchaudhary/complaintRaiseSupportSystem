@@ -9,6 +9,10 @@ const complaintSchema = new mongoose.Schema(
       required: true,
     },
 
+    name: String,
+    email: String,
+
+
     subject: {
       type: String,
       required: true,
@@ -72,7 +76,4 @@ const complaintSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model(
-  "Complaint",
-  complaintSchema
-);
+export default mongoose.model("complaints", complaintSchema)
