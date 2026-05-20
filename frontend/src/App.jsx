@@ -1,7 +1,6 @@
 import "./App.css";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashbord";
-import Contact from "./pages/Contact";
 import ResetPassword from "./pages/ResetPassword";
 import { Routes, Route } from "react-router-dom";
 
@@ -16,8 +15,8 @@ function App() {
     <>
       <Routes>
         <Route path={"/"} element={<Home />} />
-        <Route path={"/contact"} element={<Contact />} />
         <Route path={"/dashboard"} element={<Dashboard />} />
+        <Route path={"/reset-password"} element={<ResetPassword />} />
 
         {/* this is for user dashboard blocks */}
         <Route path={"/User/Dashboard"} element={<UserDashboardPage />} />
@@ -25,9 +24,10 @@ function App() {
         <Route path={"/User/Pending"} element={<UserPendingPage />} />
         <Route path={"/User/Rejected"} element={<UserRejectedPage />} />
 
-        <Route path={"/reset-password"} element={<ResetPassword />} />
+        {/* this is for admin dashboard blocks */}
+        
       </Routes>
-    </> 
+    </>
   );
 }
 
