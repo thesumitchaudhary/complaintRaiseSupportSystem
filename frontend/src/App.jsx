@@ -17,6 +17,11 @@ import AdminUsersPage from "./pages/admin/user/Page";
 import AdminComplaintsPage from "./pages/admin/complaints/Page";
 import AdminAddServicePage from "./pages/admin/add-service/Page";
 
+// this is for the employee pages direction
+import EmployeeAllTaskPage from "./pages/employee/all-task/Page";
+import EmployeeTaskCompletedPage from "./pages/employee/completed/Page";
+import EmployeeTaskInprogressPage from "./pages/employee/in-progress/Page";
+import EmployeeTaskPendingPage from "./pages/employee/pending/Page";
 
 function App() {
   return (
@@ -41,6 +46,24 @@ function App() {
         <Route path={"/Admin/Complaints"} element={<AdminComplaintsPage />} />
         <Route path={"/Admin/User"} element={<AdminUsersPage />} />
         <Route path={"/Admin/Addservice"} element={<AdminAddServicePage />} />
+
+        {/* this is for employee dashboard blocks */}
+        <Route
+          path={"/Employee/AllTaskPage"}
+          element={<EmployeeAllTaskPage />}
+        />
+        <Route
+          path={"/Employee/TaskCompletedPage"}
+          element={<EmployeeTaskCompletedPage />}
+        />
+        <Route
+          path={"/Employee/TaskInprogressPage"}
+          element={<EmployeeTaskInprogressPage />}
+        />
+        <Route
+          path={"/Employee/TaskPendingPage"}
+          element={<EmployeeTaskPendingPage />}
+        />
       </Routes>
     </>
   );

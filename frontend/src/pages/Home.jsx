@@ -113,7 +113,7 @@ const Home = () => {
             >
               Admin Login
             </button>
-            <Link to={"/Admin/Dashboard"}> AdminDashboard</Link>
+            <Link to={"/Employee/AllTaskPage"}>EmployeeDashboard</Link>
           </div>
         </header>
 

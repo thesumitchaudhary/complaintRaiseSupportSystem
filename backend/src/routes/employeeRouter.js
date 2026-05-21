@@ -18,7 +18,11 @@ router.post("/createEmployee", async (req, res) => {
         const { name, email, password, confirmPassword } = req.body;
 
         if (!name || !email || !password || !confirmPassword) {
-            return res.status(401).josn({ success: false, message: "hey name, email,password and confirmPassword is mandatory" });
+            return res.status(401).json({ success: false, message: "hey name, email,password and confirmPassword is mandatory" });
+        }
+
+        if (password != confirmPassword) {
+            return res.status(401).json({ message: false, message: "passowrd is not match" })
         }
 
         const salt = await bcrypt.salt(10);
@@ -27,7 +31,7 @@ router.post("/createEmployee", async (req, res) => {
         const employee = await userModel.create({
             name,
             email,
-            role: "employye"
+            role: "employye",
             password: hash
         })
 
@@ -61,7 +65,7 @@ router.post("/login", async (req, res) => {
 
     }
     catch (error) {
-        res.status(500).json(success: false, message: "Internal servver Error", error: error.message);
+        res.status(500).json({ success: false, message: "Internal servver Error", error: error.message });
     }
 })
 
@@ -72,7 +76,7 @@ router.get("/logout", (req, res) => {
         res.status(200).json({ success: true, message: "logout is successfully" })
     }
     catch (error) {
-        res.status(500).json(success: false, message: "Internal servver Error", error: error.message);
+        res.status(500).json({ success: false, message: "Internal servver Error", error: error.message });
     }
 })
 

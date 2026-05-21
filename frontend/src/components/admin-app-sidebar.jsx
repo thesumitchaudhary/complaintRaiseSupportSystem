@@ -25,7 +25,14 @@ import {
   ChartPieIcon,
   MapTrifoldIcon,
 } from "@phosphor-icons/react";
-import { ShieldAlert } from "lucide-react";
+import {
+  ShieldAlert,
+  LayoutDashboard,
+  MessageSquareWarning,
+  ClipboardCheck,
+  Users,
+  SquarePlus,
+} from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { userLogout, getRaisedComplaint } from "../services/user";
 // This is sample data.
@@ -46,7 +53,7 @@ const data = {
     {
       title: "Dashboard",
       url: "/Admin/Dashboard",
-      icon: <TerminalIcon />,
+      icon: <LayoutDashboard />,
       isActive: true,
       // items: [
       //   {
@@ -66,7 +73,7 @@ const data = {
     {
       title: "Complaint",
       url: "/Admin/Complaints",
-      icon: <BookOpenIcon />,
+      icon: <MessageSquareWarning />,
       // items: [
       //   {
       //     title: "Introduction",
@@ -89,7 +96,7 @@ const data = {
     {
       title: "AssignTask",
       url: "/Admin/Assigntask",
-      icon: <BookOpenIcon />,
+      icon: <ClipboardCheck />,
       // items: [
       //   {
       //     title: "Introduction",
@@ -112,7 +119,7 @@ const data = {
     {
       title: "Employees",
       url: "/Admin/Employee",
-      icon: <RobotIcon />,
+      icon: <Users />,
       // items: [
       //   {
       //     title: "Genesis",
@@ -131,7 +138,7 @@ const data = {
     {
       title: "Users",
       url: "/Admin/User",
-      icon: <RobotIcon />,
+      icon: <Users />,
       // items: [
       //   {
       //     title: "Genesis",
@@ -150,7 +157,7 @@ const data = {
     {
       title: "Add Service",
       url: "/Admin/Addservice",
-      icon: <RobotIcon />,
+      icon: <SquarePlus />,
       // items: [
       //   {
       //     title: "Genesis",

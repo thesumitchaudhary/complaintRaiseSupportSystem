@@ -43,8 +43,8 @@ const data = {
   ],
   navMain: [
     {
-      title: "All Complaint",
-      // url: "/User/Dashboard",
+      title: "All Task",
+      url: "/Employee/AllTaskPage",
       icon: <TerminalIcon />,
       isActive: true,
       // items: [
@@ -63,8 +63,8 @@ const data = {
       // ],
     },
     {
-      title: "Pending",
-      // url: "/User/Pending",
+      title: "Pending Task",
+      url: "/Employee/TaskPendingPage",
       icon: <RobotIcon />,
       // items: [
       //   {
@@ -82,73 +82,50 @@ const data = {
       // ],
     },
     {
-      title: "Rejected",
-      // url: "/User/Rejected",
-      icon: <BookOpenIcon />,
+      title: "Inprogress Task ",
+      url: "/Employee/TaskPendingPage",
+      icon: <GearIcon />,
       // items: [
       //   {
-      //     title: "Introduction",
+      //     title: "General",
       //     url: "#",
       //   },
       //   {
-      //     title: "Get Started",
+      //     title: "Team",
       //     url: "#",
       //   },
       //   {
-      //     title: "Tutorials",
+      //     title: "Billing",
       //     url: "#",
       //   },
       //   {
-      //     title: "Changelog",
+      //     title: "Limits",
       //     url: "#",
       //   },
       // ],
     },
     {
-      title: "In-progress",
-      url: "#",
+      title: "Completed Tasks",
+      url: "/Employee/TaskCompletedPage",
       icon: <GearIcon />,
-      items: [
-        {
-          title: "General",
-          // url: "/User/Inprogress",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Completed ",
-      url: "#",
-      icon: <GearIcon />,
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
+      // items: [
+      //   {
+      //     title: "General",
+      //     url: "#",
+      //   },
+      //   {
+      //     title: "Team",
+      //     url: "#",
+      //   },
+      //   {
+      //     title: "Billing",
+      //     url: "#",
+      //   },
+      //   {
+      //     title: "Limits",
+      //     url: "#",
+      //   },
+      // ],
     },
   ],
   projects: [
