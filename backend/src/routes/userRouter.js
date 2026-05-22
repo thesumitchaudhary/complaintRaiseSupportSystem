@@ -119,6 +119,7 @@ router.post("/login", async (req, res) => {
     }
 })
 
+// this is for user who get his complaint
 router.get("/ticketDetails", authMiddleware, async (req, res) => {
     try {
         const customerId = req.user.id;

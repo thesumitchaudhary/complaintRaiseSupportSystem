@@ -1,6 +1,6 @@
 import { useState } from "react";
 import AdminLogin from "./AdminLogin";
-import UserLogin from "./UserLogin";
+import UserLogin from "./Registration&Login";
 import {
   Moon,
   Sun,

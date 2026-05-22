@@ -67,8 +67,7 @@ router.get("/showUser", async (req, res) => {
 
 router.get("/showEmployee", async (req, res) => {
     try {
-        const employee = await userModel.find({ role: "employee" }).populate("complaints");
-
+        const employee = await userModel.find({ role: "employee" })
         if (!employee) {
             res.status(401).json({ success: false, message: "hey employee is not found" });
         }

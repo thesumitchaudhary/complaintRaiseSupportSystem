@@ -17,7 +17,7 @@ import {
   SidebarTrigger,
 } from "../../../components/ui/sidebar";
 import { useNavigate } from "react-router-dom";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   adminLogout,
   deleteComplaint,
@@ -79,6 +79,7 @@ export default function Page() {
   };
 
   const navigation = useNavigate();
+  const queryClient = useQueryClient();
 
   const logoutMutation = useMutation({
     mutationFn: adminLogout,
@@ -100,9 +101,11 @@ export default function Page() {
     mutationFn: ({ id, status }) => updateComplaint(id, { status }),
     onSuccess: () => {
       toast.success("complaint status updated successfully");
+      queryClient.invalidateQueries({ queryKey: ["showComplaints"] });
     },
     onError: (error) => {
       console.log(error);
+      toast.error(error?.response?.data?.message || "failed to update complaint");
     },
   });
 
@@ -110,9 +113,11 @@ export default function Page() {
     mutationFn: deleteComplaint,
     onSuccess: () => {
       toast.success("complaint deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["showComplaints"] });
     },
     onError: (error) => {
       console.log(error);
+      toast.error(error?.response?.data?.message || "failed to delete complaint");
     },
   });
 
@@ -134,7 +139,7 @@ export default function Page() {
     {
       label: "Resolved",
       value: complaints.filter(
-        (item) => (item?.status || "").toLowerCase() === "resolved",
+        (item) => ["completed", "resolved"].includes((item?.status || "").toLowerCase()),
       ).length,
       detail: "Closed items",
     },
@@ -317,7 +322,7 @@ export default function Page() {
                                     onClick={() =>
                                       updateStatusMutation.mutate({
                                         id: complaint?._id,
-                                        status: "Pending",
+                                        status: "pending",
                                       })
                                     }
                                   >
@@ -327,7 +332,7 @@ export default function Page() {
                                     onClick={() =>
                                       updateStatusMutation.mutate({
                                         id: complaint?._id,
-                                        status: "Resolved",
+                                        status: "completed",
                                       })
                                     }
                                   >
@@ -337,7 +342,7 @@ export default function Page() {
                                     onClick={() =>
                                       updateStatusMutation.mutate({
                                         id: complaint?._id,
-                                        status: "In-Progress",
+                                        status: "in_progress",
                                       })
                                     }
                                   >

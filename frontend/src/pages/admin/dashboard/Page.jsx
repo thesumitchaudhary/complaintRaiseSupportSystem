@@ -17,9 +17,8 @@ import {
   SidebarTrigger,
 } from "../../../components/ui/sidebar";
 import { showEmployee, showUser } from "../../../services/admin";
-import { getRaisedComplaint } from "../../../services/user";
+import { showComplain } from "../../../services/admin";
 import { useQuery } from "@tanstack/react-query";
-import { RaiseComplaintModal } from "../../../components/RaiseComplaintModal";
 
 export default function Page() {
   const [theme, setTheme] = useState(false);
@@ -64,8 +63,8 @@ export default function Page() {
   }, [theme]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["showRaisedTicked"],
-    queryFn: getRaisedComplaint,
+    queryKey: ["showComplaints"],
+    queryFn: showComplain,
   });
 
   const { data: customerData, isLoading: isCustomerLoading } = useQuery({
@@ -82,6 +81,8 @@ export default function Page() {
   const customers = customerData?.result || [];
   const employees = employeeData?.result || [];
 
+  console.log(complaints);
+
   const stats = [
     {
       label: "Total customers",
@@ -97,11 +98,6 @@ export default function Page() {
       label: "Complaints",
       value: complaints.length,
       detail: "All recorded tickets",
-    },
-    {
-      label: "Pending",
-      value: complaints.filter((item) => (item?.status || "Pending").toLowerCase() === "pending").length,
-      detail: "Need attention",
     },
   ];
 
@@ -134,34 +130,34 @@ export default function Page() {
       <SidebarProvider style={{ backgroundColor: "transparent" }}>
         <AppSidebar />
         <SidebarInset style={{ backgroundColor: "transparent" }}>
-          <header className={`sticky top-0 z-10 border-b ${pageTheme.border} ${pageTheme.header} backdrop-blur`}>
+          <header
+            className={`sticky top-0 z-10 border-b ${pageTheme.border} ${pageTheme.header} backdrop-blur`}
+          >
             <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4">
               <div className="flex items-center gap-2">
-              <SidebarTrigger className="-ml-1" />
-              <Separator
-                orientation="vertical"
-                className="mr-2 data-[orientation=vertical]:h-4"
-              />
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem className="hidden md:block">
-                    <BreadcrumbLink
-                      className={`${pageTheme.muted} transition-colors hover:text-current`}
-                      href="#"
-                    >
-                      Admin dashboard
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="hidden md:block" />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage
-                      className={pageTheme.muted}
-                    >
-                      Dashboard
-                    </BreadcrumbPage>
-                  </BreadcrumbItem>
-                </BreadcrumbList>
-              </Breadcrumb>
+                <SidebarTrigger className="-ml-1" />
+                <Separator
+                  orientation="vertical"
+                  className="mr-2 data-[orientation=vertical]:h-4"
+                />
+                <Breadcrumb>
+                  <BreadcrumbList>
+                    <BreadcrumbItem className="hidden md:block">
+                      <BreadcrumbLink
+                        className={`${pageTheme.muted} transition-colors hover:text-current`}
+                        href="#"
+                      >
+                        Admin dashboard
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator className="hidden md:block" />
+                    <BreadcrumbItem>
+                      <BreadcrumbPage className={pageTheme.muted}>
+                        Dashboard
+                      </BreadcrumbPage>
+                    </BreadcrumbItem>
+                  </BreadcrumbList>
+                </Breadcrumb>
               </div>
 
               <button
@@ -170,37 +166,18 @@ export default function Page() {
                 className={`inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors ${pageTheme.button}`}
                 onClick={toggleTheme}
               >
-                {theme ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                {theme ? (
+                  <Moon className="h-4 w-4" />
+                ) : (
+                  <Sun className="h-4 w-4" />
+                )}
               </button>
             </div>
           </header>
           <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 lg:p-6">
-            <section className={`rounded-2xl border ${pageTheme.border} ${pageTheme.panel} p-6 shadow-sm`}>
-              <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-                <div className="space-y-2">
-                  <p className={`text-sm font-medium uppercase tracking-[0.2em] ${pageTheme.muted}`}>
-                    Admin overview
-                  </p>
-                  <h1 className="text-2xl font-semibold md:text-3xl">
-                    Dashboard
-                  </h1>
-                  <p className={`max-w-2xl text-sm leading-6 ${pageTheme.muted}`}>
-                    Track complaints, monitor resolution progress, and keep the support team aligned from one place.
-                  </p>
-                </div>
+   
 
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    className={`rounded-md border px-4 py-2 text-sm font-medium transition-colors ${pageTheme.button}`}
-                  >
-                    View reports
-                  </button>
-                </div>
-              </div>
-            </section>
-
-            <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <section className="grid gap-5 md:grid-cols-4 xl:grid-cols-4">
               {stats.map((stat) => (
                 <article
                   key={stat.label}
@@ -209,14 +186,20 @@ export default function Page() {
                   <p className={`text-sm ${pageTheme.muted}`}>{stat.label}</p>
                   <div className="mt-3 flex items-end justify-between gap-3">
                     <h2 className="text-3xl font-semibold">{stat.value}</h2>
-                    <span className={`text-xs ${pageTheme.muted}`}>{stat.detail}</span>
+                    <span className={`text-xs ${pageTheme.muted}`}>
+                      {stat.detail}
+                    </span>
                   </div>
                 </article>
               ))}
             </section>
 
-            <section className={`overflow-hidden rounded-2xl border ${pageTheme.border} ${pageTheme.panel} shadow-sm`}>
-              <div className={`flex items-center justify-between gap-3 border-b px-5 py-4 ${pageTheme.border}`}>
+            <section
+              className={`overflow-hidden rounded-2xl border ${pageTheme.border} ${pageTheme.panel} shadow-sm`}
+            >
+              <div
+                className={`flex items-center justify-between gap-3 border-b px-5 py-4 ${pageTheme.border}`}
+              >
                 <div>
                   <h2 className="text-lg font-semibold">Recent complaints</h2>
                   <p className={`text-sm ${pageTheme.muted}`}>
@@ -231,11 +214,31 @@ export default function Page() {
                 <table className="min-w-full border-separate border-spacing-0 text-left text-sm">
                   <thead className={pageTheme.tableHead}>
                     <tr>
-                      <th className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}>Name</th>
-                      <th className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}>Email</th>
-                      <th className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}>Subject</th>
-                      <th className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}>Status</th>
-                      <th className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}>Date</th>
+                      <th
+                        className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}
+                      >
+                        Name
+                      </th>
+                      <th
+                        className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}
+                      >
+                        Email
+                      </th>
+                      <th
+                        className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}
+                      >
+                        Subject
+                      </th>
+                      <th
+                        className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}
+                      >
+                        Status
+                      </th>
+                      <th
+                        className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}
+                      >
+                        Date
+                      </th>
                     </tr>
                   </thead>
 
@@ -254,17 +257,42 @@ export default function Page() {
                       </tr>
                     ) : (
                       recentComplaints.map((complaint) => (
-                        <tr key={complaint?._id || complaint?.email} className={`transition-colors ${pageTheme.tableRow}`}>
-                          <td className={`border-b px-5 py-4 ${pageTheme.border}`}>{complaint?.name || "-"}</td>
-                          <td className={`border-b px-5 py-4 ${pageTheme.border}`}>{complaint?.email || "-"}</td>
-                          <td className={`border-b px-5 py-4 ${pageTheme.border}`}>{complaint?.subject || "-"}</td>
-                          <td className={`border-b px-5 py-4 ${pageTheme.border}`}>
-                            <span className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${getStatusBadgeClass(complaint?.status)}`}>
+                        <tr
+                          key={complaint?._id || complaint?.email}
+                          className={`transition-colors ${pageTheme.tableRow}`}
+                        >
+                          <td
+                            className={`border-b px-5 py-4 ${pageTheme.border}`}
+                          >
+                            {complaint?.name || "-"}
+                          </td>
+                          <td
+                            className={`border-b px-5 py-4 ${pageTheme.border}`}
+                          >
+                            {complaint?.email || "-"}
+                          </td>
+                          <td
+                            className={`border-b px-5 py-4 ${pageTheme.border}`}
+                          >
+                            {complaint?.subject || "-"}
+                          </td>
+                          <td
+                            className={`border-b px-5 py-4 ${pageTheme.border}`}
+                          >
+                            <span
+                              className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${getStatusBadgeClass(complaint?.status)}`}
+                            >
                               {complaint?.status || "Pending"}
                             </span>
                           </td>
-                          <td className={`border-b px-5 py-4 ${pageTheme.border}`}>
-                            {complaint?.createdAt ? new Date(complaint.createdAt).toLocaleDateString() : "-"}
+                          <td
+                            className={`border-b px-5 py-4 ${pageTheme.border}`}
+                          >
+                            {complaint?.createdAt
+                              ? new Date(
+                                  complaint.createdAt,
+                                ).toLocaleDateString()
+                              : "-"}
                           </td>
                         </tr>
                       ))
@@ -276,11 +304,6 @@ export default function Page() {
           </div>
         </SidebarInset>
       </SidebarProvider>
-      <RaiseComplaintModal
-        open={complaintModalOpen}
-        onOpenChange={setComplaintModalOpen}
-        theme={theme}
-      />
     </div>
   );
 }

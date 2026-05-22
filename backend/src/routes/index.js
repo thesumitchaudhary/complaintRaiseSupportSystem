@@ -24,7 +24,7 @@ router.post("/raiseTickets", authMiddleware, authorizedRoles("user"), async (req
         }
 
         const createdTicket = await complaints.create({ customerId: customerId, name, email, subject, message, serviceType, raisedDate: Date.now() });
-       
+
         await sendMail(email, name, subject, message);
         await sendAdminMail(email, name, subject, message);
 
@@ -73,6 +73,22 @@ const handleForgotPassword = async (req, res) => {
 };
 
 router.route("/forgotPassword").get(handleForgotPassword).post(handleForgotPassword);
+
+router.get("/me", authMiddleware, async (req, res) => {
+    try {
+        const id = req.user.id;
+
+        const user = await userModel.findOne({ _id: id });
+
+        if (!user) {
+            res.status(401).json({ success: false, message: "hey user is not found" });
+        }
+
+        res.status(200).json({ success: true, message: "user fetched successfully", result: user });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Internal Server Error", error: error.message })
+    }
+})
 
 router.post("/resetPassword", async (req, res) => {
     try {
@@ -130,13 +146,34 @@ router.put("/tickets/:id", authMiddleware, async (req, res) => {
         const { status } = req.body;
         const ticketId = req.params.id;
 
+        const normalizeStatus = (incomingStatus = "") => {
+            const value = String(incomingStatus).trim().toLowerCase();
+
+            if (value === "pending") return "pending";
+            if (value === "in-progress" || value === "in progress" || value === "in_progress") return "in_progress";
+            if (value === "resolved" || value === "completed") return "completed";
+            if (value === "assigned") return "assigned";
+            if (value === "rejected") return "rejected";
+
+            return "";
+        };
+
+        const normalizedStatus = normalizeStatus(status);
+
+        if (!normalizedStatus) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid status value"
+            });
+        }
+
         const updatedTicket = await complaints
             .findByIdAndUpdate(
                 ticketId,
-                { status },
+                { status: normalizedStatus },
                 { returnDocument: 'after', runValidators: true }
             )
-            .populate("userId");
+            .populate("customerId", "name email");
 
         if (!updatedTicket) {
             return res.status(404).json({
@@ -145,13 +182,18 @@ router.put("/tickets/:id", authMiddleware, async (req, res) => {
             });
         }
 
-        await sendStatusUpdateMail(
-            updatedTicket.userId.name,
-            updatedTicket.userId.email,
-            updatedTicket.subject,
-            updatedTicket.message,
-            updatedTicket.status
-        );
+        const customerName = updatedTicket.customerId?.name || updatedTicket.name;
+        const customerEmail = updatedTicket.customerId?.email || updatedTicket.email;
+
+        if (customerName && customerEmail) {
+            await sendStatusUpdateMail(
+                customerName,
+                customerEmail,
+                updatedTicket.subject,
+                updatedTicket.message,
+                updatedTicket.status
+            );
+        }
 
         return res.status(200).json({
             success: true,

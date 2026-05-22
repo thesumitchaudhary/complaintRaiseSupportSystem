@@ -5,13 +5,9 @@ const complaintSchema = new mongoose.Schema(
     // customer who raised complaint
     customerId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "user",
+      ref: "User",
       required: true,
     },
-
-    name: String,
-    email: String,
-
 
     subject: {
       type: String,
@@ -36,7 +32,7 @@ const complaintSchema = new mongoose.Schema(
 
     raisedDate: {
       type: Date,
-      required: true,
+      default: Date.now,
     },
 
     status: {
@@ -47,11 +43,12 @@ const complaintSchema = new mongoose.Schema(
         "in_progress",
         "completed",
         "rejected",
+        "overdue",
       ],
       default: "pending",
     },
 
-    // employee assigned to task
+    // current assigned employee
     assignedEmployee: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -71,14 +68,67 @@ const complaintSchema = new mongoose.Schema(
       default: "medium",
     },
 
+    // task deadline
+    deadline: {
+      type: Date,
+      default: null,
+    },
+
     resolutionNote: {
       type: String,
       default: "",
     },
+
+    // full assignment history
+    assignmentHistory: [
+      {
+        employee: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+
+        assignedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+
+        assignedAt: {
+          type: Date,
+          default: Date.now,
+        },
+
+        deadline: {
+          type: Date,
+          default: null,
+        },
+
+        completedAt: {
+          type: Date,
+          default: null,
+        },
+
+        status: {
+          type: String,
+          enum: [
+            "assigned",
+            "in_progress",
+            "completed",
+            "reassigned",
+            "expired",
+          ],
+          default: "assigned",
+        },
+
+        note: {
+          type: String,
+          default: "",
+        },
+      },
+    ],
   },
   {
     timestamps: true,
   }
 );
 
-export default mongoose.model("complaints", complaintSchema)
+export default mongoose.model("Complaint", complaintSchema);

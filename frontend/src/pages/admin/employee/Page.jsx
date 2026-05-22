@@ -9,6 +9,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "../../../components/ui/breadcrumb";
+import { toast } from "react-hot-toast";
 
 import { Separator } from "../../../components/ui/separator";
 import {
@@ -16,8 +17,9 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "../../../components/ui/sidebar";
-import { getRaisedComplaint } from "../../../services/user";
-import { useQuery } from "@tanstack/react-query";
+import { createEmployee } from "../../../services/employee";
+import { showEmployee } from "../../../services/admin";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import {
@@ -31,6 +33,8 @@ import {
 export default function Page() {
   const [theme, setTheme] = useState(false);
   const [employeeModalOpen, setEmployeeModalOpen] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const [employeeForm, setEmployeeForm] = useState({
     name: "",
     email: "",
@@ -38,20 +42,23 @@ export default function Page() {
     confirmPassword: "",
   });
 
-  const summaryCards = [
-    { label: "Total employees", value: "24", detail: "+3 this week" },
-    { label: "Active tasks", value: "18", detail: "6 waiting review" },
-    { label: "Completed", value: "12", detail: "Last updated today" },
-  ];
-
-  const employees = [
-    {
-      name: "Chaudhary Sumit",
-      email: "sumit@gmail.com",
-      joinDate: "11-11-2031",
-      tasks: "Yes",
+  const employeeMutation = useMutation({
+    mutationFn: createEmployee,
+    onSuccess: () => {
+      toast.success("Employee created successfully");
+      setError("");
+      resetForm();
+      setEmployeeModalOpen(false);
     },
-  ];
+    onError: (error) => {
+      setError(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to create employee",
+      );
+      toast.error(error.response?.data?.message || "Failed to create employee");
+    },
+  });
 
   const toggleTheme = () => {
     setTheme(!theme);
@@ -65,16 +72,68 @@ export default function Page() {
     }));
   };
 
-  const handleEmployeeSubmit = (event) => {
-    event.preventDefault();
-    setEmployeeModalOpen(false);
+  const resetForm = () => {
     setEmployeeForm({
       name: "",
       email: "",
-      joinDate: "",
-      taskStatus: "",
+      password: "",
+      confirmPassword: "",
     });
   };
+
+  const handleEmployeeSubmit = (event) => {
+    event.preventDefault();
+    setError("");
+
+    if (!employeeForm.name.trim()) {
+      setError("name is required");
+      return;
+    }
+
+    if (!employeeForm.email.trim()) {
+      setError("email is required");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(employeeForm.email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    if (!employeeForm.password.trim()) {
+      setError("password is required");
+      return;
+    }
+
+    if (!employeeForm.confirmPassword.trim()) {
+      setError("confirmedPassword is required");
+      return;
+    }
+
+    if (employeeForm.password !== employeeForm.confirmPassword) {
+      setError("Passwords do not match");
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      employeeMutation.mutate(employeeForm);
+    } catch (error) {
+      setError(error.message || "Failed to create Employee");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // this is for show all employee
+  const { data } = useQuery({
+    queryKey: ["showActiveEmployee"],
+    queryFn: showEmployee,
+  });
+
+  // console.log(data?.result?.map((employee) => employee).length);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -92,11 +151,6 @@ export default function Page() {
       root.classList.remove("dark");
     }
   }, [theme]);
-
-  const { data } = useQuery({
-    queryKey: ["showRaisedTicked"],
-    queryFn: getRaisedComplaint,
-  });
 
   const pageTheme = theme
     ? {
@@ -202,20 +256,36 @@ export default function Page() {
             </section>
 
             <section className="grid gap-4 md:grid-cols-3">
-              {summaryCards.map((card) => (
-                <article
-                  key={card.label}
-                  className={`rounded-2xl border ${pageTheme.border} ${pageTheme.panel} p-5 shadow-sm`}
-                >
-                  <p className={`text-sm ${pageTheme.muted}`}>{card.label}</p>
-                  <div className="mt-3 flex items-end justify-between gap-3">
-                    <h2 className="text-3xl font-semibold">{card.value}</h2>
-                    <span className={`text-xs ${pageTheme.muted}`}>
-                      {card.detail}
-                    </span>
-                  </div>
-                </article>
-              ))}
+              <article
+                className={`rounded-2xl border ${pageTheme.border} ${pageTheme.panel} p-5 shadow-sm`}
+              >
+                <p className={`text-sm ${pageTheme.muted}`}>employees</p>
+                <div className="mt-3 flex items-end justify-between gap-3">
+                  <h2 className="text-3xl font-semibold">
+                    {data?.result?.map((employee) => employee).length}
+                  </h2>
+                </div>
+              </article>
+              <article
+                className={`rounded-2xl border ${pageTheme.border} ${pageTheme.panel} p-5 shadow-sm`}
+              >
+                <p className={`text-sm ${pageTheme.muted}`}>employees</p>
+                <div className="mt-3 flex items-end justify-between gap-3">
+                  <h2 className="text-3xl font-semibold">
+                    {data?.result?.map((employee) => employee).length}
+                  </h2>
+                </div>
+              </article>
+              <article
+                className={`rounded-2xl border ${pageTheme.border} ${pageTheme.panel} p-5 shadow-sm`}
+              >
+                <p className={`text-sm ${pageTheme.muted}`}>employees</p>
+                <div className="mt-3 flex items-end justify-between gap-3">
+                  <h2 className="text-3xl font-semibold">
+                    {data?.result?.map((employee) => employee).length}
+                  </h2>
+                </div>
+              </article>
             </section>
 
             <section
@@ -227,9 +297,9 @@ export default function Page() {
                 <div>
                   <h2 className="text-lg font-semibold">Team roster</h2>
                   <p className={`text-sm ${pageTheme.muted}`}>
-                    {Array.isArray(data)
+                    {/* {Array.isArray(data)
                       ? `${data.length} synced records available`
-                      : "Structured view of the current team list"}
+                      : "Structured view of the current team list"} */}
                   </p>
                 </div>
               </div>
@@ -253,6 +323,11 @@ export default function Page() {
                       >
                         Join date
                       </th>
+                        <th
+                        className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}
+                      >
+                        Pending task
+                      </th>
                       <th
                         className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}
                       >
@@ -261,7 +336,7 @@ export default function Page() {
                     </tr>
                   </thead>
                   <tbody>
-                    {employees.map((employee) => (
+                    {data?.result?.map((employee) => (
                       <tr
                         key={`${employee.email}-${employee.joinDate}`}
                         className={`transition-colors ${pageTheme.tableRow}`}
@@ -282,6 +357,11 @@ export default function Page() {
                           {employee.joinDate}
                         </td>
                         <td
+                          className={`border-b px-5 py-4 ${pageTheme.border}`}
+                        >
+                          {employee.tasks}
+                        </td>
+                         <td
                           className={`border-b px-5 py-4 ${pageTheme.border}`}
                         >
                           {employee.tasks}
@@ -353,9 +433,9 @@ export default function Page() {
             <label className="space-y-2 text-sm font-medium">
               Password
               <Input
-                name="joinDate"
+                name="password"
                 type="password"
-                value={employeeForm.joinDate}
+                value={employeeForm.password}
                 onChange={handleEmployeeChange}
                 className={
                   theme
@@ -368,11 +448,10 @@ export default function Page() {
             <label className="space-y-2 text-sm font-medium">
               Confirmed Passowrd
               <Input
-                name="taskStatus"
+                name="confirmPassword"
                 type="password"
-                value={employeeForm.taskStatus}
+                value={employeeForm.confirmPassword}
                 onChange={handleEmployeeChange}
-                placeholder="e.g. 6 completed"
                 className={
                   theme
                     ? "border-slate-700 bg-slate-900 text-slate-100 placeholder:text-slate-500"
