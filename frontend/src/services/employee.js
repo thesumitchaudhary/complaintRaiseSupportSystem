@@ -40,7 +40,7 @@ export const adminLogin = async ({ email, password }) => {
     }
 }
 
-export const logout = async () => {
+export const employeeLogout = async () => {
     try {
         const response = await api.get("/employee/logout");
         return response.data;

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { NavMain } from "@/components/nav-main";
 import { NavProjects } from "@/components/nav-projects";
 import { NavUser } from "@/components/nav-user";
+import { toast } from "react-hot-toast";
 import { TeamSwitcher } from "@/components/team-switcher";
 import {
   Sidebar,
@@ -26,7 +27,7 @@ import {
 } from "@phosphor-icons/react";
 import { ShieldAlert } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { userLogout, getRaisedComplaint } from "../services/user";
+import { employeeLogout } from "../services/employee";
 // This is sample data.
 const data = {
   user: {
@@ -149,10 +150,6 @@ const data = {
 
 export function EmployeeAppSidebar({ ...props }) {
   const navigate = useNavigate();
-  const { data: complaintsData } = useQuery({
-    queryKey: ["showRaisedTicked"],
-    queryFn: getRaisedComplaint,
-  });
 
   const handleLogoutSuccess = useCallback(() => {
     toast.success("logout successful");
@@ -164,7 +161,7 @@ export function EmployeeAppSidebar({ ...props }) {
   }, []);
 
   const logoutMutation = useMutation({
-    mutationFn: userLogout,
+    mutationFn: employeeLogout,
     onSuccess: handleLogoutSuccess,
     onError: handleLogoutError,
   });
@@ -178,7 +175,7 @@ export function EmployeeAppSidebar({ ...props }) {
         {/* <NavProjects projects={data.projects} /> */}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={data.user} onLogout={() => logoutMutation.mutate()} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

@@ -133,22 +133,6 @@ const Home = () => {
             >
               User Login
             </button>
-            <button
-              onClick={() => setOpenAdminLogin(true)}
-              className="rounded-lg border border-sky-600 bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700 sm:text-base"
-            >
-              Admin Login
-            </button>
-            <Link
-              to={"/Employee/AllTaskPage"}
-              className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                theme
-                  ? "text-sky-300 hover:bg-slate-800"
-                  : "text-sky-700 hover:bg-white"
-              }`}
-            >
-              Employee Dashboard
-            </Link>
           </div>
         </header>
 
@@ -319,7 +303,7 @@ const Home = () => {
                 </h4>
               </div>
               <button
-                onClick={() => setOpenUserLogin(true)}
+               
                 className="inline-flex items-center gap-2 self-start rounded-xl bg-amber-500 px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-amber-400"
               >
                 Start New Ticket

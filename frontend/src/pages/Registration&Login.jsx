@@ -35,15 +35,33 @@ const UserLogin = ({ closeUserLogin, theme }) => {
 
   const loginMutation = useMutation({
     mutationFn: userLogin,
-    onSuccess: () => {
-      toast.success("Login successful");
-      navigate("/User/Dashboard");
+    onSuccess: (data) => {
+      resetLoginForm();
+
+      const loggedInUser = data?.result || data?.admin || data;
+      const loggedInRole = loggedInUser?.role || "user";
+      localStorage.setItem("role", loggedInRole);
+      if (loggedInRole === "admin") {
+        navigate("/Admin/Dashboard");
+        toast.success("Login successful");
+      } else if (loggedInRole === "employee") {
+        navigate("/Employee/AllTaskPage");
+        toast.success("Login successful");
+      } else {
+        navigate("/User/Dashboard");
+        toast.success("Login successful");
+      }
     },
     onError: (err) => {
       setError(err.response?.data?.message || err.message || "Login failed");
       console.error("Login error", err);
     },
   });
+
+  const resetLoginForm = () => {
+    setEmail("");
+    setPassword("");
+  };
 
   const registerMutation = useMutation({
     mutationFn: registerUser,
@@ -89,7 +107,11 @@ const UserLogin = ({ closeUserLogin, theme }) => {
       toast.success("Password reset link sent to your email");
     },
     onError: (err) => {
-      setError(err.response?.data?.message || err.message || "Failed to send reset link");
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to send reset link",
+      );
       toast.error(err.response?.data?.message || "Failed to send reset link");
       console.error("Forgot password error", err);
     },

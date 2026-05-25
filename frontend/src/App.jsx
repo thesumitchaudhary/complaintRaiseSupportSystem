@@ -8,6 +8,7 @@ import { Routes, Route } from "react-router-dom";
 import UserDashboardPage from "./pages/user/dashboard/Page";
 import UserRaiseComplainPage from "./pages/user/raisecomplaint/Page";
 import UserWorkServicePage from "./pages/user/work-service/Page";
+import UserCompaintPage from "./pages/user/complaint-history/Page";
 
 // this is for the admin pages direction
 import AdminDashboardPage from "./pages/admin/dashboard/Page";

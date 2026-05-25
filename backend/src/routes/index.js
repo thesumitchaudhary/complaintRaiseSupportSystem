@@ -9,7 +9,7 @@ import { authorizedRoles } from "../middleware/authorizedRoles.js";
 
 const router = express.Router();
 
-router.post("/raiseTickets", authMiddleware, authorizedRoles("user"), async (req, res) => {
+router.post("/raiseTickets", authMiddleware, async (req, res) => {
     try {
         const customerId = req.user.id;
         const { name, email, subject, message, serviceType } = req.body || {};
@@ -74,7 +74,7 @@ const handleForgotPassword = async (req, res) => {
 
 router.route("/forgotPassword").get(handleForgotPassword).post(handleForgotPassword);
 
-router.get("/me", authMiddleware, async (req, res) => {
+router.get("/me", authMiddleware, authorizedRoles("user", "admin", "employee"), async (req, res) => {
     try {
         const id = req.user.id;
 
