@@ -14,6 +14,11 @@ const authMiddleware = async (req, res, next) => {
         }
 
         const decoded = jwt.verify(token, jwtSecret);
+
+        if (decoded?.role) {
+            decoded.role = String(decoded.role).toLowerCase();
+        }
+
         req.user = decoded;
         next();
     } catch (error) {

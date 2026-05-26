@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  CalendarDays,
   CheckCircle2,
   Clock3,
   Moon,
@@ -8,7 +7,7 @@ import {
   Sun,
   UserRound,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { AppSidebar } from "../../../components/admin-app-sidebar";
 import { Button } from "../../../components/ui/button";
 import {
@@ -34,7 +33,11 @@ import {
   SidebarTrigger,
 } from "../../../components/ui/sidebar";
 import { Textarea } from "../../../components/ui/textarea";
-import { showComplain, showEmployee } from "../../../services/admin";
+import {
+  showComplain,
+  showEmployee,
+  assignTask,
+} from "../../../services/admin";
 
 export default function Page() {
   const [theme, setTheme] = useState(false);
@@ -42,7 +45,7 @@ export default function Page() {
   const [searchTerm, setSearchTerm] = useState("");
   const [assignTaskForm, setAssignTaskForm] = useState({
     complaintId: "",
-    employeeEmail: "",
+    employeeId: "",
     taskTitle: "",
     priority: "medium",
     dueDate: "",
@@ -64,6 +67,19 @@ export default function Page() {
     body.style.color = textColor;
     root.classList.toggle("dark", isDarkTheme);
   }, [isDarkTheme]);
+
+  // this is for assign task
+  const taskMutation = useMutation({
+    mutationFn: assignTask,
+    onSuccess: () => {
+      console.log("Success");
+      resetAssignTaskForm();
+      setAssignTaskModalOpen(false);
+    },
+    onError: (error) => {
+      console.log("Error", error.message);
+    },
+  });
 
   const { data: complaintData, isLoading: isComplaintsLoading } = useQuery({
     queryKey: ["adminAcceptedComplaints"],
@@ -99,8 +115,12 @@ export default function Page() {
 
   const filteredComplaints = acceptedComplaints.filter((complaint) => {
     const subject = String(complaint?.subject || "").toLowerCase();
-    const customerName = String(complaint?.customerId?.name || "").toLowerCase();
-    const customerEmail = String(complaint?.customerId?.email || "").toLowerCase();
+    const customerName = String(
+      complaint?.customerId?.name || "",
+    ).toLowerCase();
+    const customerEmail = String(
+      complaint?.customerId?.email || "",
+    ).toLowerCase();
     const needle = searchTerm.trim().toLowerCase();
 
     if (!needle) {
@@ -149,7 +169,9 @@ export default function Page() {
       detail: "Ready for assignment",
       icon: CheckCircle2,
       accent: isDarkTheme ? "text-sky-400" : "text-sky-600",
-      iconWrap: isDarkTheme ? "border-slate-700 bg-slate-800" : "border-sky-100 bg-white",
+      iconWrap: isDarkTheme
+        ? "border-slate-700 bg-slate-800"
+        : "border-sky-100 bg-white",
     },
     {
       label: "Available employees",
@@ -157,7 +179,9 @@ export default function Page() {
       detail: "Active team members",
       icon: UserRound,
       accent: isDarkTheme ? "text-emerald-400" : "text-emerald-600",
-      iconWrap: isDarkTheme ? "border-slate-700 bg-slate-800" : "border-emerald-100 bg-white",
+      iconWrap: isDarkTheme
+        ? "border-slate-700 bg-slate-800"
+        : "border-emerald-100 bg-white",
     },
     {
       label: "Selectable tasks",
@@ -165,7 +189,9 @@ export default function Page() {
       detail: searchTerm ? "Filtered results" : "Current queue",
       icon: Clock3,
       accent: isDarkTheme ? "text-amber-400" : "text-amber-600",
-      iconWrap: isDarkTheme ? "border-slate-700 bg-slate-800" : "border-amber-100 bg-white",
+      iconWrap: isDarkTheme
+        ? "border-slate-700 bg-slate-800"
+        : "border-amber-100 bg-white",
     },
   ];
 
@@ -180,7 +206,7 @@ export default function Page() {
   const resetAssignTaskForm = () => {
     setAssignTaskForm({
       complaintId: "",
-      employeeEmail: "",
+      employeeId: "",
       taskTitle: "",
       priority: "medium",
       dueDate: "",
@@ -190,17 +216,14 @@ export default function Page() {
 
   const handleAssignTaskSubmit = (event) => {
     event.preventDefault();
-    console.log("Assign task form payload", assignTaskForm);
-    setAssignTaskModalOpen(false);
-    resetAssignTaskForm();
-  };
-
-  const openWithComplaint = (complaintId) => {
-    setAssignTaskForm((prev) => ({
-      ...prev,
-      complaintId,
-    }));
-    setAssignTaskModalOpen(true);
+    taskMutation.mutate({
+      complaintId: assignTaskForm.complaintId,
+      employeeId: assignTaskForm.employeeId,
+      taskTitle: assignTaskForm.taskTitle,
+      priority: assignTaskForm.priority,
+      dueDate: assignTaskForm.dueDate,
+      taskNotes: assignTaskForm.notes,
+    });
   };
 
   return (
@@ -268,9 +291,12 @@ export default function Page() {
                     <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
                       Assign work from a focused command panel.
                     </h1>
-                    <p className={`max-w-2xl text-sm leading-6 ${pageTheme.muted}`}>
-                      Pick an accepted complaint, match it to an available employee,
-                      and keep the assignment details structured in one place.
+                    <p
+                      className={`max-w-2xl text-sm leading-6 ${pageTheme.muted}`}
+                    >
+                      Pick an accepted complaint, match it to an available
+                      employee, and keep the assignment details structured in
+                      one place.
                     </p>
                   </div>
 
@@ -285,11 +311,17 @@ export default function Page() {
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div>
-                              <p className={`text-sm ${pageTheme.muted}`}>{stat.label}</p>
-                              <p className={`mt-3 text-3xl font-semibold ${stat.accent}`}>
+                              <p className={`text-sm ${pageTheme.muted}`}>
+                                {stat.label}
+                              </p>
+                              <p
+                                className={`mt-3 text-3xl font-semibold ${stat.accent}`}
+                              >
                                 {stat.value}
                               </p>
-                              <p className={`mt-2 text-xs ${pageTheme.muted}`}>{stat.detail}</p>
+                              <p className={`mt-2 text-xs ${pageTheme.muted}`}>
+                                {stat.detail}
+                              </p>
                             </div>
                             <div
                               className={`rounded-xl border p-3 ${stat.iconWrap}`}
@@ -302,7 +334,6 @@ export default function Page() {
                     })}
                   </div>
                 </div>
-
               </div>
             </section>
 
@@ -313,7 +344,9 @@ export default function Page() {
                 <div className={`border-b ${pageTheme.border} px-5 py-4`}>
                   <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
-                      <h2 className="text-lg font-semibold">Accepted complaints</h2>
+                      <h2 className="text-lg font-semibold">
+                        Accepted complaints
+                      </h2>
                       <p className={`text-sm ${pageTheme.muted}`}>
                         {isComplaintsLoading
                           ? "Loading complaint queue"
@@ -322,7 +355,9 @@ export default function Page() {
                     </div>
 
                     <div className="relative w-full md:w-80">
-                      <Search className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`} />
+                      <Search
+                        className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`}
+                      />
                       <Input
                         value={searchTerm}
                         onChange={(event) => setSearchTerm(event.target.value)}
@@ -337,11 +372,31 @@ export default function Page() {
                   <table className="min-w-full border-separate border-spacing-0 text-left text-sm">
                     <thead className={pageTheme.tableHead}>
                       <tr>
-                        <th className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}>Customer</th>
-                        <th className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}>Subject</th>
-                        <th className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}>Status</th>
-                        <th className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}>Date</th>
-                        <th className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}>Action</th>
+                        <th
+                          className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}
+                        >
+                          Customer
+                        </th>
+                        <th
+                          className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}
+                        >
+                          Subject
+                        </th>
+                        <th
+                          className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}
+                        >
+                          Status
+                        </th>
+                        <th
+                          className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}
+                        >
+                          Date
+                        </th>
+                        <th
+                          className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}
+                        >
+                          Action
+                        </th>
                       </tr>
                     </thead>
 
@@ -354,43 +409,69 @@ export default function Page() {
                         </tr>
                       ) : (
                         filteredComplaints.map((complaint) => {
-                          const status = String(complaint?.status || "").toLowerCase();
-                          const statusClass = status === "completed"
-                            ? isDarkTheme
-                              ? "bg-emerald-500/15 text-emerald-300"
-                              : "bg-emerald-100 text-emerald-700"
-                            : isDarkTheme
-                              ? "bg-amber-500/15 text-amber-300"
-                              : "bg-amber-100 text-amber-700";
+                          const status = String(
+                            complaint?.status || "",
+                          ).toLowerCase();
+                          const statusClass =
+                            status === "completed"
+                              ? isDarkTheme
+                                ? "bg-emerald-500/15 text-emerald-300"
+                                : "bg-emerald-100 text-emerald-700"
+                              : isDarkTheme
+                                ? "bg-amber-500/15 text-amber-300"
+                                : "bg-amber-100 text-amber-700";
 
                           return (
-                            <tr key={complaint?._id || complaint?.subject} className={`transition-colors ${pageTheme.tableRow}`}>
-                              <td className={`border-b px-5 py-4 ${pageTheme.border}`}>
+                            <tr
+                              key={complaint?._id || complaint?.subject}
+                              className={`transition-colors ${pageTheme.tableRow}`}
+                            >
+                              <td
+                                className={`border-b px-5 py-4 ${pageTheme.border}`}
+                              >
                                 <div>
                                   <p className="font-medium">
-                                    {complaint?.customerId?.name || complaint?.name || "-"}
+                                    {complaint?.customerId?.name ||
+                                      complaint?.name ||
+                                      "-"}
                                   </p>
                                   <p className={`text-xs ${pageTheme.muted}`}>
-                                    {complaint?.customerId?.email || complaint?.email || "-"}
+                                    {complaint?.customerId?.email ||
+                                      complaint?.email ||
+                                      "-"}
                                   </p>
                                 </div>
                               </td>
-                              <td className={`border-b px-5 py-4 ${pageTheme.border}`}>
+                              <td
+                                className={`border-b px-5 py-4 ${pageTheme.border}`}
+                              >
                                 {complaint?.subject || "-"}
                               </td>
-                              <td className={`border-b px-5 py-4 ${pageTheme.border}`}>
-                                <span className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${statusClass}`}>
+                              <td
+                                className={`border-b px-5 py-4 ${pageTheme.border}`}
+                              >
+                                <span
+                                  className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${statusClass}`}
+                                >
                                   {complaint?.status || "pending"}
                                 </span>
                               </td>
-                              <td className={`border-b px-5 py-4 ${pageTheme.border}`}>
+                              <td
+                                className={`border-b px-5 py-4 ${pageTheme.border}`}
+                              >
                                 {complaint?.acceptedDate
-                                  ? new Date(complaint.acceptedDate).toLocaleDateString()
+                                  ? new Date(
+                                      complaint.acceptedDate,
+                                    ).toLocaleDateString()
                                   : complaint?.createdAt
-                                    ? new Date(complaint.createdAt).toLocaleDateString()
+                                    ? new Date(
+                                        complaint.createdAt,
+                                      ).toLocaleDateString()
                                     : "-"}
                               </td>
-                              <td className={`border-b px-5 py-4 ${pageTheme.border}`}>
+                              <td
+                                className={`border-b px-5 py-4 ${pageTheme.border}`}
+                              >
                                 <Button
                                   type="button"
                                   variant="outline"
@@ -420,17 +501,28 @@ export default function Page() {
       </SidebarProvider>
 
       <Sheet open={assignTaskModalOpen} onOpenChange={setAssignTaskModalOpen}>
-        <SheetContent side="right" className={`${isDarkTheme ? "bg-slate-900 text-slate-100 border-slate-700" : "bg-white text-slate-900 border-slate-200"} flex h-screen w-full flex-col overflow-hidden sm:w-120`}>
+        <SheetContent
+          side="right"
+          className={`${isDarkTheme ? "bg-slate-900 text-slate-100 border-slate-700" : "bg-white text-slate-900 border-slate-200"} flex h-screen w-full flex-col overflow-hidden sm:w-120`}
+        >
           <SheetHeader className="border-b border-inherit px-4 pb-4 pt-6">
-            <SheetTitle className={isDarkTheme ? "text-slate-100" : "text-slate-900"}>
+            <SheetTitle
+              className={isDarkTheme ? "text-slate-100" : "text-slate-900"}
+            >
               Assign Task
             </SheetTitle>
-            <SheetDescription className={isDarkTheme ? "text-slate-400" : "text-slate-600"}>
-              Fill in the complaint, employee, and work details to assign the task.
+            <SheetDescription
+              className={isDarkTheme ? "text-slate-400" : "text-slate-600"}
+            >
+              Fill in the complaint, employee, and work details to assign the
+              task.
             </SheetDescription>
           </SheetHeader>
 
-          <form onSubmit={handleAssignTaskSubmit} className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+          <form
+            onSubmit={handleAssignTaskSubmit}
+            className="flex-1 space-y-4 overflow-y-auto px-4 py-4"
+          >
             <div className="space-y-2">
               <label className="text-sm font-medium" htmlFor="complaintId">
                 Accepted Complaint
@@ -459,13 +551,13 @@ export default function Page() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="employeeEmail">
+              <label className="text-sm font-medium" htmlFor="employeeId">
                 Employee
               </label>
               <select
-                id="employeeEmail"
-                name="employeeEmail"
-                value={assignTaskForm.employeeEmail}
+                id="employeeId"
+                name="employeeId"
+                value={assignTaskForm.employeeId}
                 onChange={handleAssignTaskInputChange}
                 required
                 className={`h-10 w-full rounded-lg border px-3 text-sm outline-none transition-colors ${isDarkTheme ? "border-slate-700 bg-slate-950 text-slate-100 focus:border-sky-500" : "border-slate-300 bg-white text-slate-900 focus:border-sky-500"}`}
@@ -477,7 +569,10 @@ export default function Page() {
                   </option>
                 ) : (
                   employees.map((employee) => (
-                    <option key={employee?._id || employee?.email} value={employee?.email || ""}>
+                    <option
+                      key={employee?._id || employee?.email}
+                      value={employee?._id || ""}
+                    >
                       {`${employee?.name || "Employee"} - ${employee?.email || "No email"}`}
                     </option>
                   ))
@@ -486,53 +581,107 @@ export default function Page() {
             </div>
 
             {selectedComplaint ? (
-              <div className={`space-y-4 rounded-2xl border p-4 ${isDarkTheme ? "border-slate-700 bg-slate-950/60" : "border-sky-200 bg-blue-50"}`}>
+              <div
+                className={`space-y-4 rounded-2xl border p-4 ${isDarkTheme ? "border-slate-700 bg-slate-950/60" : "border-sky-200 bg-blue-50"}`}
+              >
                 <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-sm font-semibold">Selected complaint details</h3>
-                  <span className={`rounded-full border px-2.5 py-1 text-[11px] font-medium capitalize ${isDarkTheme ? "border-slate-700 bg-slate-900 text-slate-100" : "border-sky-200 bg-white text-sky-700"}`}>
+                  <h3 className="text-sm font-semibold">
+                    Selected complaint details
+                  </h3>
+                  <span
+                    className={`rounded-full border px-2.5 py-1 text-[11px] font-medium capitalize ${isDarkTheme ? "border-slate-700 bg-slate-900 text-slate-100" : "border-sky-200 bg-white text-sky-700"}`}
+                  >
                     {selectedComplaint?.status || "pending"}
                   </span>
                 </div>
 
                 <div className="grid gap-3 text-sm">
                   <div>
-                    <p className={`text-xs uppercase tracking-wide ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>Customer</p>
-                    <p className="font-medium">{selectedComplaint?.customerId?.name || "-"}</p>
-                    <p className={isDarkTheme ? "text-slate-400" : "text-slate-600"}>{selectedComplaint?.customerId?.email || "-"}</p>
+                    <p
+                      className={`text-xs uppercase tracking-wide ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}
+                    >
+                      Customer
+                    </p>
+                    <p className="font-medium">
+                      {selectedComplaint?.customerId?.name || "-"}
+                    </p>
+                    <p
+                      className={
+                        isDarkTheme ? "text-slate-400" : "text-slate-600"
+                      }
+                    >
+                      {selectedComplaint?.customerId?.email || "-"}
+                    </p>
                   </div>
 
                   <div>
-                    <p className={`text-xs uppercase tracking-wide ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>Subject</p>
-                    <p className="font-medium">{selectedComplaint?.subject || "-"}</p>
+                    <p
+                      className={`text-xs uppercase tracking-wide ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}
+                    >
+                      Subject
+                    </p>
+                    <p className="font-medium">
+                      {selectedComplaint?.subject || "-"}
+                    </p>
                   </div>
 
                   <div>
-                    <p className={`text-xs uppercase tracking-wide ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>Message</p>
-                    <p className="leading-6">{selectedComplaint?.message || "-"}</p>
+                    <p
+                      className={`text-xs uppercase tracking-wide ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}
+                    >
+                      Message
+                    </p>
+                    <p className="leading-6">
+                      {selectedComplaint?.message || "-"}
+                    </p>
                   </div>
 
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div>
-                      <p className={`text-xs uppercase tracking-wide ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>Service Type</p>
-                      <p className="font-medium">{selectedComplaint?.serviceType || "-"}</p>
+                      <p
+                        className={`text-xs uppercase tracking-wide ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}
+                      >
+                        Service Type
+                      </p>
+                      <p className="font-medium">
+                        {selectedComplaint?.serviceType || "-"}
+                      </p>
                     </div>
                     <div>
-                      <p className={`text-xs uppercase tracking-wide ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>Priority</p>
-                      <p className="font-medium capitalize">{selectedComplaint?.priority || "-"}</p>
+                      <p
+                        className={`text-xs uppercase tracking-wide ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}
+                      >
+                        Priority
+                      </p>
+                      <p className="font-medium capitalize">
+                        {selectedComplaint?.priority || "-"}
+                      </p>
                     </div>
                     <div>
-                      <p className={`text-xs uppercase tracking-wide ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>Accepted Date</p>
+                      <p
+                        className={`text-xs uppercase tracking-wide ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}
+                      >
+                        Accepted Date
+                      </p>
                       <p className="font-medium">
                         {selectedComplaint?.acceptedDate
-                          ? new Date(selectedComplaint.acceptedDate).toLocaleDateString()
+                          ? new Date(
+                              selectedComplaint.acceptedDate,
+                            ).toLocaleDateString()
                           : "-"}
                       </p>
                     </div>
                     <div>
-                      <p className={`text-xs uppercase tracking-wide ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>Raised Date</p>
+                      <p
+                        className={`text-xs uppercase tracking-wide ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}
+                      >
+                        Raised Date
+                      </p>
                       <p className="font-medium">
                         {selectedComplaint?.createdAt
-                          ? new Date(selectedComplaint.createdAt).toLocaleDateString()
+                          ? new Date(
+                              selectedComplaint.createdAt,
+                            ).toLocaleDateString()
                           : "-"}
                       </p>
                     </div>

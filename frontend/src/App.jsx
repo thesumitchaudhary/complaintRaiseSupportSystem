@@ -2,7 +2,7 @@ import "./App.css";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashbord";
 import ResetPassword from "./pages/ResetPassword";
-import { Routes, Route } from "react-router-dom";
+import { Navigate, Routes, Route } from "react-router-dom";
 
 // this is for the user pages direction
 import UserDashboardPage from "./pages/user/dashboard/Page";
@@ -16,7 +16,6 @@ import AdminAssignTaskPage from "./pages/admin/assign-task/Page";
 import AdminEmployeePage from "./pages/admin/employee/Page";
 import AdminUsersPage from "./pages/admin/user/Page";
 import AdminComplaintsPage from "./pages/admin/complaints/Page";
-import AdminAddServicePage from "./pages/admin/add-service/Page";
 
 // this is for the employee pages direction
 import EmployeeAllTaskPage from "./pages/employee/all-task/Page";
@@ -43,11 +42,14 @@ function App() {
 
         {/* this is for admin dashboard blocks */}
         <Route path={"/Admin/Dashboard"} element={<AdminDashboardPage />} />
+        <Route
+          path={"/Admin/Addservice"}
+          element={<Navigate to="/Admin/Dashboard" replace />}
+        />
         <Route path={"/Admin/Employee"} element={<AdminEmployeePage />} />
         <Route path={"/Admin/Assigntask"} element={<AdminAssignTaskPage />} />
         <Route path={"/Admin/Complaints"} element={<AdminComplaintsPage />} />
         <Route path={"/Admin/User"} element={<AdminUsersPage />} />
-        <Route path={"/Admin/Addservice"} element={<AdminAddServicePage />} />
 
         {/* this is for employee dashboard blocks */}
         <Route

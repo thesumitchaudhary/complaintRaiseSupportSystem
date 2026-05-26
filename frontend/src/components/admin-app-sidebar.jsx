@@ -154,25 +154,6 @@ const data = {
       //   },
       // ],
     },
-    {
-      title: "Add Service",
-      url: "/Admin/Addservice",
-      icon: <SquarePlus />,
-      // items: [
-      //   {
-      //     title: "Genesis",
-      //     url: "#",
-      //   },
-      //   {
-      //     title: "Explorer",
-      //     url: "#",
-      //   },
-      //   {
-      //     title: "Quantum",
-      //     url: "#",
-      //   },
-      // ],
-    },
   ],
   projects: [
     {

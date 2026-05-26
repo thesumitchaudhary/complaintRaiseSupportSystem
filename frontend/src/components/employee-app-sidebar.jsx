@@ -14,17 +14,23 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import {
-  RowsIcon,
-  WaveformIcon,
-  CommandIcon,
+  // RowsIcon,
+  // WaveformIcon,
+  // CommandIcon,
   TerminalIcon,
   RobotIcon,
-  BookOpenIcon,
+  // BookOpenIcon,
   GearIcon,
   CropIcon,
   ChartPieIcon,
   MapTrifoldIcon,
 } from "@phosphor-icons/react";
+import {
+  ClipboardList,
+  Clock3,
+  LoaderCircle,
+  BadgeCheck
+} from "lucide-react";
 import { ShieldAlert } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { employeeLogout } from "../services/employee";
@@ -46,7 +52,7 @@ const data = {
     {
       title: "All Task",
       url: "/Employee/AllTaskPage",
-      icon: <TerminalIcon />,
+      icon: <ClipboardList />,
       isActive: true,
       // items: [
       //   {
@@ -66,7 +72,7 @@ const data = {
     {
       title: "Pending Task",
       url: "/Employee/TaskPendingPage",
-      icon: <RobotIcon />,
+      icon: <Clock3 />,
       // items: [
       //   {
       //     title: "Genesis",
@@ -83,9 +89,9 @@ const data = {
       // ],
     },
     {
-      title: "Inprogress Task ",
-      url: "/Employee/TaskPendingPage",
-      icon: <GearIcon />,
+      title: "In Progress Task",
+      url: "/Employee/TaskInprogressPage",
+      icon: <LoaderCircle />,
       // items: [
       //   {
       //     title: "General",
@@ -108,7 +114,7 @@ const data = {
     {
       title: "Completed Tasks",
       url: "/Employee/TaskCompletedPage",
-      icon: <GearIcon />,
+      icon: <BadgeCheck />,
       // items: [
       //   {
       //     title: "General",

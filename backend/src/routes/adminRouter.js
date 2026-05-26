@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import userModel from "../model/userModel.js";
 import complaints from "../model/complaints.js";
 import authMiddleware from "../middleware/authMiddleware.js";
+import { authorizedRoles } from "../middleware/authorizedRoles.js"
 // import complaints from "../model/complaints.js";
 
 const router = express.Router();
@@ -82,7 +83,7 @@ router.get("/showEmployee", async (req, res) => {
 })
 
 // this is for the assign task to employee
-router.post("/assignTask", authMiddleware, async (req, res) => {
+router.post("/assignTask", authMiddleware, authorizedRoles("admin"), async (req, res) => {
     try {
         const {
             complaintId,
@@ -94,7 +95,7 @@ router.post("/assignTask", authMiddleware, async (req, res) => {
         } = req.body;
 
         // find complaint
-        const complaint = await Complaint.findById(complaintId);
+        const complaint = await complaints.findById(complaintId);
 
         if (!complaint) {
             return res.status(404).json({

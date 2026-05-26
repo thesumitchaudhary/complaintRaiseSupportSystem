@@ -38,7 +38,7 @@
   );
 
   userSchema.virtual("complaints", {
-    ref: "Complaint",
+    ref: "complaint",
     localField: "_id",
     foreignField: "customerId",
   });

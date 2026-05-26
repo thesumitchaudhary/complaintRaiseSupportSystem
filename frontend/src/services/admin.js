@@ -82,3 +82,21 @@ export const showEmployee = async () => {
     throw error;
   }
 }
+
+export const assignTask = async ({ complaintId, employeeId, taskTitle, priority, dueDate, taskNotes }) => {
+  try {
+    const response = await api.post("/admin/assignTask", {
+      complaintId,
+      employeeId,
+      taskTitle,
+      priority,
+      dueDate,
+      taskNotes,
+    })
+
+    return response.data;
+  } catch (error) {
+    console.log("Failed to assignTask:", error.response?.status);
+    throw error;
+  }
+}

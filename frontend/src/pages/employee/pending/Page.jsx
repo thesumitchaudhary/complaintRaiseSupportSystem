@@ -25,20 +25,7 @@ export default function Page() {
   };
 
   useEffect(() => {
-    const root = document.documentElement;
-    const body = document.body;
-
-    if (theme) {
-      root.style.backgroundColor = "#000000";
-      body.style.backgroundColor = "#000000";
-      body.style.color = "#ffffff";
-      root.classList.add("dark");
-    } else {
-      root.style.backgroundColor = "#ffffff";
-      body.style.backgroundColor = "#ffffff";
-      body.style.color = "#000000";
-      root.classList.remove("dark");
-    }
+    document.documentElement.classList.toggle("dark", theme);
   }, [theme]);
 
   return (
@@ -50,12 +37,11 @@ export default function Page() {
         color: theme ? "#ffffff" : "#000000",
       }}
     >
-      <SidebarProvider
-        style={{ backgroundColor: theme ? "#000000" : "#ffffff" }}
-      >
+      <SidebarProvider style={{ backgroundColor: "transparent" }}>
         <AppSidebar />
         <SidebarInset
-          style={{ backgroundColor: theme ? "#000000" : "#ffffff" }}
+          className={theme ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"}
+          style={{ backgroundColor: "transparent" }}
         >
           <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
             <div className="flex items-center gap-2 px-4">

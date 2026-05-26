@@ -81,7 +81,6 @@ export default function Page() {
   const customers = customerData?.result || [];
   const employees = employeeData?.result || [];
 
-  console.log(complaints);
 
   const stats = [
     {
@@ -202,11 +201,6 @@ export default function Page() {
               >
                 <div>
                   <h2 className="text-lg font-semibold">Recent complaints</h2>
-                  <p className={`text-sm ${pageTheme.muted}`}>
-                    {isLoading
-                      ? "Loading complaint data"
-                      : `${complaints.length} complaint${complaints.length === 1 ? "" : "s"} available`}
-                  </p>
                 </div>
               </div>
 
@@ -264,12 +258,12 @@ export default function Page() {
                           <td
                             className={`border-b px-5 py-4 ${pageTheme.border}`}
                           >
-                            {complaint?.name || "-"}
+                            {complaint.customerId?.name}
                           </td>
                           <td
                             className={`border-b px-5 py-4 ${pageTheme.border}`}
                           >
-                            {complaint?.email || "-"}
+                            {complaint.customerId?.email}
                           </td>
                           <td
                             className={`border-b px-5 py-4 ${pageTheme.border}`}
