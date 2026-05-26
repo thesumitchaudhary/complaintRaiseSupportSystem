@@ -150,7 +150,8 @@ router.put("/tickets/:id", authMiddleware, async (req, res) => {
             const value = String(incomingStatus).trim().toLowerCase();
 
             if (value === "pending") return "pending";
-            if (value === "in-progress" || value === "in progress" || value === "in_progress") return "in_progress";
+            if (value === "accepted") return "accepted";
+            if (value === "inprogress" || value === "in-progress" || value === "in progress" || value === "in_progress") return "in_progress";
             if (value === "resolved" || value === "completed") return "completed";
             if (value === "assigned") return "assigned";
             if (value === "rejected") return "rejected";
@@ -159,6 +160,7 @@ router.put("/tickets/:id", authMiddleware, async (req, res) => {
         };
 
         const normalizedStatus = normalizeStatus(status);
+        const shouldSetAcceptedDate = normalizedStatus === "accepted" || normalizedStatus === "in_progress";
 
         if (!normalizedStatus) {
             return res.status(400).json({
@@ -172,7 +174,7 @@ router.put("/tickets/:id", authMiddleware, async (req, res) => {
                 ticketId,
                 {
                     status: normalizedStatus,
-                    acceptedDate: Date.now(),
+                    ...(shouldSetAcceptedDate ? { acceptedDate: Date.now() } : {}),
                 },
                 { returnDocument: 'after', runValidators: true }
             )

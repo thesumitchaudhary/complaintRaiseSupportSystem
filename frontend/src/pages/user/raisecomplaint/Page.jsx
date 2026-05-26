@@ -47,7 +47,9 @@ export default function Page() {
 
   const cardBg = isDarkTheme ? "bg-slate-800" : "bg-blue-50";
   const cardBorder = isDarkTheme ? "border-slate-700" : "border-blue-200";
-  const cardHover = isDarkTheme ? "hover:shadow-slate-900/50" : "hover:shadow-blue-200";
+  const cardHover = isDarkTheme
+    ? "hover:shadow-slate-900/50"
+    : "hover:shadow-blue-200";
   const cardText = isDarkTheme ? "text-slate-200" : "text-slate-800";
   const cardSubText = isDarkTheme ? "text-slate-400" : "text-slate-600";
   const breadcrumbText = isDarkTheme
@@ -68,11 +70,17 @@ export default function Page() {
             <div className="flex items-center gap-2 px-4 w-full justify-between">
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="-ml-1" />
-                <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+                <Separator
+                  orientation="vertical"
+                  className="mr-2 data-[orientation=vertical]:h-4"
+                />
                 <Breadcrumb>
                   <BreadcrumbList>
                     <BreadcrumbItem className="hidden md:block">
-                      <BreadcrumbLink className={`text-sm ${breadcrumbText}`} href="#">
+                      <BreadcrumbLink
+                        className={`text-sm ${breadcrumbText}`}
+                        href="#"
+                      >
                         Customer Dashboard
                       </BreadcrumbLink>
                     </BreadcrumbItem>
@@ -103,10 +111,14 @@ export default function Page() {
             {/* Header Section */}
             <div className="flex justify-between items-center">
               <div>
-                <h1 className={`text-2xl font-bold ${isDarkTheme ? "text-slate-100" : "text-slate-900"}`}>
+                <h1
+                  className={`text-2xl font-bold ${isDarkTheme ? "text-slate-100" : "text-slate-900"}`}
+                >
                   My Complaints
                 </h1>
-                <p className={`text-sm mt-1 ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
+                <p
+                  className={`text-sm mt-1 ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}
+                >
                   Track and manage all your raised complaints
                 </p>
               </div>
@@ -133,7 +145,9 @@ export default function Page() {
                     {/* Card Header */}
                     <div className="flex justify-between items-start gap-3">
                       <div className="flex-1">
-                        <h3 className={`font-semibold text-lg leading-tight ${cardText}`}>
+                        <h3
+                          className={`font-semibold text-lg leading-tight ${cardText}`}
+                        >
                           {ticket.subject}
                         </h3>
                         <p className={`text-xs mt-2 ${cardSubText}`}>
@@ -147,15 +161,15 @@ export default function Page() {
                               ? "bg-amber-900 text-amber-200 border border-amber-700"
                               : "bg-amber-100 text-amber-800 border border-amber-300"
                             : ticket.status === "Resolved"
-                            ? isDarkTheme
-                              ? "bg-green-900 text-green-200 border border-green-700"
-                              : "bg-green-100 text-green-800 border border-green-300"
-                            : isDarkTheme
-                            ? "bg-slate-700 text-slate-200 border border-slate-600"
-                            : "bg-slate-200 text-slate-800 border border-slate-300"
+                              ? isDarkTheme
+                                ? "bg-green-900 text-green-200 border border-green-700"
+                                : "bg-green-100 text-green-800 border border-green-300"
+                              : isDarkTheme
+                                ? "bg-slate-700 text-slate-200 border border-slate-600"
+                                : "bg-slate-200 text-slate-800 border border-slate-300"
                         }`}
                       >
-                        {ticket.status}
+                        {ticket.status === "in_progress" ? <label>In Progress</label> : <label></label>}
                       </span>
                     </div>
 
@@ -166,21 +180,47 @@ export default function Page() {
 
                     {/* Card Body */}
                     <div className="space-y-3">
-                      <div>
-                        <p className={`text-xs font-medium ${isDarkTheme ? "text-slate-500" : "text-slate-500"}`}>
-                          Raised Date
-                        </p>
-                        <p className={`text-sm mt-1 ${cardText}`}>
-                          {new Date(ticket.raisedDate).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </p>
+                      <div className="flex justify-between">
+                        <div>
+                          <p
+                            className={`text-xs font-medium ${isDarkTheme ? "text-slate-500" : "text-slate-500"}`}
+                          >
+                            Raised Date
+                          </p>
+                          <p className={`text-sm mt-1 ${cardText}`}>
+                            {new Date(ticket.raisedDate).toLocaleDateString(
+                              "en-US",
+                              {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              },
+                            )}
+                          </p>
+                        </div>
+                        <div>
+                          <p
+                            className={`text-xs font-medium ${isDarkTheme ? "text-slate-500" : "text-slate-500"}`}
+                          >
+                            Accepted Date
+                          </p>
+                          <p className={`text-sm mt-1 ${cardText}`}>
+                            {new Date(ticket.acceptedDate).toLocaleDateString(
+                              "en-US",
+                              {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              },
+                            )}
+                          </p>
+                        </div>
                       </div>
 
                       <div>
-                        <p className={`text-xs font-medium ${isDarkTheme ? "text-slate-500" : "text-slate-500"}`}>
+                        <p
+                          className={`text-xs font-medium ${isDarkTheme ? "text-slate-500" : "text-slate-500"}`}
+                        >
                           Description
                         </p>
                         <p
@@ -192,9 +232,16 @@ export default function Page() {
                     </div>
 
                     {/* Card Footer */}
-                    <div className={`pt-3 border-t ${isDarkTheme ? "border-slate-700" : "border-blue-200"}`}>
-                      <p className={`text-xs ${isDarkTheme ? "text-slate-500" : "text-slate-500"}`}>
-                        Ticket ID: <span className="font-mono text-slate-400">{ticket._id?.slice(-8)}</span>
+                    <div
+                      className={`pt-3 border-t ${isDarkTheme ? "border-slate-700" : "border-blue-200"}`}
+                    >
+                      <p
+                        className={`text-xs ${isDarkTheme ? "text-slate-500" : "text-slate-500"}`}
+                      >
+                        Ticket ID:{" "}
+                        <span className="font-mono text-slate-400">
+                          {ticket._id?.slice(-8)}
+                        </span>
                       </p>
                     </div>
                   </div>
@@ -204,7 +251,9 @@ export default function Page() {
               <div
                 className={`${cardBg} border-2 ${cardBorder} rounded-lg p-12 text-center`}
               >
-                <div className={`text-4xl mb-3 ${isDarkTheme ? "text-slate-600" : "text-slate-300"}`}>
+                <div
+                  className={`text-4xl mb-3 ${isDarkTheme ? "text-slate-600" : "text-slate-300"}`}
+                >
                   📋
                 </div>
                 <h3 className={`text-lg font-semibold ${cardText}`}>

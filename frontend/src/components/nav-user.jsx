@@ -16,10 +16,10 @@ import {
 } from "@/components/ui/sidebar";
 import {
   CaretUpDownIcon,
-  SparkleIcon,
+  // SparkleIcon,
   CheckCircleIcon,
-  CreditCardIcon,
-  BellIcon,
+  // CreditCardIcon,
+  // BellIcon,
   SignOutIcon,
 } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";

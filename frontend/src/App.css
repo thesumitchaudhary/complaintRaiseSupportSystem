@@ -1,6 +1,1 @@
-@import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
-@import "@fontsource-variable/jetbrains-mono";
-
-/* Global theme moved to src/index.css. Keep this file minimal. */
+/* Component styles live here if needed. Global theme is defined in src/index.css. */
