@@ -130,9 +130,9 @@ router.post("/resetPassword", async (req, res) => {
     }
 });
 
-router.get("/tickets", authMiddleware, async (req, res) => {
+router.get("/tickets", async (req, res) => {
     try {
-        const tickets = await complaints.find().sort({ createdAt: -1 });
+        const tickets = await complaints.find().populate('customerId').sort({ createdAt: -1 });
         return res.status(200).json({ success: true, result: tickets });
     } catch (error) {
         return res.status(500).json({ success: false, message: "Failed to fetch tickets" });
@@ -170,7 +170,10 @@ router.put("/tickets/:id", authMiddleware, async (req, res) => {
         const updatedTicket = await complaints
             .findByIdAndUpdate(
                 ticketId,
-                { status: normalizedStatus },
+                {
+                    status: normalizedStatus,
+                    acceptedDate: Date.now(),
+                },
                 { returnDocument: 'after', runValidators: true }
             )
             .populate("customerId", "name email");

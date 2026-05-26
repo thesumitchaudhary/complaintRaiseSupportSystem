@@ -87,6 +87,26 @@ const data = {
       //   },
       // ],
     },
+     {
+      title: "Complaints History",
+      url: "/User/ComplaintHistory",
+      icon: <MessageSquareWarning />,
+      // items: [
+      //   {
+      //     title: "Genesis",
+      //     url: "#",
+      //   },
+      //   {
+      //     title: "Explorer",
+      //     url: "#",
+      //   },
+      //   {
+      //     title: "Quantum",
+      //     url: "#",
+      //   },
+      // ],
+    },
+   
     {
       title: "Work Services",
       url: "/User/WorkService",

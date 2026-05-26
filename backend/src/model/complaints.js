@@ -2,10 +2,9 @@ import mongoose from "mongoose";
 
 const complaintSchema = new mongoose.Schema(
   {
-    // customer who raised complaint
     customerId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "user",
       required: true,
     },
 
@@ -35,10 +34,26 @@ const complaintSchema = new mongoose.Schema(
       default: Date.now,
     },
 
+    acceptedDate: {
+      type: Date,
+      default: null,
+    },
+
+    rejectedDate: {
+      type: Date,
+      default: null,
+    },
+
+    completedDate: {
+      type: Date,
+      default: null,
+    },
+
     status: {
       type: String,
       enum: [
         "pending",
+        "accepted",
         "assigned",
         "in_progress",
         "completed",
@@ -51,14 +66,14 @@ const complaintSchema = new mongoose.Schema(
     // current assigned employee
     assignedEmployee: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "user",
       default: null,
     },
 
     // admin who assigned complaint
     assignedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "user",
       default: null,
     },
 
@@ -66,6 +81,19 @@ const complaintSchema = new mongoose.Schema(
       type: String,
       enum: ["low", "medium", "high"],
       default: "medium",
+    },
+
+    // task information
+    task: {
+      title: {
+        type: String,
+        default: "",
+      },
+
+      notes: {
+        type: String,
+        default: "",
+      },
     },
 
     // task deadline
@@ -84,12 +112,12 @@ const complaintSchema = new mongoose.Schema(
       {
         employee: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
+          ref: "user",
         },
 
         assignedBy: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
+          ref: "user",
         },
 
         assignedAt: {
@@ -125,10 +153,48 @@ const complaintSchema = new mongoose.Schema(
         },
       },
     ],
+
+    // employee work updates
+    workUpdates: [
+      {
+        updatedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "user",
+        },
+
+        message: {
+          type: String,
+          required: true,
+        },
+
+        status: {
+          type: String,
+          enum: [
+            "assigned",
+            "in_progress",
+            "completed",
+            "on_hold",
+          ],
+          default: "in_progress",
+        },
+
+        progress: {
+          type: Number,
+          default: 0,
+        },
+
+        images: [String],
+
+        updatedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   {
     timestamps: true,
   }
 );
 
-export default mongoose.model("Complaint", complaintSchema);
+export default mongoose.model("complaint", complaintSchema);

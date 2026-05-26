@@ -323,7 +323,7 @@ export default function Page() {
                       >
                         Join date
                       </th>
-                        <th
+                      <th
                         className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}
                       >
                         Pending task
@@ -354,14 +354,14 @@ export default function Page() {
                         <td
                           className={`border-b px-5 py-4 ${pageTheme.border}`}
                         >
-                          {employee.joinDate}
+                          {new Date(employee.createdAt).toLocaleDateString()}
                         </td>
                         <td
                           className={`border-b px-5 py-4 ${pageTheme.border}`}
                         >
                           {employee.tasks}
                         </td>
-                         <td
+                        <td
                           className={`border-b px-5 py-4 ${pageTheme.border}`}
                         >
                           {employee.tasks}

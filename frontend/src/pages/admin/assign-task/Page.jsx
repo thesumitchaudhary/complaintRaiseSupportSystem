@@ -1,6 +1,16 @@
-import React, { useState, useEffect } from "react";
-import { Moon, Sun } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  CalendarDays,
+  CheckCircle2,
+  Clock3,
+  Moon,
+  Search,
+  Sun,
+  UserRound,
+} from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { AppSidebar } from "../../../components/admin-app-sidebar";
+import { Button } from "../../../components/ui/button";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -9,71 +19,155 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "../../../components/ui/breadcrumb";
-
+import { Input } from "../../../components/ui/input";
 import { Separator } from "../../../components/ui/separator";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "../../../components/ui/sheet";
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
 } from "../../../components/ui/sidebar";
-import { Button } from "../../../components/ui/button";
-import { Input } from "../../../components/ui/input";
 import { Textarea } from "../../../components/ui/textarea";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "../../../components/ui/sheet";
+import { showComplain, showEmployee } from "../../../services/admin";
 
 export default function Page() {
   const [theme, setTheme] = useState(false);
   const [assignTaskModalOpen, setAssignTaskModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const [assignTaskForm, setAssignTaskForm] = useState({
+    complaintId: "",
     employeeEmail: "",
     taskTitle: "",
     priority: "medium",
     dueDate: "",
     notes: "",
   });
+
   const isDarkTheme = theme;
 
-  const toggleTheme = () => {
-    setTheme((prevTheme) => !prevTheme);
-  };
+  const toggleTheme = () => setTheme((currentTheme) => !currentTheme);
 
   useEffect(() => {
     const root = document.documentElement;
     const body = document.body;
-    const backgroundColor = isDarkTheme ? "#000000" : "#ffffff";
-    const textColor = isDarkTheme ? "#ffffff" : "#000000";
+    const backgroundColor = isDarkTheme ? "#020617" : "#f8fafc";
+    const textColor = isDarkTheme ? "#f8fafc" : "#0f172a";
 
     root.style.backgroundColor = backgroundColor;
     body.style.backgroundColor = backgroundColor;
     body.style.color = textColor;
-
-    if (isDarkTheme) {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
+    root.classList.toggle("dark", isDarkTheme);
   }, [isDarkTheme]);
 
-  const pageThemeClass = isDarkTheme ? "dark bg-black text-white" : "bg-white text-black";
-  const pageStyle = {
-    minHeight: "100vh",
-    backgroundColor: isDarkTheme ? "#000000" : "#ffffff",
-    color: isDarkTheme ? "#ffffff" : "#000000",
-  };
-  const breadcrumbTextClass = isDarkTheme
-    ? "text-gray-400 hover:text-gray-100"
-    : "text-gray-400 hover:text-black";
-  const themeToggleButtonClass = `border-2 p-1 rounded-md ${
-    isDarkTheme
-      ? "text-white border-white"
-      : "text-black border-black hover:bg-gray-200 hover:border-gray-300"
-  }`;
+  const { data: complaintData, isLoading: isComplaintsLoading } = useQuery({
+    queryKey: ["adminAcceptedComplaints"],
+    queryFn: showComplain,
+  });
+
+  const { data: employeeData, isLoading: isEmployeesLoading } = useQuery({
+    queryKey: ["adminEmployees"],
+    queryFn: showEmployee,
+  });
+
+  const complaints = Array.isArray(complaintData?.result)
+    ? complaintData.result
+    : [];
+  const employees = Array.isArray(employeeData?.result)
+    ? employeeData.result
+    : [];
+
+  const acceptedComplaints = useMemo(() => {
+    return complaints.filter((complaint) => {
+      const status = String(complaint?.status || "").toLowerCase();
+
+      return (
+        Boolean(complaint?.acceptedDate) ||
+        ["assigned", "in_progress", "in progress", "completed"].includes(status)
+      );
+    });
+  }, [complaints]);
+
+  const selectedComplaint = acceptedComplaints.find(
+    (complaint) => complaint?._id === assignTaskForm.complaintId,
+  );
+
+  const filteredComplaints = acceptedComplaints.filter((complaint) => {
+    const subject = String(complaint?.subject || "").toLowerCase();
+    const customerName = String(complaint?.customerId?.name || "").toLowerCase();
+    const customerEmail = String(complaint?.customerId?.email || "").toLowerCase();
+    const needle = searchTerm.trim().toLowerCase();
+
+    if (!needle) {
+      return true;
+    }
+
+    return (
+      subject.includes(needle) ||
+      customerName.includes(needle) ||
+      customerEmail.includes(needle)
+    );
+  });
+
+  const pageTheme = isDarkTheme
+    ? {
+        shell: "bg-slate-950 text-slate-100",
+        panel: "border-slate-800 bg-slate-900/70 text-slate-100",
+        soft: "bg-slate-900/50",
+        muted: "text-slate-400",
+        border: "border-slate-800",
+        header: "bg-slate-900/90",
+        tableHead: "bg-slate-900 text-slate-200",
+        tableRow: "border-slate-800 hover:bg-slate-800/40",
+        button: "border-slate-700 text-slate-100 hover:bg-slate-800",
+        field:
+          "border-slate-700 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-sky-500",
+      }
+    : {
+        shell: "bg-slate-50 text-slate-900",
+        panel: "border-slate-200 bg-white text-slate-900",
+        soft: "bg-sky-50",
+        muted: "text-slate-500",
+        border: "border-slate-200",
+        header: "bg-white/90",
+        tableHead: "bg-slate-100 text-slate-700",
+        tableRow: "border-slate-200 hover:bg-slate-50",
+        button: "border-slate-300 text-slate-900 hover:bg-slate-100",
+        field:
+          "border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-sky-500",
+      };
+
+  const stats = [
+    {
+      label: "Accepted complaints",
+      value: acceptedComplaints.length,
+      detail: "Ready for assignment",
+      icon: CheckCircle2,
+      accent: isDarkTheme ? "text-sky-400" : "text-sky-600",
+      iconWrap: isDarkTheme ? "border-slate-700 bg-slate-800" : "border-sky-100 bg-white",
+    },
+    {
+      label: "Available employees",
+      value: isEmployeesLoading ? "..." : employees.length,
+      detail: "Active team members",
+      icon: UserRound,
+      accent: isDarkTheme ? "text-emerald-400" : "text-emerald-600",
+      iconWrap: isDarkTheme ? "border-slate-700 bg-slate-800" : "border-emerald-100 bg-white",
+    },
+    {
+      label: "Selectable tasks",
+      value: filteredComplaints.length,
+      detail: searchTerm ? "Filtered results" : "Current queue",
+      icon: Clock3,
+      accent: isDarkTheme ? "text-amber-400" : "text-amber-600",
+      iconWrap: isDarkTheme ? "border-slate-700 bg-slate-800" : "border-amber-100 bg-white",
+    },
+  ];
 
   const handleAssignTaskInputChange = (event) => {
     const { name, value } = event.target;
@@ -85,6 +179,7 @@ export default function Page() {
 
   const resetAssignTaskForm = () => {
     setAssignTaskForm({
+      complaintId: "",
       employeeEmail: "",
       taskTitle: "",
       priority: "medium",
@@ -100,99 +195,354 @@ export default function Page() {
     resetAssignTaskForm();
   };
 
+  const openWithComplaint = (complaintId) => {
+    setAssignTaskForm((prev) => ({
+      ...prev,
+      complaintId,
+    }));
+    setAssignTaskModalOpen(true);
+  };
+
   return (
-    <div className={pageThemeClass} style={pageStyle}>
-      <SidebarProvider style={{ backgroundColor: pageStyle.backgroundColor }}>
+    <div className={`${pageTheme.shell} min-h-screen`}>
+      <SidebarProvider style={{ backgroundColor: "transparent" }}>
         <AppSidebar />
-        <SidebarInset style={{ backgroundColor: pageStyle.backgroundColor }}>
-          <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-            <div className="flex items-center gap-2 px-4">
-              <SidebarTrigger className="-ml-1" />
-              <Separator
-                orientation="vertical"
-                className="mr-2 data-[orientation=vertical]:h-4"
-              />
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem className="hidden md:block">
-                    <BreadcrumbLink className={breadcrumbTextClass} href="#">
-                      Admin dashboard
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="hidden md:block" />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage className={breadcrumbTextClass}>
-                      Assign Task
-                    </BreadcrumbPage>
-                  </BreadcrumbItem>
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>
-                      <button className={themeToggleButtonClass} onClick={toggleTheme}>
-                        {isDarkTheme ? <Moon /> : <Sun />}
-                      </button>
-                    </BreadcrumbPage>
-                  </BreadcrumbItem>
-                </BreadcrumbList>
-              </Breadcrumb>
+        <SidebarInset style={{ backgroundColor: "transparent" }}>
+          <header
+            className={`sticky top-0 z-10 border-b ${pageTheme.border} ${pageTheme.header} backdrop-blur`}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4">
+              <div className="flex items-center gap-2">
+                <SidebarTrigger className="-ml-1" />
+                <Separator
+                  orientation="vertical"
+                  className="mr-2 data-[orientation=vertical]:h-4"
+                />
+                <Breadcrumb>
+                  <BreadcrumbList>
+                    <BreadcrumbItem className="hidden md:block">
+                      <BreadcrumbLink
+                        className={`${pageTheme.muted} transition-colors hover:text-current`}
+                        href="#"
+                      >
+                        Admin dashboard
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator className="hidden md:block" />
+                    <BreadcrumbItem>
+                      <BreadcrumbPage className={pageTheme.muted}>
+                        Assign Task
+                      </BreadcrumbPage>
+                    </BreadcrumbItem>
+                  </BreadcrumbList>
+                </Breadcrumb>
+              </div>
+
+              <button
+                type="button"
+                aria-label="Toggle theme"
+                className={`inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors ${pageTheme.button}`}
+                onClick={toggleTheme}
+              >
+                {isDarkTheme ? (
+                  <Moon className="h-4 w-4" />
+                ) : (
+                  <Sun className="h-4 w-4" />
+                )}
+              </button>
             </div>
           </header>
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-            <div className="flex items-center justify-end">
-              <Button
-                className={isDarkTheme ? "border border-gray-600" : "border border-gray-300"}
-                onClick={() => setAssignTaskModalOpen(true)}
-              >
-                Assign Task to Employee
-              </Button>
-            </div>
-            <div
-              className={`rounded-lg border p-4 ${
-                isDarkTheme ? "border-gray-700 bg-gray-900" : "border-gray-200 bg-gray-50"
-              }`}
+
+          <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 lg:p-6">
+            <section
+              className={`rounded-3xl border ${pageTheme.border} ${pageTheme.panel} overflow-hidden shadow-sm`}
             >
-            </div>
+              <div className="grid gap-6 p-6 xl:grid-cols-[1.2fr_0.8fr] xl:p-8">
+                <div className="space-y-6">
+                  <div className="space-y-3">
+                    <p
+                      className={`text-sm font-medium uppercase tracking-[0.24em] ${pageTheme.muted}`}
+                    >
+                      Task orchestration
+                    </p>
+                    <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
+                      Assign work from a focused command panel.
+                    </h1>
+                    <p className={`max-w-2xl text-sm leading-6 ${pageTheme.muted}`}>
+                      Pick an accepted complaint, match it to an available employee,
+                      and keep the assignment details structured in one place.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-3">
+                    {stats.map((stat) => {
+                      const Icon = stat.icon;
+
+                      return (
+                        <article
+                          key={stat.label}
+                          className={`rounded-2xl border ${pageTheme.border} ${pageTheme.soft} p-4 shadow-sm`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className={`text-sm ${pageTheme.muted}`}>{stat.label}</p>
+                              <p className={`mt-3 text-3xl font-semibold ${stat.accent}`}>
+                                {stat.value}
+                              </p>
+                              <p className={`mt-2 text-xs ${pageTheme.muted}`}>{stat.detail}</p>
+                            </div>
+                            <div
+                              className={`rounded-xl border p-3 ${stat.iconWrap}`}
+                            >
+                              <Icon className={stat.accent} size={18} />
+                            </div>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                </div>
+
+              </div>
+            </section>
+
+            <section className="grid gap-6 xl:grid-cols-[1.35fr_0.85fr]">
+              <article
+                className={`rounded-3xl border ${pageTheme.border} ${pageTheme.panel} overflow-hidden shadow-sm`}
+              >
+                <div className={`border-b ${pageTheme.border} px-5 py-4`}>
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <h2 className="text-lg font-semibold">Accepted complaints</h2>
+                      <p className={`text-sm ${pageTheme.muted}`}>
+                        {isComplaintsLoading
+                          ? "Loading complaint queue"
+                          : `${acceptedComplaints.length} complaint${acceptedComplaints.length === 1 ? "" : "s"} ready for assignment`}
+                      </p>
+                    </div>
+
+                    <div className="relative w-full md:w-80">
+                      <Search className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`} />
+                      <Input
+                        value={searchTerm}
+                        onChange={(event) => setSearchTerm(event.target.value)}
+                        placeholder="Search customer or subject"
+                        className={`pl-9 ${pageTheme.field}`}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border-separate border-spacing-0 text-left text-sm">
+                    <thead className={pageTheme.tableHead}>
+                      <tr>
+                        <th className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}>Customer</th>
+                        <th className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}>Subject</th>
+                        <th className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}>Status</th>
+                        <th className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}>Date</th>
+                        <th className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}>Action</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {filteredComplaints.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="px-5 py-10 text-center">
+                            No accepted complaints found.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredComplaints.map((complaint) => {
+                          const status = String(complaint?.status || "").toLowerCase();
+                          const statusClass = status === "completed"
+                            ? isDarkTheme
+                              ? "bg-emerald-500/15 text-emerald-300"
+                              : "bg-emerald-100 text-emerald-700"
+                            : isDarkTheme
+                              ? "bg-amber-500/15 text-amber-300"
+                              : "bg-amber-100 text-amber-700";
+
+                          return (
+                            <tr key={complaint?._id || complaint?.subject} className={`transition-colors ${pageTheme.tableRow}`}>
+                              <td className={`border-b px-5 py-4 ${pageTheme.border}`}>
+                                <div>
+                                  <p className="font-medium">
+                                    {complaint?.customerId?.name || complaint?.name || "-"}
+                                  </p>
+                                  <p className={`text-xs ${pageTheme.muted}`}>
+                                    {complaint?.customerId?.email || complaint?.email || "-"}
+                                  </p>
+                                </div>
+                              </td>
+                              <td className={`border-b px-5 py-4 ${pageTheme.border}`}>
+                                {complaint?.subject || "-"}
+                              </td>
+                              <td className={`border-b px-5 py-4 ${pageTheme.border}`}>
+                                <span className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${statusClass}`}>
+                                  {complaint?.status || "pending"}
+                                </span>
+                              </td>
+                              <td className={`border-b px-5 py-4 ${pageTheme.border}`}>
+                                {complaint?.acceptedDate
+                                  ? new Date(complaint.acceptedDate).toLocaleDateString()
+                                  : complaint?.createdAt
+                                    ? new Date(complaint.createdAt).toLocaleDateString()
+                                    : "-"}
+                              </td>
+                              <td className={`border-b px-5 py-4 ${pageTheme.border}`}>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className="rounded-lg"
+                                  onClick={() => {
+                                    setAssignTaskForm((prev) => ({
+                                      ...prev,
+                                      complaintId: complaint?._id || "",
+                                    }));
+                                    setAssignTaskModalOpen(true);
+                                  }}
+                                >
+                                  Assign
+                                </Button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </article>
+            </section>
           </div>
         </SidebarInset>
       </SidebarProvider>
 
       <Sheet open={assignTaskModalOpen} onOpenChange={setAssignTaskModalOpen}>
-        <SheetContent
-          side="right"
-          className={`${
-            isDarkTheme
-              ? "bg-gray-900 text-white border-gray-700"
-              : "bg-white text-black border-gray-200"
-          } w-full sm:w-[420px]`}
-        >
-          <SheetHeader>
-            <SheetTitle className={isDarkTheme ? "text-white" : "text-black"}>
+        <SheetContent side="right" className={`${isDarkTheme ? "bg-slate-900 text-slate-100 border-slate-700" : "bg-white text-slate-900 border-slate-200"} flex h-screen w-full flex-col overflow-hidden sm:w-120`}>
+          <SheetHeader className="border-b border-inherit px-4 pb-4 pt-6">
+            <SheetTitle className={isDarkTheme ? "text-slate-100" : "text-slate-900"}>
               Assign Task
             </SheetTitle>
-            <SheetDescription
-              className={isDarkTheme ? "text-gray-300" : "text-gray-600"}
-            >
-              Fill in employee and task details to assign work.
+            <SheetDescription className={isDarkTheme ? "text-slate-400" : "text-slate-600"}>
+              Fill in the complaint, employee, and work details to assign the task.
             </SheetDescription>
           </SheetHeader>
 
-          <form onSubmit={handleAssignTaskSubmit} className="space-y-4 px-4 pb-4">
+          <form onSubmit={handleAssignTaskSubmit} className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm" htmlFor="employeeEmail">
-                Employee Email
+              <label className="text-sm font-medium" htmlFor="complaintId">
+                Accepted Complaint
               </label>
-              <Input
-                id="employeeEmail"
-                name="employeeEmail"
-                type="email"
-                value={assignTaskForm.employeeEmail}
+              <select
+                id="complaintId"
+                name="complaintId"
+                value={assignTaskForm.complaintId}
                 onChange={handleAssignTaskInputChange}
-                placeholder="employee@example.com"
                 required
-              />
+                className={`h-10 w-full rounded-lg border px-3 text-sm outline-none transition-colors ${isDarkTheme ? "border-slate-700 bg-slate-950 text-slate-100 focus:border-sky-500" : "border-slate-300 bg-white text-slate-900 focus:border-sky-500"}`}
+              >
+                <option value="">Select an accepted complaint</option>
+                {acceptedComplaints.length === 0 ? (
+                  <option value="" disabled>
+                    No accepted complaints available
+                  </option>
+                ) : (
+                  acceptedComplaints.map((complaint) => (
+                    <option key={complaint?._id} value={complaint?._id}>
+                      {`${complaint?.customerId?.name || complaint?.customerId?.email || "Customer"} - ${complaint?.subject || "Untitled complaint"}`}
+                    </option>
+                  ))
+                )}
+              </select>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm" htmlFor="taskTitle">
+              <label className="text-sm font-medium" htmlFor="employeeEmail">
+                Employee
+              </label>
+              <select
+                id="employeeEmail"
+                name="employeeEmail"
+                value={assignTaskForm.employeeEmail}
+                onChange={handleAssignTaskInputChange}
+                required
+                className={`h-10 w-full rounded-lg border px-3 text-sm outline-none transition-colors ${isDarkTheme ? "border-slate-700 bg-slate-950 text-slate-100 focus:border-sky-500" : "border-slate-300 bg-white text-slate-900 focus:border-sky-500"}`}
+              >
+                <option value="">Select an employee</option>
+                {employees.length === 0 ? (
+                  <option value="" disabled>
+                    No employees available
+                  </option>
+                ) : (
+                  employees.map((employee) => (
+                    <option key={employee?._id || employee?.email} value={employee?.email || ""}>
+                      {`${employee?.name || "Employee"} - ${employee?.email || "No email"}`}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+
+            {selectedComplaint ? (
+              <div className={`space-y-4 rounded-2xl border p-4 ${isDarkTheme ? "border-slate-700 bg-slate-950/60" : "border-sky-200 bg-blue-50"}`}>
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-semibold">Selected complaint details</h3>
+                  <span className={`rounded-full border px-2.5 py-1 text-[11px] font-medium capitalize ${isDarkTheme ? "border-slate-700 bg-slate-900 text-slate-100" : "border-sky-200 bg-white text-sky-700"}`}>
+                    {selectedComplaint?.status || "pending"}
+                  </span>
+                </div>
+
+                <div className="grid gap-3 text-sm">
+                  <div>
+                    <p className={`text-xs uppercase tracking-wide ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>Customer</p>
+                    <p className="font-medium">{selectedComplaint?.customerId?.name || "-"}</p>
+                    <p className={isDarkTheme ? "text-slate-400" : "text-slate-600"}>{selectedComplaint?.customerId?.email || "-"}</p>
+                  </div>
+
+                  <div>
+                    <p className={`text-xs uppercase tracking-wide ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>Subject</p>
+                    <p className="font-medium">{selectedComplaint?.subject || "-"}</p>
+                  </div>
+
+                  <div>
+                    <p className={`text-xs uppercase tracking-wide ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>Message</p>
+                    <p className="leading-6">{selectedComplaint?.message || "-"}</p>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <p className={`text-xs uppercase tracking-wide ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>Service Type</p>
+                      <p className="font-medium">{selectedComplaint?.serviceType || "-"}</p>
+                    </div>
+                    <div>
+                      <p className={`text-xs uppercase tracking-wide ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>Priority</p>
+                      <p className="font-medium capitalize">{selectedComplaint?.priority || "-"}</p>
+                    </div>
+                    <div>
+                      <p className={`text-xs uppercase tracking-wide ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>Accepted Date</p>
+                      <p className="font-medium">
+                        {selectedComplaint?.acceptedDate
+                          ? new Date(selectedComplaint.acceptedDate).toLocaleDateString()
+                          : "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className={`text-xs uppercase tracking-wide ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>Raised Date</p>
+                      <p className="font-medium">
+                        {selectedComplaint?.createdAt
+                          ? new Date(selectedComplaint.createdAt).toLocaleDateString()
+                          : "-"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium" htmlFor="taskTitle">
                 Task Title
               </label>
               <Input
@@ -203,11 +553,12 @@ export default function Page() {
                 onChange={handleAssignTaskInputChange}
                 placeholder="e.g. Resolve AC maintenance ticket"
                 required
+                className={pageTheme.field}
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm" htmlFor="priority">
+              <label className="text-sm font-medium" htmlFor="priority">
                 Priority
               </label>
               <select
@@ -215,11 +566,7 @@ export default function Page() {
                 name="priority"
                 value={assignTaskForm.priority}
                 onChange={handleAssignTaskInputChange}
-                className={`h-8 w-full rounded-none border px-2.5 text-xs outline-none ${
-                  isDarkTheme
-                    ? "border-gray-600 bg-gray-800 text-white"
-                    : "border-gray-300 bg-white text-black"
-                }`}
+                className={`h-10 w-full rounded-lg border px-3 text-sm outline-none transition-colors ${isDarkTheme ? "border-slate-700 bg-slate-950 text-slate-100 focus:border-sky-500" : "border-slate-300 bg-white text-slate-900 focus:border-sky-500"}`}
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
@@ -228,7 +575,7 @@ export default function Page() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm" htmlFor="dueDate">
+              <label className="text-sm font-medium" htmlFor="dueDate">
                 Due Date
               </label>
               <Input
@@ -238,11 +585,12 @@ export default function Page() {
                 value={assignTaskForm.dueDate}
                 onChange={handleAssignTaskInputChange}
                 required
+                className={pageTheme.field}
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm" htmlFor="notes">
+              <label className="text-sm font-medium" htmlFor="notes">
                 Task Notes
               </label>
               <Textarea
@@ -252,6 +600,7 @@ export default function Page() {
                 onChange={handleAssignTaskInputChange}
                 placeholder="Add instructions for the employee"
                 rows={4}
+                className={pageTheme.field}
               />
             </div>
 
@@ -274,7 +623,6 @@ export default function Page() {
           </form>
         </SheetContent>
       </Sheet>
-
     </div>
   );
 }

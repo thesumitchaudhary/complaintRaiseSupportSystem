@@ -2,6 +2,8 @@ import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import userModel from "../model/userModel.js";
+import complaints from "../model/complaints.js";
+import authMiddleware from "../middleware/authMiddleware.js";
 // import complaints from "../model/complaints.js";
 
 const router = express.Router();
@@ -52,7 +54,7 @@ router.post("/login", async (req, res) => {
 
 router.get("/showUser", async (req, res) => {
     try {
-        const user = await userModel.find({role: "user"}).populate("complaints");
+        const user = await userModel.find({ role: "user" }).populate("complaints");
 
         if (!user) {
             res.status(401).json({ success: false, message: "hey user is not found" });
@@ -78,5 +80,71 @@ router.get("/showEmployee", async (req, res) => {
         res.status(500).json({ success: false, message: "Internal server error", error: error.message });
     }
 })
+
+// this is for the assign task to employee
+router.post("/assignTask", authMiddleware, async (req, res) => {
+    try {
+        const {
+            complaintId,
+            employeeId,
+            taskTitle,
+            priority,
+            dueDate,
+            taskNotes,
+        } = req.body;
+
+        // find complaint
+        const complaint = await Complaint.findById(complaintId);
+
+        if (!complaint) {
+            return res.status(404).json({
+                success: false,
+                message: "Complaint not found",
+            });
+        }
+
+        // update complaint
+        complaint.assignedEmployee = employeeId;
+
+        complaint.priority = priority;
+
+        complaint.deadline = dueDate;
+
+        complaint.status = "assigned";
+
+        // task object
+        complaint.task = {
+            title: taskTitle,
+            notes: taskNotes,
+        };
+
+        // assignment history
+        complaint.assignmentHistory.push({
+            employee: employeeId,
+
+            assignedBy: req.user.id, // admin id from auth middleware
+
+            deadline: dueDate,
+
+            note: taskNotes,
+
+            status: "assigned",
+        });
+
+        await complaint.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Task assigned successfully",
+            complaint,
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+            error: error.message,
+        });
+    }
+});
 
 export default router
