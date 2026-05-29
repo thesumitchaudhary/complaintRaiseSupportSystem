@@ -17,6 +17,7 @@ import {
   SidebarTrigger,
 } from "../../../components/ui/sidebar";
 import { getRaisedComplaint } from "../../../services/user";
+import { showloggedinuser } from "../../../services/index";
 import { useQuery } from "@tanstack/react-query";
 import { RaiseComplaintModal } from "../../../components/RaiseComplaintModal";
 
@@ -32,6 +33,11 @@ export default function Page() {
   const { data } = useQuery({
     queryKey: ["showRaisedTicked"],
     queryFn: getRaisedComplaint,
+  });
+
+    const { data: UserData } = useQuery({
+    queryKey: ["showloginuser"],
+    queryFn: showloggedinuser,
   });
 
   // Theme constants
@@ -151,25 +157,33 @@ export default function Page() {
                           {ticket.subject}
                         </h3>
                         <p className={`text-xs mt-2 ${cardSubText}`}>
-                          By: {ticket.name}
+                          By: {UserData?.result?.name}
                         </p>
                       </div>
                       <span
                         className={`inline-flex shrink-0 items-center px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
-                          ticket.status === "Pending"
+                          ticket.status === "pending"
                             ? isDarkTheme
                               ? "bg-amber-900 text-amber-200 border border-amber-700"
                               : "bg-amber-100 text-amber-800 border border-amber-300"
-                            : ticket.status === "Resolved"
+                            : ticket.status === "completed"
                               ? isDarkTheme
                                 ? "bg-green-900 text-green-200 border border-green-700"
                                 : "bg-green-100 text-green-800 border border-green-300"
                               : isDarkTheme
-                                ? "bg-slate-700 text-slate-200 border border-slate-600"
-                                : "bg-slate-200 text-slate-800 border border-slate-300"
+                                ? "bg-blue-700 text-blue-200 border border-blue-600"
+                                : "bg-blue-200 text-blue-800 border border-blue-300"
                         }`}
                       >
-                        {ticket.status === "in_progress" ? <label>In Progress</label> : <label></label>}
+                        {ticket.status === "in_progress" ? (
+                          <label>In Progress</label>
+                        ) : ticket.status === "pending" ? (
+                          <label>Pending</label>
+                        ) : ticket.status === "assigned" ? (
+                          <label>assigned</label>
+                        ) : (
+                          <label> completed</label>
+                        )}
                       </span>
                     </div>
 

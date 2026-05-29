@@ -41,6 +41,7 @@ router.post("/login", async (req, res) => {
             httpOnly: true,
             sameSite: 'lax',
             maxAge: 24 * 60 * 60 * 1000,
+            path: '/',
         });
 
         return res.status(200).json({ success: true, message: "Login successful", token, admin: { email: admin.email } });
@@ -106,6 +107,8 @@ router.post("/assignTask", authMiddleware, authorizedRoles("admin"), async (req,
 
         // update complaint
         complaint.assignedEmployee = employeeId;
+
+        complaint.assignedBy = req.user.id;
 
         complaint.priority = priority;
 

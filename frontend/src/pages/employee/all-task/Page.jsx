@@ -36,6 +36,7 @@ import {
   SidebarTrigger,
 } from "../../../components/ui/sidebar";
 import { showComplain } from "../../../services/admin";
+import { showAssignedComplaint } from "../../../services/employee";
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -84,6 +85,13 @@ export default function Page() {
     document.documentElement.classList.toggle("dark", theme);
   }, [theme]);
 
+  const {data: showAssignedComplaints} = useQuery({
+    queryKey: ["showAssignedComplaints"],
+    queryFn: showAssignedComplaint,
+  });
+
+  console.log(showAssignedComplaints)
+
   const { data: complaintData, isLoading } = useQuery({
     queryKey: ["employeeAllTasks"],
     queryFn: showComplain,
@@ -96,7 +104,9 @@ export default function Page() {
   const tasks = useMemo(() => {
     return allComplaints.filter((complaint) => {
       const status = String(complaint?.status || "").toLowerCase();
-      return ["assigned", "in_progress", "completed", "overdue"].includes(status);
+      return ["assigned", "in_progress", "completed", "overdue"].includes(
+        status,
+      );
     });
   }, [allComplaints]);
 
@@ -132,7 +142,9 @@ export default function Page() {
     },
     {
       label: "In progress",
-      value: tasks.filter((task) => String(task?.status || "").toLowerCase() === "in_progress").length,
+      value: tasks.filter(
+        (task) => String(task?.status || "").toLowerCase() === "in_progress",
+      ).length,
       detail: "Currently active",
       icon: LoaderCircle,
       accent: theme ? "text-amber-400" : "text-amber-600",
@@ -240,7 +252,9 @@ export default function Page() {
           </header>
 
           <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 lg:p-6">
-            <section className={`rounded-3xl border ${pageTheme.border} ${pageTheme.panel} overflow-hidden shadow-sm`}>
+            <section
+              className={`rounded-3xl border ${pageTheme.border} ${pageTheme.panel} overflow-hidden shadow-sm`}
+            >
               <div className="grid gap-6 p-6 xl:grid-cols-[1.25fr_0.75fr] xl:p-8">
                 <div className="space-y-4">
                   <div className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
@@ -250,9 +264,11 @@ export default function Page() {
                   <h1 className="max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
                     Track every assigned task from one focused workspace.
                   </h1>
-                  <p className={`max-w-2xl text-sm leading-7 sm:text-base ${pageTheme.muted}`}>
-                    Search the queue, inspect customer context, and monitor progress
-                    without jumping between screens.
+                  <p
+                    className={`max-w-2xl text-sm leading-7 sm:text-base ${pageTheme.muted}`}
+                  >
+                    Search the queue, inspect customer context, and monitor
+                    progress without jumping between screens.
                   </p>
                 </div>
 
@@ -267,11 +283,17 @@ export default function Page() {
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <p className={`text-sm ${pageTheme.muted}`}>{item.label}</p>
-                            <h2 className={`mt-2 text-3xl font-semibold ${item.accent}`}>
+                            <p className={`text-sm ${pageTheme.muted}`}>
+                              {item.label}
+                            </p>
+                            <h2
+                              className={`mt-2 text-3xl font-semibold ${item.accent}`}
+                            >
                               {item.value}
                             </h2>
-                            <p className={`mt-2 text-sm ${pageTheme.muted}`}>{item.detail}</p>
+                            <p className={`mt-2 text-sm ${pageTheme.muted}`}>
+                              {item.detail}
+                            </p>
                           </div>
                           <div className="rounded-2xl border border-white/40 bg-white p-3 shadow-sm">
                             <Icon className={`h-5 w-5 ${item.accent}`} />
@@ -284,7 +306,9 @@ export default function Page() {
               </div>
             </section>
 
-            <section className={`rounded-3xl border ${pageTheme.border} ${pageTheme.panel} overflow-hidden shadow-sm`}>
+            <section
+              className={`rounded-3xl border ${pageTheme.border} ${pageTheme.panel} overflow-hidden shadow-sm`}
+            >
               <div className="flex flex-col gap-4 border-b border-inherit p-6 md:flex-row md:items-center md:justify-between">
                 <div>
                   <h2 className="text-2xl font-semibold">All tasks</h2>
@@ -296,7 +320,9 @@ export default function Page() {
                 </div>
 
                 <div className="relative w-full md:max-w-md">
-                  <Search className={`pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`} />
+                  <Search
+                    className={`pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`}
+                  />
                   <Input
                     value={searchTerm}
                     onChange={(event) => setSearchTerm(event.target.value)}
@@ -310,11 +336,17 @@ export default function Page() {
                 <table className="min-w-full border-collapse text-left">
                   <thead className={pageTheme.tableHead}>
                     <tr>
-                      <th className="px-6 py-4 text-sm font-medium">Customer</th>
+                      <th className="px-6 py-4 text-sm font-medium">
+                        Customer
+                      </th>
                       <th className="px-6 py-4 text-sm font-medium">Task</th>
                       <th className="px-6 py-4 text-sm font-medium">Status</th>
-                      <th className="px-6 py-4 text-sm font-medium">Priority</th>
-                      <th className="px-6 py-4 text-sm font-medium">Due date</th>
+                      <th className="px-6 py-4 text-sm font-medium">
+                        Priority
+                      </th>
+                      <th className="px-6 py-4 text-sm font-medium">
+                        Due date
+                      </th>
                       <th className="px-6 py-4 text-sm font-medium">Action</th>
                     </tr>
                   </thead>
@@ -323,36 +355,57 @@ export default function Page() {
                       <tr>
                         <td colSpan={6} className="px-6 py-16 text-center">
                           <div className="mx-auto max-w-sm space-y-2">
-                            <p className="text-lg font-semibold">No tasks found</p>
+                            <p className="text-lg font-semibold">
+                              No tasks found
+                            </p>
                             <p className={`text-sm ${pageTheme.muted}`}>
-                              Try clearing the search or check back once tasks are assigned.
+                              Try clearing the search or check back once tasks
+                              are assigned.
                             </p>
                           </div>
                         </td>
                       </tr>
                     ) : (
                       filteredTasks.map((task) => {
-                        const customerName = task?.customerId?.name || task?.name || "Unknown customer";
-                        const customerEmail = task?.customerId?.email || task?.email || "-";
-                        const title = task?.task?.title || task?.subject || "Untitled task";
+                        const customerName =
+                          task?.customerId?.name ||
+                          task?.name ||
+                          "Unknown customer";
+                        const customerEmail =
+                          task?.customerId?.email || task?.email || "-";
+                        const title =
+                          task?.task?.title || task?.subject || "Untitled task";
                         const status = task?.status || "pending";
 
                         return (
-                          <tr key={task?._id} className={`border-t ${pageTheme.tableRow}`}>
+                          <tr
+                            key={task?._id}
+                            className={`border-t ${pageTheme.tableRow}`}
+                          >
                             <td className="px-6 py-5 align-top">
                               <div className="space-y-1">
                                 <p className="font-semibold">{customerName}</p>
-                                <p className={`text-sm ${pageTheme.muted}`}>{customerEmail}</p>
+                                <p className={`text-sm ${pageTheme.muted}`}>
+                                  {customerEmail}
+                                </p>
                               </div>
                             </td>
                             <td className="px-6 py-5 align-top">
-                              <p className="max-w-xs font-medium leading-6">{title}</p>
-                              <p className={`mt-1 text-sm ${pageTheme.muted} line-clamp-2`}>
-                                {task?.task?.notes || task?.message || "No additional notes provided."}
+                              <p className="max-w-xs font-medium leading-6">
+                                {title}
+                              </p>
+                              <p
+                                className={`mt-1 text-sm ${pageTheme.muted} line-clamp-2`}
+                              >
+                                {task?.task?.notes ||
+                                  task?.message ||
+                                  "No additional notes provided."}
                               </p>
                             </td>
                             <td className="px-6 py-5 align-top">
-                              <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold capitalize ${getStatusBadgeClass(status)}`}>
+                              <span
+                                className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold capitalize ${getStatusBadgeClass(status)}`}
+                              >
                                 {String(status).replace(/_/g, " ")}
                               </span>
                             </td>
@@ -362,9 +415,15 @@ export default function Page() {
                               </span>
                             </td>
                             <td className="px-6 py-5 align-top">
-                              <div className={`flex items-center gap-2 text-sm ${pageTheme.muted}`}>
+                              <div
+                                className={`flex items-center gap-2 text-sm ${pageTheme.muted}`}
+                              >
                                 <Clock3 className="h-4 w-4" />
-                                {formatDate(task?.deadline || task?.acceptedDate || task?.createdAt)}
+                                {formatDate(
+                                  task?.deadline ||
+                                    task?.acceptedDate ||
+                                    task?.createdAt,
+                                )}
                               </div>
                             </td>
                             <td className="px-6 py-5 align-top">
@@ -389,12 +448,18 @@ export default function Page() {
         </SidebarInset>
       </SidebarProvider>
 
-      <Sheet open={Boolean(selectedTask)} onOpenChange={(open) => !open && setSelectedTask(null)}>
-        <SheetContent className={`${pageTheme.panel} ${pageTheme.border} overflow-y-auto`}>
+      <Sheet
+        open={Boolean(selectedTask)}
+        onOpenChange={(open) => !open && setSelectedTask(null)}
+      >
+        <SheetContent
+          className={`${pageTheme.panel} ${pageTheme.border} overflow-y-auto`}
+        >
           <SheetHeader>
             <SheetTitle>Task details</SheetTitle>
             <SheetDescription className={pageTheme.muted}>
-              Review the customer, task, and status information for the selected item.
+              Review the customer, task, and status information for the selected
+              item.
             </SheetDescription>
           </SheetHeader>
 
@@ -402,15 +467,29 @@ export default function Page() {
             <div className="mt-6 space-y-5">
               <div>
                 <p className={`text-sm ${pageTheme.muted}`}>Customer</p>
-                <p className="mt-1 font-medium">{selectedTask?.customerId?.name || selectedTask?.name || "Unknown customer"}</p>
-                <p className={`text-sm ${pageTheme.muted}`}>{selectedTask?.customerId?.email || selectedTask?.email || "-"}</p>
+                <p className="mt-1 font-medium">
+                  {selectedTask?.customerId?.name ||
+                    selectedTask?.name ||
+                    "Unknown customer"}
+                </p>
+                <p className={`text-sm ${pageTheme.muted}`}>
+                  {selectedTask?.customerId?.email ||
+                    selectedTask?.email ||
+                    "-"}
+                </p>
               </div>
 
               <div>
                 <p className={`text-sm ${pageTheme.muted}`}>Task</p>
-                <p className="mt-1 font-medium">{selectedTask?.task?.title || selectedTask?.subject || "Untitled task"}</p>
+                <p className="mt-1 font-medium">
+                  {selectedTask?.task?.title ||
+                    selectedTask?.subject ||
+                    "Untitled task"}
+                </p>
                 <p className={`mt-2 text-sm leading-6 ${pageTheme.muted}`}>
-                  {selectedTask?.task?.notes || selectedTask?.message || "No task notes available."}
+                  {selectedTask?.task?.notes ||
+                    selectedTask?.message ||
+                    "No task notes available."}
                 </p>
               </div>
 
@@ -418,20 +497,29 @@ export default function Page() {
                 <div className="rounded-2xl border p-4">
                   <p className={`text-sm ${pageTheme.muted}`}>Status</p>
                   <p className="mt-1 font-medium capitalize">
-                    {String(selectedTask?.status || "pending").replace(/_/g, " ")}
+                    {String(selectedTask?.status || "pending").replace(
+                      /_/g,
+                      " ",
+                    )}
                   </p>
                 </div>
                 <div className="rounded-2xl border p-4">
                   <p className={`text-sm ${pageTheme.muted}`}>Priority</p>
-                  <p className="mt-1 font-medium capitalize">{selectedTask?.priority || "medium"}</p>
+                  <p className="mt-1 font-medium capitalize">
+                    {selectedTask?.priority || "medium"}
+                  </p>
                 </div>
                 <div className="rounded-2xl border p-4">
                   <p className={`text-sm ${pageTheme.muted}`}>Due date</p>
-                  <p className="mt-1 font-medium">{formatDate(selectedTask?.deadline)}</p>
+                  <p className="mt-1 font-medium">
+                    {formatDate(selectedTask?.deadline)}
+                  </p>
                 </div>
                 <div className="rounded-2xl border p-4">
                   <p className={`text-sm ${pageTheme.muted}`}>Service type</p>
-                  <p className="mt-1 font-medium">{selectedTask?.serviceType || "-"}</p>
+                  <p className="mt-1 font-medium">
+                    {selectedTask?.serviceType || "-"}
+                  </p>
                 </div>
               </div>
             </div>

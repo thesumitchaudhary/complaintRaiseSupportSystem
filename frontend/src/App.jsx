@@ -7,7 +7,6 @@ import { Navigate, Routes, Route } from "react-router-dom";
 // this is for the user pages direction
 import UserDashboardPage from "./pages/user/dashboard/Page";
 import UserRaiseComplainPage from "./pages/user/raisecomplaint/Page";
-import UserWorkServicePage from "./pages/user/work-service/Page";
 import UserCompaintHistoryPage from "./pages/user/complaint-history/Page";
 
 // this is for the admin pages direction
@@ -37,7 +36,6 @@ function App() {
           path={"/User/RaiseComplaint"}
           element={<UserRaiseComplainPage />}
         />
-        <Route path={"/User/WorkService"} element={<UserWorkServicePage />} />
         <Route path={"/User/ComplaintHistory"} element={<UserCompaintHistoryPage />} />
 
         {/* this is for admin dashboard blocks */}

@@ -81,12 +81,12 @@ router.get("/me", authMiddleware, authorizedRoles("user", "admin", "employee"), 
         const user = await userModel.findOne({ _id: id });
 
         if (!user) {
-            res.status(401).json({ success: false, message: "hey user is not found" });
+            return res.status(401).json({ success: false, message: "hey user is not found" });
         }
 
-        res.status(200).json({ success: true, message: "user fetched successfully", result: user });
+        return res.status(200).json({ success: true, message: "user fetched successfully", result: user });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Internal Server Error", error: error.message })
+        return res.status(500).json({ success: false, message: "Internal Server Error", error: error.message })
     }
 })
 

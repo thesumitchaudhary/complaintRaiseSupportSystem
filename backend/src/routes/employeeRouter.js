@@ -4,6 +4,9 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 
 import userModel from "../model/userModel.js";
+import complaint from "../model/complaints.js";
+import authMiddleware from "../middleware/authMiddleware.js";
+import { authorizedRoles } from "../middleware/authorizedRoles.js";
 
 dotenv.config();
 
@@ -35,9 +38,16 @@ router.post("/create", async (req, res) => {
             password: hash
         })
 
-        const token = jwt.sign({ name: employee.name, email: employee.email, role: employee.role }, process.env.JWT_SECRET);
+        const token = jwt.sign(
+            { id: employee._id, name: employee.name, email: employee.email, role: employee.role },
+            process.env.JWT_SECRET
+        );
 
-        res.cookie("token", token);
+        res.cookie("token", token, {
+            httpOnly: true,
+            sameSite: 'lax',
+            path: '/',
+        });
 
         res.status(200).json({ success: true, message: "hey employee create successfully", result: employee });
     }
@@ -48,9 +58,9 @@ router.post("/create", async (req, res) => {
 
 router.post("/login", async (req, res) => {
     try {
-        const { email, passowrd } = req.body;
+        const { email, password } = req.body;
 
-        if (!email || !passowrd) {
+        if (!email || !password) {
             return res.status(401).json({ success: false, message: "hey email and password is mandatory" });
         }
 
@@ -60,8 +70,28 @@ router.post("/login", async (req, res) => {
             return res.status(401).json({ success: false, message: "employee is not exist" });
         }
 
-        const isMatch = await bcrypt.compare(passowrd, employee.passowrd);
+        const isMatch = await bcrypt.compare(password, employee.password);
 
+        if (!isMatch) {
+            return res.status(401).json({ success: false, message: "Invalid Credentials" });
+        }
+
+        const token = jwt.sign(
+            { id: employee._id, name: employee.name, email: employee.email, role: employee.role },
+            process.env.JWT_SECRET
+        );
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            sameSite: "lax",
+            path: "/",
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Login successful",
+            employee: { id: employee._id, name: employee.name, email: employee.email, role: employee.role },
+        });
 
     }
     catch (error) {
@@ -71,15 +101,48 @@ router.post("/login", async (req, res) => {
 
 router.get("/logout", (req, res) => {
     try {
-        res.cookie("token", "");
+        res.clearCookie("token", { path: '/' });
 
         res.status(200).json({ success: true, message: "logout is successfully" })
     }
     catch (error) {
         res.status(500).json({ success: false, message: "Internal servver Error", error: error.message });
     }
-})
+});
 
+router.get("/showAssignedComplaint", authMiddleware, authorizedRoles("employee"), async (req, res) => {
+    try {
+        const id = req.user.id;
 
+        const employee = await userModel.findOne({ _id: id, role: "employee" });
+
+        if (!employee) {
+            return res.status(401).json({
+                success: false,
+                message: "Employee does not exist",
+            });
+        }
+
+        const assignedComplaints = await complaint
+            .find({
+                assignedEmployee: id,
+            })
+            .populate("customerId", "name email")
+            .populate("assignedBy", "name email")
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            total: assignedComplaints.length,
+            assignedComplaints,
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+            error: error.message,
+        });
+    }
+});
 
 export default router;

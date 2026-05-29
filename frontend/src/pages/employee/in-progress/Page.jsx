@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Moon, Sun } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Clock3, Moon, Sun } from "lucide-react";
 import { EmployeeAppSidebar as AppSidebar } from "../../../components/employee-app-sidebar";
 import {
   Breadcrumb,
@@ -20,8 +20,32 @@ import {
 export default function Page() {
   const [theme, setTheme] = useState(false);
 
+  const pageTheme = theme
+    ? {
+        shell: "bg-slate-950 text-slate-100",
+        header: "border-slate-800 bg-slate-950/80",
+        border: "border-slate-800",
+        muted: "text-slate-400",
+        card: "border-slate-800 bg-slate-900/70 text-slate-100",
+        cardTitle: "text-slate-50",
+        cardText: "text-slate-400",
+        button:
+          "border-slate-700 text-slate-100 hover:border-slate-500 hover:bg-slate-800",
+      }
+    : {
+        shell: "bg-slate-50 text-slate-900",
+        header: "border-slate-200 bg-white/90",
+        border: "border-slate-200",
+        muted: "text-slate-500",
+        card: "border-slate-200 bg-white text-slate-900",
+        cardTitle: "text-slate-900",
+        cardText: "text-slate-500",
+        button:
+          "border-slate-300 text-slate-900 hover:border-slate-400 hover:bg-slate-100",
+      };
+
   const toggleTheme = () => {
-    setTheme(!theme);
+    setTheme((currentTheme) => !currentTheme);
   };
 
   useEffect(() => {
@@ -29,60 +53,128 @@ export default function Page() {
   }, [theme]);
 
   return (
-    <div
-      className={theme ? "dark bg-black text-white" : "bg-white text-black"}
-      style={{
-        minHeight: "100vh",
-        backgroundColor: theme ? "#000000" : "#ffffff",
-        color: theme ? "#ffffff" : "#000000",
-      }}
-    >
+    <div className={`${pageTheme.shell} min-h-screen`}>
       <SidebarProvider style={{ backgroundColor: "transparent" }}>
         <AppSidebar />
         <SidebarInset
-          className={theme ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"}
+          className={pageTheme.shell}
           style={{ backgroundColor: "transparent" }}
         >
-          <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-            <div className="flex items-center gap-2 px-4">
-              <SidebarTrigger className="-ml-1" />
-              <Separator
-                orientation="vertical"
-                className="mr-2 data-[orientation=vertical]:h-4"
-              />
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem className="hidden md:block">
-                    <BreadcrumbLink
-                      className={`${theme ? "text-gray-400 hover:text-gray-100" : "text-gray-400 hover:text-black"}`}
-                      href="#"
-                    >
-                      Customer dashboard
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="hidden md:block" />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage
-                      className={`${theme ? "text-gray-400 hover:text-gray-100" : "text-gray-400 hover:text-black"}`}
-                    >
-                      Overview
-                    </BreadcrumbPage>
-                  </BreadcrumbItem>
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>
-                      <button
-                        className={`border-2 p-1 rounded-md  ${theme ? "text-white border-white" : "text-black border-black hover:bg-gray-200 hover:border-gray-300"}`}
-                        onClick={toggleTheme}
+          <header
+            className={`sticky top-0 z-10 border-b ${pageTheme.border} ${pageTheme.header} backdrop-blur`}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4">
+              <div className="flex items-center gap-2">
+                <SidebarTrigger className="-ml-1" />
+                <Separator
+                  orientation="vertical"
+                  className="mr-2 data-[orientation=vertical]:h-4"
+                />
+                <Breadcrumb>
+                  <BreadcrumbList>
+                    <BreadcrumbItem className="hidden md:block">
+                      <BreadcrumbLink
+                        className={`${pageTheme.muted} transition-colors hover:text-current`}
+                        href="#"
                       >
-                        {theme ? <Moon /> : <Sun />}
-                      </button>
-                    </BreadcrumbPage>
-                  </BreadcrumbItem>
-                </BreadcrumbList>
-              </Breadcrumb>
+                        Employee dashboard
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator className="hidden md:block" />
+                    <BreadcrumbItem>
+                      <BreadcrumbPage className={pageTheme.muted}>
+                        In progress
+                      </BreadcrumbPage>
+                    </BreadcrumbItem>
+                  </BreadcrumbList>
+                </Breadcrumb>
+              </div>
+
+              <button
+                type="button"
+                aria-label="Toggle theme"
+                className={`inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors ${pageTheme.button}`}
+                onClick={toggleTheme}
+              >
+                {theme ? (
+                  <Moon className="h-4 w-4" />
+                ) : (
+                  <Sun className="h-4 w-4" />
+                )}
+              </button>
             </div>
           </header>
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-0"></div>
+
+          <main className="flex flex-1 flex-col gap-6 p-4 pt-6">
+            <section
+              className={`rounded-2xl border p-6 shadow-sm ${pageTheme.card}`}
+            >
+              <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                <div className="max-w-2xl space-y-4">
+                  <div
+                    className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-medium ${pageTheme.muted}`}
+                  >
+                    <Clock3 className="h-4 w-4" />
+                    Active work
+                  </div>
+                  <div className="space-y-2">
+                    <h1
+                      className={`text-3xl font-semibold tracking-tight ${pageTheme.cardTitle}`}
+                    >
+                      In-progress tasks
+                    </h1>
+                    <p className={`max-w-xl leading-7 ${pageTheme.cardText}`}>
+                      Track tickets that are currently being worked on, monitor
+                      ongoing progress, and keep the queue focused on what still
+                      needs attention.
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  className={`rounded-xl border px-4 py-3 text-sm ${pageTheme.border}`}
+                >
+                  <p className={`font-medium ${pageTheme.cardTitle}`}>
+                    Current view
+                  </p>
+                  <p className={`mt-1 ${pageTheme.cardText}`}>
+                    Tasks in progress
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section className="grid gap-4 md:grid-cols-3">
+              {[
+                {
+                  title: "Work in motion",
+                  body: "Shows tasks that still need updates, follow-through, or completion.",
+                },
+                {
+                  title: "Clear focus",
+                  body: "Keeps active tickets separated from pending and finished work.",
+                },
+                {
+                  title: "Ready for data",
+                  body: "This section can be connected to your live in-progress task list next.",
+                },
+              ].map((item) => (
+                <article
+                  key={item.title}
+                  className={`rounded-xl border p-4 shadow-sm ${pageTheme.card}`}
+                >
+                  <h2
+                    className={`text-sm font-semibold uppercase tracking-wide ${pageTheme.cardTitle}`}
+                  >
+                    {item.title}
+                  </h2>
+                  <p className={`mt-2 text-sm leading-6 ${pageTheme.cardText}`}>
+                    {item.body}
+                  </p>
+                </article>
+              ))}
+            </section>
+          </main>
         </SidebarInset>
       </SidebarProvider>
     </div>

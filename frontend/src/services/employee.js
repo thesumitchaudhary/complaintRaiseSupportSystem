@@ -50,3 +50,13 @@ export const employeeLogout = async () => {
         throw error
     }
 }
+
+export const showAssignedComplaint = async () => {
+    try {
+        const response = await api.get("/employee/showAssignedComplaint");
+        return response.data;
+    } catch (error) {
+        console.log("Failed to show Assigned Complaint", error.response?.status);
+        throw error
+    }
+}

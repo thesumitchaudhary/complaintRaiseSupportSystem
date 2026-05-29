@@ -33,7 +33,7 @@ export function NavUser({ user, onLogout }) {
     queryFn: showloggedinuser,
   });
 
-  console.log(data?.result?.name)
+  // console.log(data?.result?.name)
 
   return (
     <SidebarMenu>

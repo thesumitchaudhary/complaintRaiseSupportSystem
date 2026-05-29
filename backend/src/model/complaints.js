@@ -44,6 +44,11 @@ const complaintSchema = new mongoose.Schema(
       default: null,
     },
 
+    assignedData: {
+      type: Date,
+      default: null,
+    },
+
     completedDate: {
       type: Date,
       default: null,
