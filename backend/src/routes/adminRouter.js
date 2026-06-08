@@ -116,6 +116,8 @@ router.post("/assignTask", authMiddleware, authorizedRoles("admin"), async (req,
 
         complaint.status = "assigned";
 
+        complaint.assignedDate = Date.now()
+
         // task object
         complaint.task = {
             title: taskTitle,

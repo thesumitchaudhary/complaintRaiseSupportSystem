@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Moon, Sun, EllipsisVertical } from "lucide-react";
 import { AppSidebar } from "../../../components/admin-app-sidebar";
 import {
@@ -16,10 +16,8 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "../../../components/ui/sidebar";
-import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  adminLogout,
   deleteComplaint,
   showComplain,
   updateComplaint,
@@ -37,7 +35,6 @@ import { Loader2 } from "lucide-react";
 
 export default function Page() {
   const [theme, setTheme] = useState(false);
-  const [complaintModalOpen, setComplaintModalOpen] = useState(false);
 
   const toggleTheme = () => {
     setTheme(!theme);
@@ -61,35 +58,27 @@ export default function Page() {
   }, [theme]);
 
   const getStatusBadgeClass = (status) => {
-    const normalizedStatus = (status || "Pending").toLowerCase();
+    const normalizedStatus = String(status || "pending")
+      .trim()
+      .toLowerCase()
+      .replace(/[_\s]+/g, "-");
 
-    if (normalizedStatus === "resolved") {
+    if (normalizedStatus === "resolved" || normalizedStatus === "completed") {
       return "bg-green-100 text-green-700 text-xs";
     }
 
-    if (
-      normalizedStatus === "in-progress" ||
-      normalizedStatus === "in progress"
-    ) {
+    if (normalizedStatus === "in-progress") {
       return "bg-blue-100 text-blue-700 text-xs";
+    }
+
+    if (normalizedStatus === "pending") {
+      return "bg-yellow-100 text-yellow-700 text-xs";
     }
 
     return "bg-yellow-100 text-yellow-700 text-xs";
   };
 
-  const navigation = useNavigate();
   const queryClient = useQueryClient();
-
-  const logoutMutation = useMutation({
-    mutationFn: adminLogout,
-    onSuccess: () => {
-      toast.success("logout is successfully");
-      navigation("/");
-    },
-    onError: (error) => {
-      console.log(error);
-    },
-  });
 
   const { data, isLoading } = useQuery({
     queryKey: ["showComplaints"],
@@ -183,7 +172,7 @@ export default function Page() {
     <div className={`${pageTheme.shell} min-h-screen`}>
       <SidebarProvider style={{ backgroundColor: "transparent" }}>
         <AppSidebar />
-        <SidebarInset style={{ backgroundColor: "transparent" }}>
+        <SidebarInset className="flex min-h-screen flex-1 flex-col bg-transparent">
           <header
             className={`sticky top-0 z-10 border-b ${pageTheme.border} ${pageTheme.header} backdrop-blur`}
           >
@@ -228,7 +217,7 @@ export default function Page() {
               </button>
             </div>
           </header>
-          <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 lg:p-6">
+          <div className="flex w-full flex-1 flex-col gap-6 p-4 lg:p-6">
             <section
               className={`rounded-2xl border ${pageTheme.border} ${pageTheme.panel} p-6 shadow-sm`}
             >
@@ -256,7 +245,7 @@ export default function Page() {
               {summaryCards.map((card) => (
                 <article
                   key={card.label}
-                  className={`rounded-2xl border${pageTheme.border} ${pageTheme.panel} p-5 shadow-sm`}
+                  className={`rounded-2xl border ${pageTheme.border} ${pageTheme.panel} p-5 shadow-sm`}
                 >
                   <p className={`text-sm ${pageTheme.muted}`}>{card.label}</p>
                   <div className="mt-3 flex items-end justify-between gap-3">
@@ -352,17 +341,12 @@ export default function Page() {
                           <td
                             className={`border-b px-5 py-4 ${pageTheme.border}`}
                           >
-                            {" "}
-                            {data?.result?.map(
-                              (customer) => customer.customerId?.name,
-                            )}
+                            {complaint?.customerId?.name || "-"}
                           </td>
                           <td
                             className={`border-b px-5 py-4 ${pageTheme.border}`}
                           >
-                            {data?.result?.map(
-                              (customer) => customer.customerId?.email,
-                            )}
+                            {complaint?.customerId?.email || "-"}
                           </td>
                           <td
                             className={`border-b px-5 py-4 ${pageTheme.border}`}
@@ -376,7 +360,7 @@ export default function Page() {
                           </td>
                           <td
                             className={`border-b px-5 py-4 ${pageTheme.border}`}
-                          >
+                          > 
                             <p
                               className={`${getStatusBadgeClass(complaint?.status)} inline-block whitespace-nowrap rounded-full px-3 py-1 text-sm`}
                             >

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { AppSidebar } from "../../../components/app-sidebar";
 import {
@@ -58,7 +58,7 @@ export default function Page() {
   const tableHeaderText = isDarkTheme ? "text-slate-300" : "text-slate-900";
 
   return (
-    <div style={pageStyle}>
+    <div className={isDarkTheme ? "dark" : ""} style={pageStyle}>
       <SidebarProvider style={{ backgroundColor: pageStyle.backgroundColor }}>
         <AppSidebar />
         <SidebarInset style={{ backgroundColor: pageStyle.backgroundColor }}>

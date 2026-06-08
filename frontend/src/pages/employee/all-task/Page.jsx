@@ -8,7 +8,6 @@ import {
   Search,
   ShieldAlert,
   Sun,
-  UserRound,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { EmployeeAppSidebar as AppSidebar } from "../../../components/employee-app-sidebar";
@@ -35,7 +34,6 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "../../../components/ui/sidebar";
-import { showComplain } from "../../../services/admin";
 import { showAssignedComplaint } from "../../../services/employee";
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
@@ -85,21 +83,22 @@ export default function Page() {
     document.documentElement.classList.toggle("dark", theme);
   }, [theme]);
 
-  const {data: showAssignedComplaints} = useQuery({
+  const { data: showAssignedComplaints, isLoading, isError } = useQuery({
     queryKey: ["showAssignedComplaints"],
     queryFn: showAssignedComplaint,
   });
 
-  console.log(showAssignedComplaints)
+  
 
-  const { data: complaintData, isLoading } = useQuery({
-    queryKey: ["employeeAllTasks"],
-    queryFn: showComplain,
-  });
-
-  const allComplaints = Array.isArray(complaintData?.result)
-    ? complaintData.result
-    : [];
+  const allComplaints = useMemo(() => {
+    const d = showAssignedComplaints;
+    if (!d) return [];
+    if (Array.isArray(d)) return d;
+    if (Array.isArray(d.assignedComplaints)) return d.assignedComplaints;
+    if (Array.isArray(d.result)) return d.result;
+    if (Array.isArray(d.data)) return d.data;
+    return [];
+  }, [showAssignedComplaints]);
 
   const tasks = useMemo(() => {
     return allComplaints.filter((complaint) => {
@@ -315,6 +314,8 @@ export default function Page() {
                   <p className={`mt-1 text-sm ${pageTheme.muted}`}>
                     {isLoading
                       ? "Loading assigned work..."
+                      : isError
+                      ? "Failed to load assigned work."
                       : `${filteredTasks.length} task${filteredTasks.length === 1 ? "" : "s"} in the queue`}
                   </p>
                 </div>

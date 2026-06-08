@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { AppSidebar } from "../../../components/app-sidebar";
 import {
@@ -35,7 +35,7 @@ export default function Page() {
     queryFn: getRaisedComplaint,
   });
 
-    const { data: UserData } = useQuery({
+  const { data: UserData } = useQuery({
     queryKey: ["showloginuser"],
     queryFn: showloggedinuser,
   });
@@ -65,7 +65,7 @@ export default function Page() {
   const complaints = data?.result || [];
 
   return (
-    <div style={pageStyle}>
+    <div className={isDarkTheme ? "dark" : ""} style={pageStyle}>
       <SidebarProvider style={{ backgroundColor: pageStyle.backgroundColor }}>
         <AppSidebar />
         <SidebarInset style={{ backgroundColor: pageStyle.backgroundColor }}>
@@ -194,7 +194,7 @@ export default function Page() {
 
                     {/* Card Body */}
                     <div className="space-y-3">
-                      <div className="flex justify-between">
+                      <div className="grid grid-cols-2 gap-5">
                         <div>
                           <p
                             className={`text-xs font-medium ${isDarkTheme ? "text-slate-500" : "text-slate-500"}`}
@@ -213,21 +213,44 @@ export default function Page() {
                           </p>
                         </div>
                         <div>
-                          <p
-                            className={`text-xs font-medium ${isDarkTheme ? "text-slate-500" : "text-slate-500"}`}
-                          >
-                            Accepted Date
-                          </p>
-                          <p className={`text-sm mt-1 ${cardText}`}>
-                            {new Date(ticket.acceptedDate).toLocaleDateString(
-                              "en-US",
-                              {
-                                year: "numeric",
-                                month: "short",
-                                day: "numeric",
-                              },
-                            )}
-                          </p>
+                          {ticket.acceptedDate ? (
+                            <>
+                              <p
+                                className={`text-xs font-medium ${isDarkTheme ? "text-slate-500" : "text-slate-500"}`}
+                              >
+                                Accepted Date
+                              </p>
+                              <p className={`text-sm mt-1 ${cardText}`}>
+                                {new Date(
+                                  ticket.acceptedDate,
+                                ).toLocaleDateString("en-US", {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </p>
+                            </>
+                          ) : null}
+                        </div>
+                        <div>
+                          {ticket.assignedDate ? (
+                            <>
+                              <p
+                                className={`text-xs font-medium ${isDarkTheme ? "text-slate-500" : "text-slate-500"}`}
+                              >
+                                Assigned Date
+                              </p>
+                              <p>
+                                {new Date(
+                                  ticket.assignedDate,
+                                ).toLocaleDateString("en-US", {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </p>
+                            </>
+                          ) : null}
                         </div>
                       </div>
 

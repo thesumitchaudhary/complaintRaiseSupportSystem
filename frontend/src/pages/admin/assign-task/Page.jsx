@@ -280,19 +280,18 @@ export default function Page() {
             <section
               className={`rounded-3xl border ${pageTheme.border} ${pageTheme.panel} overflow-hidden shadow-sm`}
             >
-              <div className="grid gap-6 p-6 xl:grid-cols-[1.2fr_0.8fr] xl:p-8">
-                <div className="space-y-6">
-                  <div className="space-y-3">
+              <div className="space-y-6 p-6 xl:p-8">
+                <div className="space-y-3">
                     <p
                       className={`text-sm font-medium uppercase tracking-[0.24em] ${pageTheme.muted}`}
                     >
                       Task orchestration
                     </p>
-                    <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
+                    <h1 className="max-w-4xl text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl">
                       Assign work from a focused command panel.
                     </h1>
                     <p
-                      className={`max-w-2xl text-sm leading-6 ${pageTheme.muted}`}
+                      className={`max-w-3xl text-sm leading-6 ${pageTheme.muted}`}
                     >
                       Pick an accepted complaint, match it to an available
                       employee, and keep the assignment details structured in
@@ -333,15 +332,14 @@ export default function Page() {
                       );
                     })}
                   </div>
-                </div>
               </div>
             </section>
 
-            <section className="grid gap-6 xl:grid-cols-[1.35fr_0.85fr]">
+            <section className="space-y-6">
               <article
-                className={`rounded-3xl border ${pageTheme.border} ${pageTheme.panel} overflow-hidden shadow-sm`}
+                className={`w-full rounded-3xl border ${pageTheme.border} ${pageTheme.panel} overflow-hidden shadow-sm`}
               >
-                <div className={`border-b ${pageTheme.border} px-5 py-4`}>
+                <div className={`border-b ${pageTheme.border} px-5 py-4 sm:px-6`}>
                   <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
                       <h2 className="text-lg font-semibold">
@@ -354,7 +352,7 @@ export default function Page() {
                       </p>
                     </div>
 
-                    <div className="relative w-full md:w-80">
+                    <div className="relative w-full md:w-96">
                       <Search
                         className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`}
                       />
@@ -369,7 +367,7 @@ export default function Page() {
                 </div>
 
                 <div className="overflow-x-auto">
-                  <table className="min-w-full border-separate border-spacing-0 text-left text-sm">
+                  <table className="w-full min-w-[900px] border-separate border-spacing-0 text-left text-sm">
                     <thead className={pageTheme.tableHead}>
                       <tr>
                         <th
@@ -403,7 +401,10 @@ export default function Page() {
                     <tbody>
                       {filteredComplaints.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="px-5 py-10 text-center">
+                          <td
+                            colSpan={5}
+                            className={`px-5 py-14 text-center ${pageTheme.muted}`}
+                          >
                             No accepted complaints found.
                           </td>
                         </tr>
@@ -472,20 +473,22 @@ export default function Page() {
                               <td
                                 className={`border-b px-5 py-4 ${pageTheme.border}`}
                               >
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  className="rounded-lg"
-                                  onClick={() => {
-                                    setAssignTaskForm((prev) => ({
-                                      ...prev,
-                                      complaintId: complaint?._id || "",
-                                    }));
-                                    setAssignTaskModalOpen(true);
-                                  }}
-                                >
-                                  Assign
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="rounded-lg"
+                                    onClick={() => {
+                                      setAssignTaskForm((prev) => ({
+                                        ...prev,
+                                        complaintId: complaint?._id || "",
+                                      }));
+                                      setAssignTaskModalOpen(true);
+                                    }}
+                                  >
+                                    Assign
+                                  </Button>
+                                </div>
                               </td>
                             </tr>
                           );
