@@ -91,12 +91,18 @@ export default function Page() {
     queryFn: showEmployee,
   });
 
+  //  console.log(employeeData?.result?.map((employees)=> employees.employee?.email))
+
+  console.log(employeeData)
+
   const complaints = Array.isArray(complaintData?.result)
     ? complaintData.result
     : [];
-  const employees = Array.isArray(employeeData?.result)
-    ? employeeData.result
-    : [];
+    
+  const employees =
+  employeeData?.result?.map((item) => item.employee) ?? [];
+
+    console.log(employees);
 
   const acceptedComplaints = useMemo(() => {
     return complaints.filter((complaint) => {
@@ -298,40 +304,41 @@ export default function Page() {
                     place.
                   </p>
                 </div>
+              </div>
+            </section>
+            <section className={`rounded-3xl border overflow-hidden shadow-sm`}>
+              <div className="grid gap-4 md:grid-cols-3">
+                {stats.map((stat) => {
+                  const Icon = stat.icon;
 
-                <div className="grid gap-4 md:grid-cols-3">
-                  {stats.map((stat) => {
-                    const Icon = stat.icon;
-
-                    return (
-                      <article
-                        key={stat.label}
-                        className={`rounded-2xl border ${pageTheme.border} ${pageTheme.soft} p-4 shadow-sm`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className={`text-sm ${pageTheme.muted}`}>
-                              {stat.label}
-                            </p>
-                            <p
-                              className={`mt-3 text-3xl font-semibold ${stat.accent}`}
-                            >
-                              {stat.value}
-                            </p>
-                            <p className={`mt-2 text-xs ${pageTheme.muted}`}>
-                              {stat.detail}
-                            </p>
-                          </div>
-                          <div
-                            className={`rounded-xl border p-3 ${stat.iconWrap}`}
+                  return (
+                    <article
+                      key={stat.label}
+                      className={`rounded-2xl border ${pageTheme.border} ${pageTheme.soft} p-4 shadow-sm`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className={`text-sm ${pageTheme.muted}`}>
+                            {stat.label}
+                          </p>
+                          <p
+                            className={`mt-3 text-3xl font-semibold ${stat.accent}`}
                           >
-                            <Icon className={stat.accent} size={18} />
-                          </div>
+                            {stat.value}
+                          </p>
+                          <p className={`mt-2 text-xs ${pageTheme.muted}`}>
+                            {stat.detail}
+                          </p>
                         </div>
-                      </article>
-                    );
-                  })}
-                </div>
+                        <div
+                          className={`rounded-xl border p-3 ${stat.iconWrap}`}
+                        >
+                          <Icon className={stat.accent} size={18} />
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             </section>
 
@@ -504,7 +511,11 @@ export default function Page() {
                                 className={`border-b px-5 py-4 ${pageTheme.border}`}
                               >
                                 {complaint?.status === "assigned" ? (
-                                  <p>{new Date(complaint?.deadline).toLocaleDateString()}</p>
+                                  <p>
+                                    {new Date(
+                                      complaint?.deadline,
+                                    ).toLocaleDateString()}
+                                  </p>
                                 ) : (
                                   <p>not assigned yet</p>
                                 )}

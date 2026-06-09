@@ -16,6 +16,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "../../../components/ui/sidebar";
+import { showloggedinuser } from "../../../services/index";
 import { getRaisedComplaint } from "../../../services/user";
 import { useQuery } from "@tanstack/react-query";
 
@@ -28,15 +29,24 @@ export default function Page() {
   };
 
   const { data } = useQuery({
-    queryKey: ["showRaisedTicked"],
+    queryKey: ["showRaisedTicket"],
     queryFn: getRaisedComplaint,
   });
 
+  const { data: UserData } = useQuery({
+    queryKey: ["showloginuser"],
+    queryFn: showloggedinuser,
+  });
+
   // Calculate stats from data
-  const complaints = Array.isArray(data) ? data : [];
+  const complaints = Array.isArray(data?.result) ? data?.result : [];
   const totalComplaints = complaints.length;
-  const resolvedComplaints = complaints.filter((c) => c.status === "resolved").length;
-  const pendingComplaints = complaints.filter((c) => c.status === "pending").length;
+  const resolvedComplaints = complaints.filter(
+    (c) => c.status === "resolved",
+  ).length;
+  const pendingComplaints = complaints.filter(
+    (c) => c.status === "pending",
+  ).length;
 
   // Theme constants
   const pageStyle = {
@@ -53,7 +63,9 @@ export default function Page() {
   const cardBorder = isDarkTheme ? "border-slate-700" : "border-blue-200";
   const tableBg = isDarkTheme ? "bg-slate-800" : "bg-white";
   const tableHeaderBg = isDarkTheme ? "bg-slate-900" : "bg-slate-50";
-  const tableRowHover = isDarkTheme ? "hover:bg-slate-700" : "hover:bg-slate-100";
+  const tableRowHover = isDarkTheme
+    ? "hover:bg-slate-700"
+    : "hover:bg-slate-100";
   const tableText = isDarkTheme ? "text-slate-200" : "text-slate-800";
   const tableHeaderText = isDarkTheme ? "text-slate-300" : "text-slate-900";
 
@@ -69,13 +81,18 @@ export default function Page() {
             <div className="flex items-center gap-2 px-4 w-full justify-between">
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="-ml-1" />
-                <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+                <Separator
+                  orientation="vertical"
+                  className="mr-2 data-[orientation=vertical]:h-4"
+                />
                 <Breadcrumb>
                   <BreadcrumbList>
                     <BreadcrumbItem className="hidden md:block">
                       <BreadcrumbLink
                         className={`text-sm ${
-                          isDarkTheme ? "text-slate-400 hover:text-slate-200" : "text-slate-600 hover:text-slate-900"
+                          isDarkTheme
+                            ? "text-slate-400 hover:text-slate-200"
+                            : "text-slate-600 hover:text-slate-900"
                         }`}
                         href="#"
                       >
@@ -86,7 +103,9 @@ export default function Page() {
                     <BreadcrumbItem>
                       <BreadcrumbPage
                         className={`text-sm ${
-                          isDarkTheme ? "text-slate-400 hover:text-slate-200" : "text-slate-600 hover:text-slate-900"
+                          isDarkTheme
+                            ? "text-slate-400 hover:text-slate-200"
+                            : "text-slate-600 hover:text-slate-900"
                         }`}
                       >
                         Overview
@@ -111,17 +130,24 @@ export default function Page() {
 
           <div className="flex flex-1 flex-col gap-6 p-6">
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div
                 className={`${cardBg} border-2 ${cardBorder} rounded-lg p-6 transition-all hover:shadow-lg`}
               >
-                <p className={`text-sm font-medium ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
+                <p
+                  className={`text-sm font-medium ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}
+                >
                   Total Complaints
                 </p>
-                <p className={`text-3xl font-bold mt-2 ${isDarkTheme ? "text-blue-400" : "text-blue-600"}`}>
+
+                <p
+                  className={`text-3xl font-bold mt-2 ${isDarkTheme ? "text-blue-400" : "text-blue-600"}`}
+                >
                   {totalComplaints}
                 </p>
-                <p className={`text-xs mt-3 ${isDarkTheme ? "text-slate-500" : "text-slate-500"}`}>
+                <p
+                  className={`text-xs mt-3 ${isDarkTheme ? "text-slate-500" : "text-slate-500"}`}
+                >
                   All raised complaints
                 </p>
               </div>
@@ -129,13 +155,19 @@ export default function Page() {
               <div
                 className={`${cardBg} border-2 ${cardBorder} rounded-lg p-6 transition-all hover:shadow-lg`}
               >
-                <p className={`text-sm font-medium ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
+                <p
+                  className={`text-sm font-medium ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}
+                >
                   Resolved
                 </p>
-                <p className={`text-3xl font-bold mt-2 ${isDarkTheme ? "text-green-400" : "text-green-600"}`}>
+                <p
+                  className={`text-3xl font-bold mt-2 ${isDarkTheme ? "text-green-400" : "text-green-600"}`}
+                >
                   {resolvedComplaints}
                 </p>
-                <p className={`text-xs mt-3 ${isDarkTheme ? "text-slate-500" : "text-slate-500"}`}>
+                <p
+                  className={`text-xs mt-3 ${isDarkTheme ? "text-slate-500" : "text-slate-500"}`}
+                >
                   Completed complaints
                 </p>
               </div>
@@ -143,33 +175,85 @@ export default function Page() {
               <div
                 className={`${cardBg} border-2 ${cardBorder} rounded-lg p-6 transition-all hover:shadow-lg`}
               >
-                <p className={`text-sm font-medium ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
+                <p
+                  className={`text-sm font-medium ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}
+                >
+                  Resolved
+                </p>
+                <p
+                  className={`text-3xl font-bold mt-2 ${isDarkTheme ? "text-green-400" : "text-green-600"}`}
+                >
+                  {resolvedComplaints}
+                </p>
+                <p
+                  className={`text-xs mt-3 ${isDarkTheme ? "text-slate-500" : "text-slate-500"}`}
+                >
+                  Completed complaints
+                </p>
+              </div>
+
+              <div
+                className={`${cardBg} border-2 ${cardBorder} rounded-lg p-6 transition-all hover:shadow-lg`}
+              >
+                <p
+                  className={`text-sm font-medium ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}
+                >
                   Pending
                 </p>
-                <p className={`text-3xl font-bold mt-2 ${isDarkTheme ? "text-amber-400" : "text-amber-600"}`}>
+                <p
+                  className={`text-3xl font-bold mt-2 ${isDarkTheme ? "text-amber-400" : "text-amber-600"}`}
+                >
                   {pendingComplaints}
                 </p>
-                <p className={`text-xs mt-3 ${isDarkTheme ? "text-slate-500" : "text-slate-500"}`}>
+                <p
+                  className={`text-xs mt-3 ${isDarkTheme ? "text-slate-500" : "text-slate-500"}`}
+                >
                   Waiting for resolution
                 </p>
               </div>
             </div>
 
             {/* Complaints Table */}
-            <div className={`${tableBg} rounded-lg border-2 ${cardBorder} overflow-hidden`}>
-              <div className={`${tableHeaderBg} px-6 py-4 border-b ${cardBorder}`}>
-                <h2 className={`text-lg font-semibold ${tableHeaderText}`}>Your Complaints</h2>
+            <div
+              className={`${tableBg} rounded-lg border-2 ${cardBorder} overflow-hidden`}
+            >
+              <div
+                className={`${tableHeaderBg} px-6 py-4 border-b ${cardBorder}`}
+              >
+                <h2 className={`text-lg font-semibold ${tableHeaderText}`}>
+                  Your Complaints
+                </h2>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className={`${tableHeaderBg} border-b ${cardBorder}`}>
-                      <th className={`px-6 py-3 text-left font-semibold text-sm ${tableHeaderText}`}>Name</th>
-                      <th className={`px-6 py-3 text-left font-semibold text-sm ${tableHeaderText}`}>Email</th>
-                      <th className={`px-6 py-3 text-left font-semibold text-sm ${tableHeaderText}`}>Subject</th>
-                      <th className={`px-6 py-3 text-left font-semibold text-sm ${tableHeaderText}`}>Message</th>
-                      <th className={`px-6 py-3 text-left font-semibold text-sm ${tableHeaderText}`}>Status</th>
+                      <th
+                        className={`px-6 py-3 text-left font-semibold text-sm ${tableHeaderText}`}
+                      >
+                        Name
+                      </th>
+                      <th
+                        className={`px-6 py-3 text-left font-semibold text-sm ${tableHeaderText}`}
+                      >
+                        Email
+                      </th>
+                      <th
+                        className={`px-6 py-3 text-left font-semibold text-sm ${tableHeaderText}`}
+                      >
+                        Subject
+                      </th>
+                      <th
+                        className={`px-6 py-3 text-left font-semibold text-sm ${tableHeaderText}`}
+                      >
+                        Message
+                      </th>
+                      <th
+                        className={`px-6 py-3 text-left font-semibold text-sm ${tableHeaderText}`}
+                      >
+                        Status
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -179,10 +263,18 @@ export default function Page() {
                           key={index}
                           className={`border-b ${cardBorder} ${tableRowHover} transition-colors`}
                         >
-                          <td className={`px-6 py-4 text-sm ${tableText}`}>{complaint.name}</td>
-                          <td className={`px-6 py-4 text-sm ${tableText}`}>{complaint.email}</td>
-                          <td className={`px-6 py-4 text-sm ${tableText}`}>{complaint.subject}</td>
-                          <td className={`px-6 py-4 text-sm ${tableText} truncate max-w-xs`}>
+                          <td className={`px-6 py-4 text-sm ${tableText}`}>
+                            {UserData?.result?.name}
+                          </td>
+                          <td className={`px-6 py-4 text-sm ${tableText}`}>
+                            {UserData?.result?.email}
+                          </td>
+                          <td className={`px-6 py-4 text-sm ${tableText}`}>
+                            {complaint.subject}
+                          </td>
+                          <td
+                            className={`px-6 py-4 text-sm ${tableText} truncate max-w-xs`}
+                          >
                             {complaint.message}
                           </td>
                           <td className="px-6 py-4">
@@ -193,15 +285,16 @@ export default function Page() {
                                     ? "bg-green-900 text-green-200"
                                     : "bg-green-100 text-green-800"
                                   : complaint.status === "pending"
-                                  ? isDarkTheme
-                                    ? "bg-amber-900 text-amber-200"
-                                    : "bg-amber-100 text-amber-800"
-                                  : isDarkTheme
-                                  ? "bg-blue-900 text-blue-200"
-                                  : "bg-blue-100 text-blue-800"
+                                    ? isDarkTheme
+                                      ? "bg-amber-900 text-amber-200"
+                                      : "bg-amber-100 text-amber-800"
+                                    : isDarkTheme
+                                      ? "bg-blue-900 text-blue-200"
+                                      : "bg-blue-100 text-blue-800"
                               }`}
                             >
-                              {complaint.status.charAt(0).toUpperCase() + complaint.status.slice(1)}
+                              {complaint.status.charAt(0).toUpperCase() +
+                                complaint.status.slice(1)}
                             </span>
                           </td>
                         </tr>

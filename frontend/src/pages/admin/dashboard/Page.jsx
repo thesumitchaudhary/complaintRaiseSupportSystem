@@ -107,7 +107,7 @@ export default function Page() {
         shell: "bg-slate-950 text-slate-100",
         panel: "border-slate-800 bg-slate-900/70 text-slate-100",
         muted: "text-slate-400",
-        border: "border-slate-800",
+        border: "border-blue-200",
         button: "border-slate-700 text-slate-100 hover:bg-slate-800",
         header: "bg-slate-900/90",
         tableHead: "bg-slate-900 text-slate-200",
@@ -115,9 +115,9 @@ export default function Page() {
       }
     : {
         shell: "bg-slate-50 text-slate-900",
-        panel: "border-slate-200 bg-white text-slate-900",
+        panel: "border-slate-200 bg-blue-50 text-slate-900",
         muted: "text-slate-500",
-        border: "border-slate-200",
+        border: "border-blue-200",
         button: "border-slate-300 text-slate-900 hover:bg-slate-100",
         header: "bg-white/90",
         tableHead: "bg-slate-100 text-slate-700",
@@ -180,7 +180,7 @@ export default function Page() {
               {stats.map((stat) => (
                 <article
                   key={stat.label}
-                  className={`rounded-2xl border ${pageTheme.border} ${pageTheme.panel} p-5 shadow-sm`}
+                  className={`rounded-2xl bg-blue-50 border-blue-200 border-2 p-5 shadow-sm`}
                 >
                   <p className={`text-sm ${pageTheme.muted}`}>{stat.label}</p>
                   <div className="mt-3 flex items-end justify-between gap-3">
@@ -194,7 +194,7 @@ export default function Page() {
             </section>
 
             <section
-              className={`overflow-hidden rounded-2xl border ${pageTheme.border} ${pageTheme.panel} shadow-sm`}
+              className={`overflow-hidden rounded-2xl border-2 border-blue-200 shadow-sm`}
             >
               <div
                 className={`flex items-center justify-between gap-3 border-b px-5 py-4 ${pageTheme.border}`}
