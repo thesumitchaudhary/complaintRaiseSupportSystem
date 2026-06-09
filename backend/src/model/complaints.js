@@ -183,13 +183,6 @@
             default: "in_progress",
           },
 
-          progress: {
-            type: Number,
-            default: 0,
-          },
-
-          images: [String],
-
           updatedAt: {
             type: Date,
             default: Date.now,

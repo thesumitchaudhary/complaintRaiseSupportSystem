@@ -282,56 +282,56 @@ export default function Page() {
             >
               <div className="space-y-6 p-6 xl:p-8">
                 <div className="space-y-3">
-                    <p
-                      className={`text-sm font-medium uppercase tracking-[0.24em] ${pageTheme.muted}`}
-                    >
-                      Task orchestration
-                    </p>
-                    <h1 className="max-w-4xl text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl">
-                      Assign work from a focused command panel.
-                    </h1>
-                    <p
-                      className={`max-w-3xl text-sm leading-6 ${pageTheme.muted}`}
-                    >
-                      Pick an accepted complaint, match it to an available
-                      employee, and keep the assignment details structured in
-                      one place.
-                    </p>
-                  </div>
+                  <p
+                    className={`text-sm font-medium uppercase tracking-[0.24em] ${pageTheme.muted}`}
+                  >
+                    Task orchestration
+                  </p>
+                  <h1 className="max-w-4xl text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl">
+                    Assign work from a focused command panel.
+                  </h1>
+                  <p
+                    className={`max-w-3xl text-sm leading-6 ${pageTheme.muted}`}
+                  >
+                    Pick an accepted complaint, match it to an available
+                    employee, and keep the assignment details structured in one
+                    place.
+                  </p>
+                </div>
 
-                  <div className="grid gap-4 md:grid-cols-3">
-                    {stats.map((stat) => {
-                      const Icon = stat.icon;
+                <div className="grid gap-4 md:grid-cols-3">
+                  {stats.map((stat) => {
+                    const Icon = stat.icon;
 
-                      return (
-                        <article
-                          key={stat.label}
-                          className={`rounded-2xl border ${pageTheme.border} ${pageTheme.soft} p-4 shadow-sm`}
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className={`text-sm ${pageTheme.muted}`}>
-                                {stat.label}
-                              </p>
-                              <p
-                                className={`mt-3 text-3xl font-semibold ${stat.accent}`}
-                              >
-                                {stat.value}
-                              </p>
-                              <p className={`mt-2 text-xs ${pageTheme.muted}`}>
-                                {stat.detail}
-                              </p>
-                            </div>
-                            <div
-                              className={`rounded-xl border p-3 ${stat.iconWrap}`}
+                    return (
+                      <article
+                        key={stat.label}
+                        className={`rounded-2xl border ${pageTheme.border} ${pageTheme.soft} p-4 shadow-sm`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className={`text-sm ${pageTheme.muted}`}>
+                              {stat.label}
+                            </p>
+                            <p
+                              className={`mt-3 text-3xl font-semibold ${stat.accent}`}
                             >
-                              <Icon className={stat.accent} size={18} />
-                            </div>
+                              {stat.value}
+                            </p>
+                            <p className={`mt-2 text-xs ${pageTheme.muted}`}>
+                              {stat.detail}
+                            </p>
                           </div>
-                        </article>
-                      );
-                    })}
-                  </div>
+                          <div
+                            className={`rounded-xl border p-3 ${stat.iconWrap}`}
+                          >
+                            <Icon className={stat.accent} size={18} />
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
               </div>
             </section>
 
@@ -339,7 +339,9 @@ export default function Page() {
               <article
                 className={`w-full rounded-3xl border ${pageTheme.border} ${pageTheme.panel} overflow-hidden shadow-sm`}
               >
-                <div className={`border-b ${pageTheme.border} px-5 py-4 sm:px-6`}>
+                <div
+                  className={`border-b ${pageTheme.border} px-5 py-4 sm:px-6`}
+                >
                   <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
                       <h2 className="text-lg font-semibold">
@@ -390,10 +392,16 @@ export default function Page() {
                         >
                           Date
                         </th>
+
                         <th
                           className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}
                         >
                           Action
+                        </th>
+                        <th
+                          className={`border-b px-5 py-3 font-medium ${pageTheme.border}`}
+                        >
+                          DeadLine Date
                         </th>
                       </tr>
                     </thead>
@@ -486,9 +494,20 @@ export default function Page() {
                                       setAssignTaskModalOpen(true);
                                     }}
                                   >
-                                    Assign
+                                    {complaint?.status === "assigned"
+                                      ? "re-assign"
+                                      : "assign"}
                                   </Button>
                                 </div>
+                              </td>
+                              <td
+                                className={`border-b px-5 py-4 ${pageTheme.border}`}
+                              >
+                                {complaint?.status === "assigned" ? (
+                                  <p>{new Date(complaint?.deadline).toLocaleDateString()}</p>
+                                ) : (
+                                  <p>not assigned yet</p>
+                                )}
                               </td>
                             </tr>
                           );

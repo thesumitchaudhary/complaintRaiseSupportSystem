@@ -133,7 +133,16 @@ export default function Page() {
     queryFn: showEmployee,
   });
 
-  // console.log(data?.result?.map((employee) => employee).length);
+  const employeeRows = Array.isArray(data?.result) ? data.result : [];
+  const totalEmployees = employeeRows.length;
+  const totalAssignedTasks = employeeRows.reduce(
+    (total, row) => total + (Array.isArray(row.tasks) ? row.tasks.length : 0),
+    0,
+  );
+  const totalCompletedTasks = employeeRows.reduce((total, row) => {
+    const tasks = Array.isArray(row.tasks) ? row.tasks : [];
+    return total + tasks.filter((task) => task.status === "completed").length;
+  }, 0);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -261,28 +270,26 @@ export default function Page() {
               >
                 <p className={`text-sm ${pageTheme.muted}`}>employees</p>
                 <div className="mt-3 flex items-end justify-between gap-3">
+                  <h2 className="text-3xl font-semibold">{totalEmployees}</h2>
+                </div>
+              </article>
+              <article
+                className={`rounded-2xl border ${pageTheme.border} ${pageTheme.panel} p-5 shadow-sm`}
+              >
+                <p className={`text-sm ${pageTheme.muted}`}>assigned tasks</p>
+                <div className="mt-3 flex items-end justify-between gap-3">
                   <h2 className="text-3xl font-semibold">
-                    {data?.result?.map((employee) => employee).length}
+                    {totalAssignedTasks}
                   </h2>
                 </div>
               </article>
               <article
                 className={`rounded-2xl border ${pageTheme.border} ${pageTheme.panel} p-5 shadow-sm`}
               >
-                <p className={`text-sm ${pageTheme.muted}`}>employees</p>
+                <p className={`text-sm ${pageTheme.muted}`}>completed tasks</p>
                 <div className="mt-3 flex items-end justify-between gap-3">
                   <h2 className="text-3xl font-semibold">
-                    {data?.result?.map((employee) => employee).length}
-                  </h2>
-                </div>
-              </article>
-              <article
-                className={`rounded-2xl border ${pageTheme.border} ${pageTheme.panel} p-5 shadow-sm`}
-              >
-                <p className={`text-sm ${pageTheme.muted}`}>employees</p>
-                <div className="mt-3 flex items-end justify-between gap-3">
-                  <h2 className="text-3xl font-semibold">
-                    {data?.result?.map((employee) => employee).length}
+                    {totalCompletedTasks}
                   </h2>
                 </div>
               </article>
@@ -336,38 +343,51 @@ export default function Page() {
                     </tr>
                   </thead>
                   <tbody>
-                    {data?.result?.map((employee) => (
-                      <tr
-                        key={`${employee.email}-${employee.joinDate}`}
-                        className={`transition-colors ${pageTheme.tableRow}`}
-                      >
-                        <td
-                          className={`border-b px-5 py-4 ${pageTheme.border}`}
+                    {employeeRows.map((row) => {
+                      const employee = row.employee || {};
+                      const tasks = Array.isArray(row.tasks) ? row.tasks : [];
+                      const pendingTasks = tasks.filter(
+                        (task) => task.status !== "completed",
+                      ).length;
+                      const completedTasks = tasks.filter(
+                        (task) => task.status === "completed",
+                      ).length;
+
+                      return (
+                        <tr
+                          key={employee._id || employee.email}
+                          className={`transition-colors ${pageTheme.tableRow}`}
                         >
-                          {employee.name}
-                        </td>
-                        <td
-                          className={`border-b px-5 py-4 ${pageTheme.border}`}
-                        >
-                          {employee.email}
-                        </td>
-                        <td
-                          className={`border-b px-5 py-4 ${pageTheme.border}`}
-                        >
-                          {new Date(employee.createdAt).toLocaleDateString()}
-                        </td>
-                        <td
-                          className={`border-b px-5 py-4 ${pageTheme.border}`}
-                        >
-                          {employee.tasks}
-                        </td>
-                        <td
-                          className={`border-b px-5 py-4 ${pageTheme.border}`}
-                        >
-                          {employee.tasks}
-                        </td>
-                      </tr>
-                    ))}
+                          <td
+                            className={`border-b px-5 py-4 ${pageTheme.border}`}
+                          >
+                            {employee.name || "-"}
+                          </td>
+                          <td
+                            className={`border-b px-5 py-4 ${pageTheme.border}`}
+                          >
+                            {employee.email || "-"}
+                          </td>
+                          <td
+                            className={`border-b px-5 py-4 ${pageTheme.border}`}
+                          >
+                            {employee.createdAt
+                              ? new Date(employee.createdAt).toLocaleDateString()
+                              : "-"}
+                          </td>
+                          <td
+                            className={`border-b px-5 py-4 ${pageTheme.border}`}
+                          >
+                            {pendingTasks}
+                          </td>
+                          <td
+                            className={`border-b px-5 py-4 ${pageTheme.border}`}
+                          >
+                            {completedTasks}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

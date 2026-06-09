@@ -68,20 +68,44 @@ router.get("/showUser", async (req, res) => {
         res.status(500).json({ success: false, message: "Internal server error", error: error.message });
     }
 })
-
 router.get("/showEmployee", async (req, res) => {
     try {
-        const employee = await userModel.find({ role: "employee" })
-        if (!employee) {
-            res.status(401).json({ success: false, message: "hey employee is not found" });
+        const employees = await userModel
+            .find({ role: "employee" })
+            .select("-password");
+
+        if (employees.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "No employees found",
+            });
         }
 
-        res.status(200).json({ success: false, result: employee });
+        const result = await Promise.all(
+            employees.map(async (emp) => {
+                const tasks = await complaints.find({
+                    assignedEmployee: emp._id,
+                });
+
+                return {
+                    employee: emp,
+                    tasks,
+                };
+            })
+        );
+
+        res.status(200).json({
+            success: true,
+            result,
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message,
+        });
     }
-    catch (error) {
-        res.status(500).json({ success: false, message: "Internal server error", error: error.message });
-    }
-})
+});
 
 // this is for the assign task to employee
 router.post("/assignTask", authMiddleware, authorizedRoles("admin"), async (req, res) => {
