@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Moon, Sun } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Moon, Sun, Search } from "lucide-react";
 import { AppSidebar } from "../../../components/app-sidebar";
 import {
   Breadcrumb,
@@ -26,13 +26,25 @@ export default function Page() {
   const [complaintModalOpen, setComplaintModalOpen] = useState(false);
   const isDarkTheme = theme;
 
+  // this is for search useState hook for search debounce
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const toggleTheme = () => {
     setTheme((prev) => !prev);
   };
 
   const { data } = useQuery({
-    queryKey: ["showRaisedTicked"],
-    queryFn: getRaisedComplaint,
+    queryKey: ["showRaisedTicked", debouncedSearch],
+    queryFn: () => getRaisedComplaint(debouncedSearch),
   });
 
   const { data: UserData } = useQuery({
@@ -63,6 +75,15 @@ export default function Page() {
     : "text-slate-600 hover:text-slate-900";
 
   const complaints = data?.result || [];
+  // console.log(complaints)
+
+  const filteredComplaints = complaints.filter((ticket) =>
+    ticket.subject.toLowerCase().includes(debouncedSearch.toLowerCase()),
+  );
+
+  const suggestions = complaints.filter((ticket) =>
+    ticket.subject.toLowerCase().includes(search.toLowerCase()),
+  );
 
   return (
     <div className={isDarkTheme ? "dark" : ""} style={pageStyle}>
@@ -127,6 +148,33 @@ export default function Page() {
                 >
                   Track and manage all your raised complaints
                 </p>
+              </div>
+              <div className="relative w-64">
+                <div className="flex items-center border-2 border-black rounded-md">
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="flex-1 p-2 outline-none"
+                  />
+
+                  <button className="px-3">
+                    <Search size={20} />
+                  </button>
+                </div>
+
+                {search && suggestions.length > 0 && (
+                  <div className="absolute top-full left-0 w-full bg-white border shadow-md z-50">
+                    {suggestions.map((item) => (
+                      <div
+                        key={item._id}
+                        className="p-2 hover:bg-gray-100 cursor-pointer"
+                      >
+                        {item.subject}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <button
                 onClick={() => setComplaintModalOpen(true)}

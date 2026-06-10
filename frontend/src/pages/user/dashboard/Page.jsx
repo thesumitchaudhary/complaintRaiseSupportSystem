@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Moon, Sun } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Moon, Sun, Search } from "lucide-react";
 import { AppSidebar } from "../../../components/app-sidebar";
 import {
   Breadcrumb,
@@ -24,13 +24,25 @@ export default function Page() {
   const [theme, setTheme] = useState(false);
   const isDarkTheme = theme;
 
+  // this is for the debouncing
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const toggleTheme = () => {
     setTheme((prev) => !prev);
   };
 
   const { data } = useQuery({
-    queryKey: ["showRaisedTicket"],
-    queryFn: getRaisedComplaint,
+    queryKey: ["showRaisedTicket", debouncedSearch],
+    queryFn: () => getRaisedComplaint(debouncedSearch),
   });
 
   const { data: UserData } = useQuery({
@@ -39,7 +51,7 @@ export default function Page() {
   });
 
   // Calculate stats from data
-  const complaints = Array.isArray(data?.result) ? data?.result : [];
+  const complaints = data?.result || [];
   const totalComplaints = complaints.length;
   const resolvedComplaints = complaints.filter(
     (c) => c.status === "resolved",
@@ -68,6 +80,14 @@ export default function Page() {
     : "hover:bg-slate-100";
   const tableText = isDarkTheme ? "text-slate-200" : "text-slate-800";
   const tableHeaderText = isDarkTheme ? "text-slate-300" : "text-slate-900";
+
+  const filteredComplaints = complaints.filter((ticket) => {
+    ticket.subject.toLowerCase().includes(debouncedSearch.toLowerCase());
+  });
+
+  const suggestions = complaints.filter((ticket) =>
+    ticket.subject.toLowerCase().includes(search.toLowerCase()),
+  );
 
   return (
     <div className={isDarkTheme ? "dark" : ""} style={pageStyle}>
@@ -130,6 +150,36 @@ export default function Page() {
 
           <div className="flex flex-1 flex-col gap-6 p-6">
             {/* Stats Cards */}
+            <div className="flex justify-between">
+              <h2 className="text-2xl font-bold">Dashboard</h2>
+              <div className="relative w-64">
+                <div className="flex items-center border-2 border-black rounded-md">
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="flex-1 p-2 outline-none"
+                  />
+
+                  <button className="px-3">
+                    <Search size={20} />
+                  </button>
+                </div>
+
+                {search && suggestions.length > 0 && (
+                  <div className="absolute top-full left-0 w-full bg-white border shadow-md z-50">
+                    {suggestions.map((item) => (
+                      <div
+                        key={item._id}
+                        className="p-2 hover:bg-gray-100 cursor-pointer"
+                      >
+                        {item.subject}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div
                 className={`${cardBg} border-2 ${cardBorder} rounded-lg p-6 transition-all hover:shadow-lg`}
