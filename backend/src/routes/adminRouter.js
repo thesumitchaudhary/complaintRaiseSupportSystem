@@ -177,4 +177,77 @@ router.post("/assignTask", authMiddleware, authorizedRoles("admin"), async (req,
     }
 });
 
+router.post(
+  "/reassignTask",
+  authMiddleware,
+  authorizedRoles("admin"),
+  async (req, res) => {
+    try {
+      const {
+        complaintId,
+        newEmployeeId,
+        dueDate,
+        taskNotes,
+      } = req.body;
+
+      const complaint = await complaints.findById(complaintId);
+
+      if (!complaint) {
+        return res.status(404).json({
+          success: false,
+          message: "Complaint not found",
+        });
+      }
+
+      // Complaint must already be assigned
+      if (!complaint.assignedEmployee) {
+        return res.status(400).json({
+          success: false,
+          message: "Complaint is not assigned yet",
+        });
+      }
+
+      // Mark previous assignment as reassigned
+      const lastAssignment =
+        complaint.assignmentHistory[
+          complaint.assignmentHistory.length - 1
+        ];
+
+      if (lastAssignment) {
+        lastAssignment.status = "reassigned";
+      }
+
+      // Update current assignment
+      complaint.assignedEmployee = newEmployeeId;
+      complaint.assignedBy = req.user.id;
+      complaint.deadline = dueDate;
+      complaint.assignedDate = new Date();
+
+      // Add new assignment record
+      complaint.assignmentHistory.push({
+        employee: newEmployeeId,
+        assignedBy: req.user.id,
+        assignedAt: new Date(),
+        deadline: dueDate,
+        note: taskNotes,
+        status: "assigned",
+      });
+
+      await complaint.save();
+
+      return res.status(200).json({
+        success: true,
+        message: "Task reassigned successfully",
+        complaint,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Internal Server Error",
+        error: error.message,
+      });
+    }
+  }
+);
+
 export default router

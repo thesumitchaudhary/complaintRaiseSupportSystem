@@ -6,11 +6,12 @@ import {
   MessageSquare,
   Info,
   RefreshCw,
+  Loader2,
   Send,
   User,
   Wrench,
 } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "./ui/sheet";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -42,10 +43,15 @@ export function RaiseComplaintModal({ open, onOpenChange, theme }) {
 
   const isDark = Boolean(theme);
 
+  const queryClient = useQueryClient();
+
   const ticketMutation = useMutation({
     mutationFn: createTicket,
     onSuccess: () => {
       setFormData(initialFormData);
+      queryClient.invalidateQueries({
+        queryKey: ["showRaisedTicked"],
+      });
       onOpenChange(false);
     },
     onError: (mutationError) => {
@@ -129,7 +135,9 @@ export function RaiseComplaintModal({ open, onOpenChange, theme }) {
       >
         <div
           className={`border-b px-6 py-5 ${
-            isDark ? "border-slate-800 bg-slate-950" : "border-slate-200 bg-white"
+            isDark
+              ? "border-slate-800 bg-slate-950"
+              : "border-slate-200 bg-white"
           }`}
         >
           <SheetHeader className="space-y-1 text-left">
@@ -170,7 +178,9 @@ export function RaiseComplaintModal({ open, onOpenChange, theme }) {
                       <li>Use an active, valid email address.</li>
                       <li>Keep the subject short and clear.</li>
                       <li>Select the correct service type.</li>
-                      <li>Add issue details, timing, and steps already tried.</li>
+                      <li>
+                        Add issue details, timing, and steps already tried.
+                      </li>
                     </ul>
                   </TooltipContent>
                 </Tooltip>
@@ -195,7 +205,9 @@ export function RaiseComplaintModal({ open, onOpenChange, theme }) {
               </div>
             )}
 
-            <div className={`rounded-md border p-4 shadow-sm ${fieldShellClass}`}>
+            <div
+              className={`rounded-md border p-4 shadow-sm ${fieldShellClass}`}
+            >
               <div className="space-y-3">
                 {renderLabel("name", User, "Name")}
                 <Input
@@ -212,7 +224,9 @@ export function RaiseComplaintModal({ open, onOpenChange, theme }) {
               </div>
             </div>
 
-            <div className={`rounded-md border p-4 shadow-sm ${fieldShellClass}`}>
+            <div
+              className={`rounded-md border p-4 shadow-sm ${fieldShellClass}`}
+            >
               <div className="space-y-3">
                 {renderLabel("email", Mail, "Email")}
                 <Input
@@ -229,7 +243,9 @@ export function RaiseComplaintModal({ open, onOpenChange, theme }) {
               </div>
             </div>
 
-            <div className={`rounded-md border p-4 shadow-sm ${fieldShellClass}`}>
+            <div
+              className={`rounded-md border p-4 shadow-sm ${fieldShellClass}`}
+            >
               <div className="space-y-3">
                 {renderLabel("subject", FileText, "Subject")}
                 <Input
@@ -245,7 +261,9 @@ export function RaiseComplaintModal({ open, onOpenChange, theme }) {
               </div>
             </div>
 
-            <div className={`rounded-md border p-4 shadow-sm ${fieldShellClass}`}>
+            <div
+              className={`rounded-md border p-4 shadow-sm ${fieldShellClass}`}
+            >
               <div className="space-y-3">
                 {renderLabel("serviceType", Wrench, "Service Type")}
                 <select
@@ -266,7 +284,9 @@ export function RaiseComplaintModal({ open, onOpenChange, theme }) {
               </div>
             </div>
 
-            <div className={`rounded-md border p-4 shadow-sm ${fieldShellClass}`}>
+            <div
+              className={`rounded-md border p-4 shadow-sm ${fieldShellClass}`}
+            >
               <div className="space-y-3">
                 {renderLabel("message", MessageSquare, "Message", "Required")}
                 <textarea
@@ -284,7 +304,9 @@ export function RaiseComplaintModal({ open, onOpenChange, theme }) {
 
           <div
             className={`sticky bottom-0 flex gap-3 border-t px-6 py-4 ${
-              isDark ? "border-slate-800 bg-slate-950" : "border-slate-200 bg-white"
+              isDark
+                ? "border-slate-800 bg-slate-950"
+                : "border-slate-200 bg-white"
             }`}
           >
             <Button
@@ -306,12 +328,19 @@ export function RaiseComplaintModal({ open, onOpenChange, theme }) {
               disabled={loading}
               className="h-11 flex-[1.4] gap-2 bg-cyan-600 text-white hover:bg-cyan-700"
             >
-              <Send className="h-4 w-4" />
-              {loading ? "Submitting..." : "Submit Complaint"}
+              {loading ? (
+                <p>
+                  <Loader2 className="animate-spin" />
+                </p>
+              ) : (
+                <div className="flex gap-1">
+                  <Send className="h-4 w-4" />
+                  <span> Submit Complaint</span>
+                </div>
+              )}
             </Button>
           </div>
         </form>
-
       </SheetContent>
     </Sheet>
   );

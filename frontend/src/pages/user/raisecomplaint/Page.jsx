@@ -154,7 +154,14 @@ export default function Page() {
                         <h3
                           className={`font-semibold text-lg leading-tight ${cardText}`}
                         >
-                          {ticket.subject}
+                          {ticket.subject
+                            .split("_")
+                            .map(
+                              (word) =>
+                                word.charAt(0).toUpperCase() +
+                                word.slice(1).toLowerCase(),
+                            )
+                            .join(" ")}
                         </h3>
                         <p className={`text-xs mt-2 ${cardSubText}`}>
                           By: {UserData?.result?.name}

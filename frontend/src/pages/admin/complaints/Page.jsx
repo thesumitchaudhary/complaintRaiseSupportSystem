@@ -170,6 +170,14 @@ export default function Page() {
 
   return (
     <div className={`${pageTheme.shell} min-h-screen`}>
+      {updateStatusMutation.isPending && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="flex flex-col items-center gap-3 rounded-lg bg-white p-6 shadow-lg">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <p>Updating complaint...</p>
+          </div>
+        </div>
+      )}
       <SidebarProvider style={{ backgroundColor: "transparent" }}>
         <AppSidebar />
         <SidebarInset className="flex min-h-screen flex-1 flex-col bg-transparent">
@@ -360,7 +368,7 @@ export default function Page() {
                           </td>
                           <td
                             className={`border-b px-5 py-4 ${pageTheme.border}`}
-                          > 
+                          >
                             <p
                               className={`${getStatusBadgeClass(complaint?.status)} inline-block whitespace-nowrap rounded-full px-3 py-1 text-sm`}
                             >
