@@ -1,6 +1,7 @@
 import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 import userModel from "../model/userModel.js";
 import complaints from "../model/complaints.js";
 import authMiddleware from "../middleware/authMiddleware.js";
@@ -187,8 +188,20 @@ router.post(
         complaintId,
         newEmployeeId,
         dueDate,
+        taskTitle,
+        priority,
         taskNotes,
       } = req.body;
+
+      if (
+        !mongoose.Types.ObjectId.isValid(complaintId) ||
+        !mongoose.Types.ObjectId.isValid(newEmployeeId)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Valid complaintId and newEmployeeId are required",
+        });
+      }
 
       const complaint = await complaints.findById(complaintId);
 
@@ -207,6 +220,32 @@ router.post(
         });
       }
 
+      if (String(complaint.assignedEmployee) === String(newEmployeeId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Complaint is already assigned to this employee",
+        });
+      }
+
+      const employee = await userModel.findOne({
+        _id: newEmployeeId,
+        role: "employee",
+      });
+
+      if (!employee) {
+        return res.status(404).json({
+          success: false,
+          message: "Employee not found",
+        });
+      }
+
+      if (priority && !["low", "medium", "high"].includes(priority)) {
+        return res.status(400).json({
+          success: false,
+          message: "Priority must be low, medium, or high",
+        });
+      }
+
       // Mark previous assignment as reassigned
       const lastAssignment =
         complaint.assignmentHistory[
@@ -222,6 +261,18 @@ router.post(
       complaint.assignedBy = req.user.id;
       complaint.deadline = dueDate;
       complaint.assignedDate = new Date();
+      complaint.status = "assigned";
+
+      if (priority) {
+        complaint.priority = priority;
+      }
+
+      if (taskTitle || taskNotes) {
+        complaint.task = {
+          title: taskTitle || complaint.task?.title || "",
+          notes: taskNotes || complaint.task?.notes || "",
+        };
+      }
 
       // Add new assignment record
       complaint.assignmentHistory.push({

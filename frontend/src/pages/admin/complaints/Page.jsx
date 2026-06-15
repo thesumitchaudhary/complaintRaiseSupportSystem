@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Moon, Sun, EllipsisVertical } from "lucide-react";
+import { Moon, Sun, EllipsisVertical, Search } from "lucide-react";
 import { AppSidebar } from "../../../components/admin-app-sidebar";
 import {
   Breadcrumb,
@@ -35,6 +35,18 @@ import { Loader2 } from "lucide-react";
 
 export default function Page() {
   const [theme, setTheme] = useState(false);
+
+  // this is for the search debouncing
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    let timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const toggleTheme = () => {
     setTheme(!theme);
@@ -81,8 +93,8 @@ export default function Page() {
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["showComplaints"],
-    queryFn: showComplain,
+    queryKey: ["showComplaints", debouncedSearch],
+    queryFn: () => showComplain(debouncedSearch),
   });
 
   const updateStatusMutation = useMutation({
@@ -114,6 +126,14 @@ export default function Page() {
   });
 
   const complaints = data?.result || [];
+
+  const filteredComplaints = complaints.filter((ticket) =>
+    ticket.subject.toLowerCase().includes(debouncedSearch),
+  );
+
+  const suggestions = complaints.filter((ticket) =>
+    ticket.subject.toLowerCase().includes(search),
+  );
 
   const summaryCards = [
     {
@@ -279,6 +299,33 @@ export default function Page() {
                       ? "Loading complaint records"
                       : `${complaints.length} complaint${complaints.length === 1 ? "" : "s"} available`}
                   </p>
+                </div>
+                <div className="relative w-64">
+                  <div className="flex items-center border-2 border-black rounded-md">
+                    <input
+                      type="text"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      className="flex-1 p-2 outline-none"
+                    />
+
+                    <button className="px-3">
+                      <Search size={20} />
+                    </button>
+                  </div>
+
+                  {search && suggestions.length > 0 && (
+                    <div className="absolute top-full left-0 w-full bg-white border shadow-md z-50">
+                      {suggestions.map((item) => (
+                        <div
+                          key={item._id}
+                          className="p-2 hover:bg-gray-100 cursor-pointer"
+                        >
+                          {item.subject}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 

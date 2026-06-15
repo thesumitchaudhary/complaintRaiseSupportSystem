@@ -147,4 +147,27 @@ router.get("/logout", async (req, res) => {
     }
 })
 
+router.get("/getReassignedComplaints", authMiddleware, async (req, res) => {
+  try {
+    const reassignedComplaints = await complaints.find({
+      "assignmentHistory.status": "reassigned"
+    })
+      .populate("customerId", "name email")
+      .populate("assignedEmployee", "name email")
+      .populate("assignmentHistory.employee", "name email")
+      .populate("assignmentHistory.assignedBy", "name");
+
+    res.status(200).json({
+      success: true,
+      count: reassignedComplaints.length,
+      complaints: reassignedComplaints,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
 export default router

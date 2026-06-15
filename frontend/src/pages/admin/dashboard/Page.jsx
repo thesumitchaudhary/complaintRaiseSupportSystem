@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Search } from "lucide-react";
 import { AppSidebar } from "../../../components/admin-app-sidebar";
 import {
   Breadcrumb,
@@ -22,7 +22,18 @@ import { useQuery } from "@tanstack/react-query";
 
 export default function Page() {
   const [theme, setTheme] = useState(false);
-  const [complaintModalOpen, setComplaintModalOpen] = useState(false);
+
+  // this is for bebouncing
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState();
+
+  useEffect(() => {
+    let timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const getStatusBadgeClass = (status) => {
     const normalizedStatus = (status || "Pending").toLowerCase();
@@ -63,8 +74,8 @@ export default function Page() {
   }, [theme]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["showComplaints"],
-    queryFn: showComplain,
+    queryKey: ["showComplaints", debouncedSearch],
+    queryFn: () => showComplain(debouncedSearch),
   });
 
   const { data: customerData, isLoading: isCustomerLoading } = useQuery({
@@ -81,6 +92,13 @@ export default function Page() {
   const customers = customerData?.result || [];
   const employees = employeeData?.result || [];
 
+  const filteredComplaints = complaints.filter((ticket) =>
+    ticket.subject.toLowerCase().includes(debouncedSearch),
+  );
+
+  const suggestions = complaints.filter((ticket) =>
+    ticket.subject.toLowerCase().includes(search),
+  );
 
   const stats = [
     {
@@ -174,7 +192,23 @@ export default function Page() {
             </div>
           </header>
           <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 lg:p-6">
-   
+            <section
+              className={`rounded-2xl border-2  ${pageTheme.panel} p-6 shadow-sm`}
+            >
+              <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                <div className="space-y-2">
+                  <h1 className="text-2xl font-semibold md:text-3xl">
+                    Dashboard overview
+                  </h1>
+                  <p
+                    className={`max-w-2xl text-sm leading-6 ${pageTheme.muted}`}
+                  >
+                    Review Employee,user, complaint, and keep response tracking
+                    organized.
+                  </p>
+                </div>
+              </div>
+            </section>
 
             <section className="grid gap-5 md:grid-cols-4 xl:grid-cols-4">
               {stats.map((stat) => (
@@ -201,6 +235,33 @@ export default function Page() {
               >
                 <div>
                   <h2 className="text-lg font-semibold">Recent complaints</h2>
+                </div>
+                <div className="relative w-64">
+                  <div className="flex items-center border-2 border-black rounded-md">
+                    <input
+                      type="text"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      className="flex-1 p-2 outline-none"
+                    />
+
+                    <button className="px-3">
+                      <Search size={20} />
+                    </button>
+                  </div>
+
+                  {search && suggestions.length > 0 && (
+                    <div className="absolute top-full left-0 w-full bg-white border shadow-md z-50">
+                      {suggestions.map((item) => (
+                        <div
+                          key={item._id}
+                          className="p-2 hover:bg-gray-100 cursor-pointer"
+                        >
+                          {item.subject}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 

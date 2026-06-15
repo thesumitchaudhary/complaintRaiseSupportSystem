@@ -37,12 +37,12 @@ import {
   showComplain,
   showEmployee,
   assignTask,
+  reassignTask,
 } from "../../../services/admin";
 
 export default function Page() {
   const [theme, setTheme] = useState(false);
   const [assignTaskModalOpen, setAssignTaskModalOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const [assignTaskForm, setAssignTaskForm] = useState({
     complaintId: "",
     employeeId: "",
@@ -51,6 +51,18 @@ export default function Page() {
     dueDate: "",
     notes: "",
   });
+
+  // this is for the debounce search
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    let timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const isDarkTheme = theme;
 
@@ -93,16 +105,15 @@ export default function Page() {
 
   //  console.log(employeeData?.result?.map((employees)=> employees.employee?.email))
 
-  console.log(employeeData)
+  console.log(employeeData);
 
   const complaints = Array.isArray(complaintData?.result)
     ? complaintData.result
     : [];
-    
-  const employees =
-  employeeData?.result?.map((item) => item.employee) ?? [];
 
-    console.log(employees);
+  const employees = employeeData?.result?.map((item) => item.employee) ?? [];
+
+  console.log(employees);
 
   const acceptedComplaints = useMemo(() => {
     return complaints.filter((complaint) => {
@@ -127,11 +138,10 @@ export default function Page() {
     const customerEmail = String(
       complaint?.customerId?.email || "",
     ).toLowerCase();
-    const needle = searchTerm.trim().toLowerCase();
 
-    if (!needle) {
-      return true;
-    }
+    const needle = debouncedSearch.trim().toLowerCase();
+
+    if (!needle) return true;
 
     return (
       subject.includes(needle) ||
@@ -139,6 +149,17 @@ export default function Page() {
       customerEmail.includes(needle)
     );
   });
+
+ const suggestions =
+  debouncedSearch.trim() === ""
+    ? []
+    : acceptedComplaints
+        .filter((complaint) =>
+          complaint.subject
+            ?.toLowerCase()
+            .includes(debouncedSearch.toLowerCase())
+        )
+        .slice(0, 5);
 
   const pageTheme = isDarkTheme
     ? {
@@ -192,7 +213,7 @@ export default function Page() {
     {
       label: "Selectable tasks",
       value: filteredComplaints.length,
-      detail: searchTerm ? "Filtered results" : "Current queue",
+      detail: search ? "Filtered results" : "Current queue",
       icon: Clock3,
       accent: isDarkTheme ? "text-amber-400" : "text-amber-600",
       iconWrap: isDarkTheme
@@ -361,16 +382,36 @@ export default function Page() {
                       </p>
                     </div>
 
-                    <div className="relative w-full md:w-96">
+                    <div className="relative w-full  md:w-96">
                       <Search
                         className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`}
                       />
                       <Input
-                        value={searchTerm}
-                        onChange={(event) => setSearchTerm(event.target.value)}
-                        placeholder="Search customer or subject"
-                        className={`pl-9 ${pageTheme.field}`}
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search subject"
+                        className={`pl-9 outline-none ${pageTheme.field}`}
                       />
+
+                      {search.trim() && suggestions.length > 0 && (
+                        <div
+                          className={`absolute top-full left-0 mt-1 w-full rounded-md border shadow-lg z-50 ${
+                            isDarkTheme
+                              ? "bg-slate-900 border-slate-700"
+                              : "bg-white border-slate-200"
+                          }`}
+                        >
+                          {suggestions.map((item) => (
+                            <div
+                              key={item._id}
+                              onClick={() => setSearch(item.subject)}
+                              className="cursor-pointer p-2 hover:bg-slate-100 dark:hover:bg-slate-800"
+                            >
+                              {item.subject}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -787,6 +828,7 @@ export default function Page() {
             </div>
 
             <div className="flex items-center gap-2 pt-2">
+              
               <Button type="submit" className="flex-1">
                 Assign Task
               </Button>

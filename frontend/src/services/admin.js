@@ -96,7 +96,23 @@ export const assignTask = async ({ complaintId, employeeId, taskTitle, priority,
 
     return response.data;
   } catch (error) {
-    console.log("Failed to assignTask:", error.response?.status);
+    console.log("Failed to assignTask: ", error.response?.status);
     throw error;
+  }
+}
+
+export const reassignTask = async ({ complaintId, newEmployeeId, taskTitle, priority, dueDate, taskNotes }) => {
+  try {
+    const response = await api.post("/admin/re-assignTasl", {
+      complaintId,
+      newEmployeeId,
+      taskTitle,
+      priority,
+      dueDate,
+      taskNotes
+    })
+  }
+  catch (error) {
+    console.log("Failed to ReassignTask: ")
   }
 }

@@ -78,11 +78,11 @@ export default function Page() {
   // console.log(complaints)
 
   const filteredComplaints = complaints.filter((ticket) =>
-    ticket.subject.toLowerCase().includes(debouncedSearch.toLowerCase()),
+    ticket.subject.toLowerCase().includes(debouncedSearch),
   );
 
   const suggestions = complaints.filter((ticket) =>
-    ticket.subject.toLowerCase().includes(search.toLowerCase()),
+    ticket.subject.toLowerCase().includes(search),
   );
 
   return (

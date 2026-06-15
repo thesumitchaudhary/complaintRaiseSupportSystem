@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Search } from "lucide-react";
 import { AppSidebar } from "../../../components/admin-app-sidebar";
 import {
   Breadcrumb,
@@ -41,6 +41,19 @@ export default function Page() {
     password: "",
     confirmPassword: "",
   });
+
+  // this is for the search debouncing
+
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    let timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const employeeMutation = useMutation({
     mutationFn: createEmployee,
@@ -129,8 +142,8 @@ export default function Page() {
 
   // this is for show all employee
   const { data } = useQuery({
-    queryKey: ["showActiveEmployee"],
-    queryFn: showEmployee,
+    queryKey: ["showActiveEmployee", debouncedSearch],
+    queryFn: () => showEmployee(debouncedSearch),
   });
 
   const employeeRows = Array.isArray(data?.result) ? data.result : [];
@@ -143,6 +156,17 @@ export default function Page() {
     const tasks = Array.isArray(row.tasks) ? row.tasks : [];
     return total + tasks.filter((task) => task.status === "completed").length;
   }, 0);
+
+  const filterEmployees = employeeRows.filter((row) =>
+    row.name?.toLowerCase().includes(debouncedSearch.toLowerCase()),
+  );
+
+  const suggestions =
+    search.trim() === ""
+      ? []
+      : employeeRows.filter((row) =>
+          row.name?.toLowerCase().includes(search.toLowerCase()),
+        );
 
   useEffect(() => {
     const root = document.documentElement;
@@ -164,18 +188,18 @@ export default function Page() {
   const pageTheme = theme
     ? {
         shell: "bg-slate-950 text-slate-100",
-        panel: "border-slate-800 bg-slate-900/70 text-slate-100",
+        panel: "border-blue-200 bg-slate-900/70 text-slate-100",
         muted: "text-slate-400",
-        border: "border-slate-800",
+        border: "border-blue-200",
         button: "border-slate-700 text-slate-100 hover:bg-slate-800",
         header: "bg-slate-900/90",
         tableRow: "border-slate-800 hover:bg-slate-800/50",
       }
     : {
         shell: "bg-slate-50 text-slate-900",
-        panel: "border-slate-200 bg-white text-slate-900",
+        panel: "border-blue-200 bg-blue-50 text-slate-900",
         muted: "text-slate-500",
-        border: "border-slate-200",
+        border: "border-blue-200",
         button: "border-slate-300 text-slate-900 hover:bg-slate-100",
         header: "bg-white/90",
         tableRow: "border-slate-200 hover:bg-slate-50",
@@ -304,10 +328,38 @@ export default function Page() {
                 <div>
                   <h2 className="text-lg font-semibold">Team roster</h2>
                   <p className={`text-sm ${pageTheme.muted}`}>
-                    {/* {Array.isArray(data)
+                    {Array.isArray(data)
                       ? `${data.length} synced records available`
-                      : "Structured view of the current team list"} */}
+                      : "Structured view of the current team list"}
                   </p>
+                </div>
+                <div className="relative w-64">
+                  <div className="flex items-center border-2 border-black rounded-md">
+                    <input
+                      type="text"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      className="flex-1 p-2 outline-none"
+                    />
+
+                    <button className="px-3">
+                      <Search size={20} />
+                    </button>
+                  </div>
+
+                  {search && suggestions.length > 0 && (
+                    <div className="absolute top-full left-0 w-full bg-white border shadow-md z-50">
+                      {suggestions.map((item) => (
+                        <div
+                          key={item._id}
+                          className="p-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => setSearch(item.name)}
+                        >
+                          {item.name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -372,7 +424,9 @@ export default function Page() {
                             className={`border-b px-5 py-4 ${pageTheme.border}`}
                           >
                             {employee.createdAt
-                              ? new Date(employee.createdAt).toLocaleDateString()
+                              ? new Date(
+                                  employee.createdAt,
+                                ).toLocaleDateString()
                               : "-"}
                           </td>
                           <td
