@@ -1,8 +1,8 @@
 "use client";
-import React, { useCallback } from "react";
+import  { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { NavMain } from "@/components/nav-main";
-import { NavProjects } from "@/components/nav-projects";
+// import { NavProjects } from "@/components/nav-projects";
 import { NavUser } from "@/components/nav-user";
 import { toast } from "react-hot-toast";
 import { TeamSwitcher } from "@/components/team-switcher";
@@ -14,13 +14,13 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import {
-  RowsIcon,
-  WaveformIcon,
-  CommandIcon,
-  TerminalIcon,
-  RobotIcon,
-  BookOpenIcon,
-  GearIcon,
+  // RowsIcon,
+  // WaveformIcon,
+  // CommandIcon,
+  // TerminalIcon,
+  // RobotIcon,
+  // BookOpenIcon,
+  // GearIcon,
   CropIcon,
   ChartPieIcon,
   MapTrifoldIcon,

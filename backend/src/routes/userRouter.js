@@ -124,17 +124,68 @@ router.post("/login", async (req, res) => {
 })
 
 // this is for user who get his complaint
-router.get("/ticketDetails", authMiddleware, async (req, res) => {
-    try {
-        const customerId = req.user.id;
+// router.get("/ticketDetails", authMiddleware, async (req, res) => {
+//     try {
+//         const customerId = req.user.id;
 
-        const tickets = await complaints.find({ customerId }).sort({ createdAt: -1 });
+//         const tickets = await complaints.find({ customerId }).sort({ createdAt: -1 });
 
-        return res.status(200).json({ success: true, message: "tickets show successfully", result: tickets });
-    } catch (error) {
-        return res.status(500).json({ success: false, message: "Internal server Error", error: error.message });
+//         return res.status(200).json({ success: true, message: "tickets show successfully", result: tickets });
+//     } catch (error) {
+//         return res.status(500).json({ success: false, message: "Internal server Error", error: error.message });
+//     }
+// })
+
+router.get("/ticketDetails/filter", authMiddleware, async (req, res) => {
+  try {
+    const customerId = req.user.id;
+    const { startDate, endDate, search } = req.query;
+
+    const filter = {
+      customerId,
+    };
+
+    if (startDate && endDate) {
+      filter.raisedDate = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      };
     }
-})
+
+    const searchText = String(search || "").trim();
+
+    if (searchText) {
+      const escapedSearchText = searchText.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&",
+      );
+      const searchRegex = new RegExp(escapedSearchText, "i");
+
+      filter.$or = [
+        { name: searchRegex },
+        { email: searchRegex },
+        { subject: searchRegex },
+        { message: searchRegex },
+        { status: searchRegex },
+        { serviceType: searchRegex },
+      ];
+    }
+
+    const tickets = await complaints
+      .find(filter)
+      .sort({ raisedDate: -1 });
+
+    return res.status(200).json({
+      success: true,
+      result: tickets,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
 
 router.get("/logout", async (req, res) => {
     try {

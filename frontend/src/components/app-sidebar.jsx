@@ -1,8 +1,8 @@
 "use client";
-import React, { useCallback } from "react";
+import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { NavMain } from "@/components/nav-main";
-import { NavProjects } from "@/components/nav-projects";
+// import { NavProjects } from "@/components/nav-projects";
 import { NavUser } from "@/components/nav-user";
 import { toast } from "react-hot-toast";
 import { TeamSwitcher } from "@/components/team-switcher";
@@ -19,8 +19,8 @@ import {
   // CommandIcon,
   // TerminalIcon,
   // RobotIcon,
-  BookOpenIcon,
-  GearIcon,
+  // BookOpenIcon,
+  // GearIcon,
   CropIcon,
   ChartPieIcon,
   MapTrifoldIcon,
@@ -29,7 +29,7 @@ import {
   ShieldAlert,
   LayoutDashboard,
   MessageSquareWarning,
-  BriefcaseBusiness,
+  // BriefcaseBusiness,
 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { userLogout, getRaisedComplaint } from "../services/user";
@@ -128,7 +128,7 @@ const data = {
 
 export function AppSidebar({ ...props }) {
   const navigate = useNavigate();
-  const { data: complaintsData } = useQuery({
+  const { data } = useQuery({
     queryKey: ["showRaisedTicked"],
     queryFn: getRaisedComplaint,
   });

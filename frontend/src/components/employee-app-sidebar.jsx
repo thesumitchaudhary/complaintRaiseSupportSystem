@@ -1,8 +1,8 @@
 "use client";
-import React, { useCallback } from "react";
+import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { NavMain } from "@/components/nav-main";
-import { NavProjects } from "@/components/nav-projects";
+// import { NavProjects } from "@/components/nav-projects";
 import { NavUser } from "@/components/nav-user";
 import { toast } from "react-hot-toast";
 import { TeamSwitcher } from "@/components/team-switcher";
@@ -17,17 +17,17 @@ import {
   // RowsIcon,
   // WaveformIcon,
   // CommandIcon,
-  TerminalIcon,
-  RobotIcon,
+  // TerminalIcon,
+  // RobotIcon,
   // BookOpenIcon,
-  GearIcon,
+  // GearIcon,
   CropIcon,
   ChartPieIcon,
   MapTrifoldIcon,
 } from "@phosphor-icons/react";
 import { ClipboardList, Clock3, LoaderCircle, BadgeCheck } from "lucide-react";
 import { ShieldAlert } from "lucide-react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { employeeLogout } from "../services/employee";
 // This is sample data.
 const data = {
