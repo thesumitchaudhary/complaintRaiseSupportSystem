@@ -83,12 +83,14 @@ export default function Page() {
     document.documentElement.classList.toggle("dark", theme);
   }, [theme]);
 
-  const { data: showAssignedComplaints, isLoading, isError } = useQuery({
+  const {
+    data: showAssignedComplaints,
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ["showAssignedComplaints"],
     queryFn: showAssignedComplaint,
   });
-
-  
 
   const allComplaints = useMemo(() => {
     const d = showAssignedComplaints;
@@ -315,8 +317,8 @@ export default function Page() {
                     {isLoading
                       ? "Loading assigned work..."
                       : isError
-                      ? "Failed to load assigned work."
-                      : `${filteredTasks.length} task${filteredTasks.length === 1 ? "" : "s"} in the queue`}
+                        ? "Failed to load assigned work."
+                        : `${filteredTasks.length} task${filteredTasks.length === 1 ? "" : "s"} in the queue`}
                   </p>
                 </div>
 

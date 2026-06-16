@@ -36,7 +36,10 @@ function App() {
           path={"/User/RaiseComplaint"}
           element={<UserRaiseComplainPage />}
         />
-        <Route path={"/User/ComplaintHistory"} element={<UserCompaintHistoryPage />} />
+        <Route
+          path={"/User/ComplaintHistory"}
+          element={<UserCompaintHistoryPage />}
+        />
 
         {/* this is for admin dashboard blocks */}
         <Route path={"/Admin/Dashboard"} element={<AdminDashboardPage />} />

@@ -303,14 +303,22 @@ const UserLogin = ({ closeUserLogin, theme }) => {
         >
           <div className="mx-auto flex min-h-full max-w-md flex-col justify-center py-8">
             <div className="lg:hidden">
-              <div className={`mb-6 inline-flex rounded-lg p-2 ${isDark ? "bg-slate-900" : "bg-white"}`}>
+              <div
+                className={`mb-6 inline-flex rounded-lg p-2 ${isDark ? "bg-slate-900" : "bg-white"}`}
+              >
                 <ShieldCheck className={`h-5 w-5 ${iconText}`} />
               </div>
             </div>
 
             <div>
-              <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${iconText}`}>
-                {isLogin ? "Welcome back" : register ? "Verify email" : "New account"}
+              <p
+                className={`text-xs font-semibold uppercase tracking-[0.2em] ${iconText}`}
+              >
+                {isLogin
+                  ? "Welcome back"
+                  : register
+                    ? "Verify email"
+                    : "New account"}
               </p>
               <h2 className="mt-2 text-3xl font-black tracking-tight">
                 {isLogin
@@ -378,7 +386,10 @@ const UserLogin = ({ closeUserLogin, theme }) => {
             >
               {!isLogin && !register && (
                 <div>
-                  <label htmlFor="name" className={`text-sm font-semibold ${labelText}`}>
+                  <label
+                    htmlFor="name"
+                    className={`text-sm font-semibold ${labelText}`}
+                  >
                     Name
                   </label>
                   <FieldShell isDark={isDark}>
@@ -400,7 +411,10 @@ const UserLogin = ({ closeUserLogin, theme }) => {
 
               {isLogin ? (
                 <div>
-                  <label htmlFor="email" className={`text-sm font-semibold ${labelText}`}>
+                  <label
+                    htmlFor="email"
+                    className={`text-sm font-semibold ${labelText}`}
+                  >
                     Email
                   </label>
                   <FieldShell isDark={isDark}>
@@ -421,7 +435,10 @@ const UserLogin = ({ closeUserLogin, theme }) => {
               ) : (
                 !register && (
                   <div>
-                    <label htmlFor="regEmail" className={`text-sm font-semibold ${labelText}`}>
+                    <label
+                      htmlFor="regEmail"
+                      className={`text-sm font-semibold ${labelText}`}
+                    >
                       Email
                     </label>
                     <FieldShell isDark={isDark}>
@@ -445,7 +462,10 @@ const UserLogin = ({ closeUserLogin, theme }) => {
               {isLogin && (
                 <div>
                   <div className="flex items-center justify-between gap-3">
-                    <label htmlFor="password" className={`text-sm font-semibold ${labelText}`}>
+                    <label
+                      htmlFor="password"
+                      className={`text-sm font-semibold ${labelText}`}
+                    >
                       Password
                     </label>
                     <button
@@ -473,7 +493,9 @@ const UserLogin = ({ closeUserLogin, theme }) => {
                         type="button"
                         onClick={() => setShowLoginPassword((prev) => !prev)}
                         className={mutedText}
-                        aria-label={showLoginPassword ? "Hide password" : "Show password"}
+                        aria-label={
+                          showLoginPassword ? "Hide password" : "Show password"
+                        }
                       >
                         {showLoginPassword ? (
                           <EyeOff className="h-4 w-4" />
@@ -489,7 +511,10 @@ const UserLogin = ({ closeUserLogin, theme }) => {
               {!isLogin && !register && (
                 <>
                   <div>
-                    <label htmlFor="regPassword" className={`text-sm font-semibold ${labelText}`}>
+                    <label
+                      htmlFor="regPassword"
+                      className={`text-sm font-semibold ${labelText}`}
+                    >
                       Password
                     </label>
                     <FieldShell isDark={isDark}>
@@ -499,7 +524,9 @@ const UserLogin = ({ closeUserLogin, theme }) => {
                           id="regPassword"
                           type={showPassword ? "text" : "password"}
                           value={regPassword}
-                          onChange={(event) => setRegPassword(event.target.value)}
+                          onChange={(event) =>
+                            setRegPassword(event.target.value)
+                          }
                           placeholder="Create a password"
                           className={`w-full bg-transparent text-sm outline-none ${inputText}`}
                           required
@@ -508,7 +535,9 @@ const UserLogin = ({ closeUserLogin, theme }) => {
                           type="button"
                           onClick={() => setShowPassword((prev) => !prev)}
                           className={mutedText}
-                          aria-label={showPassword ? "Hide password" : "Show password"}
+                          aria-label={
+                            showPassword ? "Hide password" : "Show password"
+                          }
                         >
                           {showPassword ? (
                             <EyeOff className="h-4 w-4" />
@@ -567,7 +596,10 @@ const UserLogin = ({ closeUserLogin, theme }) => {
 
               {!isLogin && register && (
                 <div>
-                  <label htmlFor="otp" className={`text-sm font-semibold ${labelText}`}>
+                  <label
+                    htmlFor="otp"
+                    className={`text-sm font-semibold ${labelText}`}
+                  >
                     Verification Code
                   </label>
                   <FieldShell isDark={isDark}>

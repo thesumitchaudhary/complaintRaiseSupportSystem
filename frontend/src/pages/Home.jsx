@@ -83,9 +83,7 @@ const Home = () => {
   return (
     <div
       className={`min-h-screen transition-colors duration-300 ${
-        theme
-          ? "bg-slate-950 text-slate-100"
-          : "bg-slate-50 text-slate-900"
+        theme ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"
       }`}
     >
       <div
@@ -224,7 +222,9 @@ const Home = () => {
                           </span>
                           <p className="text-sm font-medium">{item.label}</p>
                         </div>
-                        <p className="text-base font-bold sm:text-lg">{item.value}</p>
+                        <p className="text-base font-bold sm:text-lg">
+                          {item.value}
+                        </p>
                       </div>
                     );
                   })}
@@ -302,17 +302,13 @@ const Home = () => {
                   Raise A Complaint In Under 2 Minutes
                 </h4>
               </div>
-              <button
-               
-                className="inline-flex items-center gap-2 self-start rounded-xl bg-amber-500 px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-amber-400"
-              >
+              <button className="inline-flex items-center gap-2 self-start rounded-xl bg-amber-500 px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-amber-400">
                 Start New Ticket
                 <ArrowRight size={16} />
               </button>
             </div>
           </section>
         </main>
-
       </div>
 
       <footer

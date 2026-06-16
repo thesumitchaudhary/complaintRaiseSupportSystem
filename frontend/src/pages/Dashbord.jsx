@@ -25,7 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "react-hot-toast";
-import { Link as Links} from "react-router-dom";
+import { Link as Links } from "react-router-dom";
 
 const Dashbord = () => {
   const [theme, setTheme] = useState(false);
@@ -128,7 +128,7 @@ const Dashbord = () => {
             <Links to={"/"}>users</Links>
             <Links to={"/"}>raised complaints</Links>
             <Links to={"/"}>add employee</Links>
-            <Links to={"/"}>assign   task</Links>
+            <Links to={"/"}>assign task</Links>
           </div>
           <div></div>
         </section>

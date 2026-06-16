@@ -1,8 +1,8 @@
-import * as React from "react"
-import { Slot } from "radix-ui"
+import * as React from "react";
+import { Slot } from "radix-ui";
 
-import { cn } from "@/lib/utils"
-import { CaretRightIcon, DotsThreeIcon } from "@phosphor-icons/react"
+import { cn } from "@/lib/utils";
+import { CaretRightIcon, DotsThreeIcon } from "@phosphor-icons/react";
 
 function Breadcrumb({ className, ...props }) {
   return (
@@ -12,7 +12,7 @@ function Breadcrumb({ className, ...props }) {
       className={cn(className)}
       {...props}
     />
-  )
+  );
 }
 
 function BreadcrumbList({ className, ...props }) {
@@ -21,11 +21,11 @@ function BreadcrumbList({ className, ...props }) {
       data-slot="breadcrumb-list"
       className={cn(
         "flex flex-wrap items-center gap-1.5 text-xs wrap-break-word text-muted-foreground",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function BreadcrumbItem({ className, ...props }) {
@@ -35,15 +35,11 @@ function BreadcrumbItem({ className, ...props }) {
       className={cn("inline-flex items-center gap-1", className)}
       {...props}
     />
-  )
+  );
 }
 
-function BreadcrumbLink({
-  asChild,
-  className,
-  ...props
-}) {
-  const Comp = asChild ? Slot.Root : "a"
+function BreadcrumbLink({ asChild, className, ...props }) {
+  const Comp = asChild ? Slot.Root : "a";
 
   return (
     <Comp
@@ -51,7 +47,7 @@ function BreadcrumbLink({
       className={cn("transition-colors hover:text-foreground", className)}
       {...props}
     />
-  )
+  );
 }
 
 function BreadcrumbPage({ className, ...props }) {
@@ -64,7 +60,7 @@ function BreadcrumbPage({ className, ...props }) {
       className={cn("font-normal text-foreground", className)}
       {...props}
     />
-  )
+  );
 }
 
 function BreadcrumbSeparator({ children, className, ...props }) {
@@ -76,11 +72,9 @@ function BreadcrumbSeparator({ children, className, ...props }) {
       className={cn("[&>svg]:size-3.5", className)}
       {...props}
     >
-      {children ?? (
-        <CaretRightIcon />
-      )}
+      {children ?? <CaretRightIcon />}
     </li>
-  )
+  );
 }
 
 function BreadcrumbEllipsis({ className, ...props }) {
@@ -91,14 +85,14 @@ function BreadcrumbEllipsis({ className, ...props }) {
       aria-hidden="true"
       className={cn(
         "flex size-5 items-center justify-center [&>svg]:size-4",
-        className
+        className,
       )}
       {...props}
     >
       <DotsThreeIcon />
       <span className="sr-only">More</span>
     </span>
-  )
+  );
 }
 
 export {
@@ -109,4 +103,4 @@ export {
   BreadcrumbPage,
   BreadcrumbSeparator,
   BreadcrumbEllipsis,
-}
+};

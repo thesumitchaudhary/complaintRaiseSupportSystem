@@ -16,9 +16,12 @@ const ResetPassword = () => {
   const navigate = useNavigate();
 
   const mutation = useMutation({
-    mutationFn: ({ email, token, newPassword }) => resetPassword({ email, token, newPassword }),
+    mutationFn: ({ email, token, newPassword }) =>
+      resetPassword({ email, token, newPassword }),
     onSuccess: () => {
-      toast.success("Password has been reset. Please login with your new password.");
+      toast.success(
+        "Password has been reset. Please login with your new password.",
+      );
       navigate("/");
     },
     onError: (err) => {
@@ -48,14 +51,34 @@ const ResetPassword = () => {
         {error && <div className="mb-3 text-sm text-red-600">{error}</div>}
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <div>
-            <label className="block text-sm text-slate-700 mb-1">New password</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full border px-3 py-2 rounded" />
+            <label className="block text-sm text-slate-700 mb-1">
+              New password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full border px-3 py-2 rounded"
+            />
           </div>
           <div>
-            <label className="block text-sm text-slate-700 mb-1">Confirm password</label>
-            <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className="w-full border px-3 py-2 rounded" />
+            <label className="block text-sm text-slate-700 mb-1">
+              Confirm password
+            </label>
+            <input
+              type="password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              className="w-full border px-3 py-2 rounded"
+            />
           </div>
-          <button type="submit" disabled={mutation.isPending} className="mt-3 bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-60">Reset password</button>
+          <button
+            type="submit"
+            disabled={mutation.isPending}
+            className="mt-3 bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-60"
+          >
+            Reset password
+          </button>
         </form>
       </div>
     </div>

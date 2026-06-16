@@ -25,12 +25,7 @@ import {
   ChartPieIcon,
   MapTrifoldIcon,
 } from "@phosphor-icons/react";
-import {
-  ClipboardList,
-  Clock3,
-  LoaderCircle,
-  BadgeCheck
-} from "lucide-react";
+import { ClipboardList, Clock3, LoaderCircle, BadgeCheck } from "lucide-react";
 import { ShieldAlert } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { employeeLogout } from "../services/employee";

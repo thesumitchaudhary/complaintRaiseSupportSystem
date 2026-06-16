@@ -150,16 +150,16 @@ export default function Page() {
     );
   });
 
- const suggestions =
-  debouncedSearch.trim() === ""
-    ? []
-    : acceptedComplaints
-        .filter((complaint) =>
-          complaint.subject
-            ?.toLowerCase()
-            .includes(debouncedSearch.toLowerCase())
-        )
-        .slice(0, 5);
+  const suggestions =
+    debouncedSearch.trim() === ""
+      ? []
+      : acceptedComplaints
+          .filter((complaint) =>
+            complaint.subject
+              ?.toLowerCase()
+              .includes(debouncedSearch.toLowerCase()),
+          )
+          .slice(0, 5);
 
   const pageTheme = isDarkTheme
     ? {
@@ -828,7 +828,6 @@ export default function Page() {
             </div>
 
             <div className="flex items-center gap-2 pt-2">
-              
               <Button type="submit" className="flex-1">
                 Assign Task
               </Button>

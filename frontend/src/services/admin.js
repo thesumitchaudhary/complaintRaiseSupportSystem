@@ -37,7 +37,7 @@ export const showComplain = async () => {
     console.error("Failed to fetch Complaints:", error.response?.status);
     throw error;
   }
-}
+};
 
 export const updateComplaint = async (id, updatedData) => {
   try {
@@ -59,7 +59,7 @@ export const deleteComplaint = async (id) => {
     console.log("Failed to delete complaint:", error.response?.status);
     throw error;
   }
-}
+};
 
 // this is for show all registered user in admin dashboard
 
@@ -71,7 +71,7 @@ export const showUser = async () => {
     console.log("Failed to show user:", error.response?.status);
     throw error;
   }
-}
+};
 
 export const showEmployee = async () => {
   try {
@@ -81,9 +81,16 @@ export const showEmployee = async () => {
     console.log("Failed to show employee:", error.response?.status);
     throw error;
   }
-}
+};
 
-export const assignTask = async ({ complaintId, employeeId, taskTitle, priority, dueDate, taskNotes }) => {
+export const assignTask = async ({
+  complaintId,
+  employeeId,
+  taskTitle,
+  priority,
+  dueDate,
+  taskNotes,
+}) => {
   try {
     const response = await api.post("/admin/assignTask", {
       complaintId,
@@ -92,16 +99,23 @@ export const assignTask = async ({ complaintId, employeeId, taskTitle, priority,
       priority,
       dueDate,
       taskNotes,
-    })
+    });
 
     return response.data;
   } catch (error) {
     console.log("Failed to assignTask: ", error.response?.status);
     throw error;
   }
-}
+};
 
-export const reassignTask = async ({ complaintId, newEmployeeId, taskTitle, priority, dueDate, taskNotes }) => {
+export const reassignTask = async ({
+  complaintId,
+  newEmployeeId,
+  taskTitle,
+  priority,
+  dueDate,
+  taskNotes,
+}) => {
   try {
     const response = await api.post("/admin/re-assignTasl", {
       complaintId,
@@ -109,10 +123,9 @@ export const reassignTask = async ({ complaintId, newEmployeeId, taskTitle, prio
       taskTitle,
       priority,
       dueDate,
-      taskNotes
-    })
+      taskNotes,
+    });
+  } catch (error) {
+    console.log("Failed to ReassignTask: ");
   }
-  catch (error) {
-    console.log("Failed to ReassignTask: ")
-  }
-}
+};

@@ -4,7 +4,9 @@ export const registerUser = async (payload = {}) => {
   const { name, email, password, confirmedPassword } = payload;
 
   if (!name || !email || !password || !confirmedPassword) {
-    const err = new Error("Missing required user fields: name, email, password, confirmedPassword");
+    const err = new Error(
+      "Missing required user fields: name, email, password, confirmedPassword",
+    );
     err.status = 400;
     throw err;
   }
@@ -14,8 +16,8 @@ export const registerUser = async (payload = {}) => {
       name,
       email,
       password,
-      confirmedPassword
-    })
+      confirmedPassword,
+    });
     return response.data;
   } catch (error) {
     console.error("Register failed:", {
@@ -25,7 +27,7 @@ export const registerUser = async (payload = {}) => {
     });
     throw error;
   }
-}
+};
 
 export const verifyEmail = async ({ code } = {}) => {
   if (!code) {
@@ -94,7 +96,11 @@ export const resetPassword = async ({ email, token, newPassword } = {}) => {
   }
 
   try {
-    const response = await api.post("/resetPassword", { email, token, newPassword });
+    const response = await api.post("/resetPassword", {
+      email,
+      token,
+      newPassword,
+    });
     return response.data;
   } catch (error) {
     console.error("Reset password failed:", {
@@ -124,7 +130,9 @@ export const createTicket = async (payload = {}) => {
   const { name, email, subject, message, serviceType } = payload;
 
   if (!name || !email || !subject || !message || !serviceType) {
-    const err = new Error("Missing required ticket fields: name, email, subject, message, serviceType");
+    const err = new Error(
+      "Missing required ticket fields: name, email, subject, message, serviceType",
+    );
     err.status = 400;
     throw err;
   }
@@ -144,12 +152,33 @@ export const createTicket = async (payload = {}) => {
   }
 };
 
-export const getRaisedComplaint = async () => {
+export const getRaisedComplaint = async (filters = {}) => {
+  const normalizedFilters =
+    typeof filters === "string" ? { search: filters } : filters;
+
+  const params =
+    normalizedFilters && typeof normalizedFilters === "object"
+      ? {
+          ...(normalizedFilters.startDate
+            ? { startDate: normalizedFilters.startDate }
+            : {}),
+          ...(normalizedFilters.endDate
+            ? { endDate: normalizedFilters.endDate }
+            : {}),
+          ...(normalizedFilters.search
+            ? { search: normalizedFilters.search }
+            : {}),
+        }
+      : {};
+
   try {
-    const response = await api.get("/user/ticketDetails");
+    const response = await api.get("/user/ticketDetails/filter", { params });
     return response.data;
   } catch (error) {
-    console.log("Failed to fetch Raised Complaint Ticket: ", error.response?.status);
+    console.log(
+      "Failed to fetch Raised Complaint Ticket: ",
+      error.response?.status,
+    );
     throw error;
   }
-}
+};

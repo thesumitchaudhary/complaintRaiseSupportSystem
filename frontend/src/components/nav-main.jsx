@@ -2,8 +2,8 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible"
-import { Link } from "react-router-dom"
+} from "@/components/ui/collapsible";
+import { Link } from "react-router-dom";
 import {
   SidebarGroup,
   // SidebarGroupLabel,
@@ -13,7 +13,7 @@ import {
   // SidebarMenuSub,
   // SidebarMenuSubButton,
   // SidebarMenuSubItem,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 // import { CaretRightIcon } from "@phosphor-icons/react"
 
 export function NavMain({ items }) {
@@ -31,7 +31,10 @@ export function NavMain({ items }) {
             <SidebarMenuItem>
               <CollapsibleTrigger asChild>
                 <SidebarMenuButton asChild tooltip={item.title}>
-                  <Link to={item.url} className="flex items-center gap-2 w-full">
+                  <Link
+                    to={item.url}
+                    className="flex items-center gap-2 w-full"
+                  >
                     {item.icon}
                     <span>{item.title}</span>
                   </Link>
@@ -55,5 +58,5 @@ export function NavMain({ items }) {
         ))}
       </SidebarMenu>
     </SidebarGroup>
-  )
+  );
 }

@@ -87,7 +87,7 @@ const data = {
       //   },
       // ],
     },
-     {
+    {
       title: "Complaints History",
       url: "/User/ComplaintHistory",
       icon: <MessageSquareWarning />,
@@ -106,8 +106,6 @@ const data = {
       //   },
       // ],
     },
-   
-   
   ],
   projects: [
     {
