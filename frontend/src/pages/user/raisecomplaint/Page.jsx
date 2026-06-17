@@ -20,6 +20,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "../../../components/ui/breadcrumb";
+import { Calendar } from "../../../components/ui/calendar";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Separator } from "../../../components/ui/separator";
@@ -77,10 +78,17 @@ const endOfDay = (date) => {
   return nextDate;
 };
 
-const getRaisedDateParams = (filterValue) => {
+const getRaisedDateParams = (filterValue, customDate) => {
   const today = new Date();
   const endDate = endOfDay(today);
   let startDate;
+
+  if (filterValue === "custom" && customDate) {
+    return {
+      startDate: startOfDay(customDate).toISOString(),
+      endDate: endOfDay(customDate).toISOString(),
+    };
+  }
 
   if (filterValue === "today") {
     startDate = startOfDay(today);
@@ -106,6 +114,17 @@ const getRaisedDateParams = (filterValue) => {
     startDate: startDate.toISOString(),
     endDate: endDate.toISOString(),
   };
+};
+
+const getRaisedDateFilterLabel = (filterValue, customDate) => {
+  if (filterValue === "custom" && customDate) {
+    return formatDate(customDate);
+  }
+
+  return (
+    raisedDateFilterOptions.find((option) => option.value === filterValue)
+      ?.label || "All dates"
+  );
 };
 
 const getStatusClasses = (status, isDarkTheme) => {
@@ -146,13 +165,21 @@ export default function Page() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [raisedDateFilter, setRaisedDateFilter] = useState("all");
+  const [selectedRaisedDate, setSelectedRaisedDate] = useState(null);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [selectedComplaint, setSelectedComplaint] = useState(null);
 
   const isDarkTheme = theme;
   const raisedDateParams = useMemo(
-    () => getRaisedDateParams(raisedDateFilter),
-    [raisedDateFilter],
+    () => getRaisedDateParams(raisedDateFilter, selectedRaisedDate),
+    [raisedDateFilter, selectedRaisedDate],
   );
+  const raisedDateFilterLabel = useMemo(
+    () => getRaisedDateFilterLabel(raisedDateFilter, selectedRaisedDate),
+    [raisedDateFilter, selectedRaisedDate],
+  );
+  const hasActiveDateFilter =
+    raisedDateFilter !== "all" || Boolean(selectedRaisedDate);
   const complaintFilters = useMemo(
     () => ({
       ...raisedDateParams,
@@ -170,7 +197,12 @@ export default function Page() {
   }, [search]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["showRaisedTicked", raisedDateFilter, debouncedSearch],
+    queryKey: [
+      "showRaisedTicked",
+      raisedDateFilter,
+      selectedRaisedDate?.toISOString(),
+      debouncedSearch,
+    ],
     queryFn: () => getRaisedComplaint(complaintFilters),
   });
 
@@ -236,6 +268,12 @@ export default function Page() {
   const pendingComplaints = complaints.filter(
     (ticket) => String(ticket?.status || "").toLowerCase() === "pending",
   ).length;
+
+  const clearRaisedDateFilter = () => {
+    setRaisedDateFilter("all");
+    setSelectedRaisedDate(null);
+    setDatePickerOpen(false);
+  };
 
   const pageTheme = isDarkTheme
     ? {
@@ -421,27 +459,75 @@ export default function Page() {
                   ) : null}
                 </div>
 
-                <div className="relative w-full sm:w-52">
+                <div className="relative w-full sm:w-64">
                   <CalendarDays
-                    className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`}
+                    className={`pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`}
                   />
-                  <select
+                  <button
+                    type="button"
+                    aria-expanded={datePickerOpen}
                     aria-label="Filter complaints by raised date"
-                    value={raisedDateFilter}
-                    onChange={(event) =>
-                      setRaisedDateFilter(event.target.value)
-                    }
-                    className={`h-10 w-full appearance-none rounded-md border py-2 pl-9 pr-9 text-sm outline-none transition-colors ${pageTheme.field}`}
+                    onClick={() => setDatePickerOpen((open) => !open)}
+                    className={`h-10 w-full rounded-md border py-2 pl-9 pr-9 text-left text-sm outline-none transition-colors ${pageTheme.field}`}
                   >
-                    {raisedDateFilterOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                    {raisedDateFilterLabel}
+                  </button>
                   <ChevronDown
                     className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`}
                   />
+
+                  {datePickerOpen ? (
+                    <div
+                      className={`absolute right-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-lg border p-3 shadow-xl ${pageTheme.panel}`}
+                    >
+                      <div className="flex gap-2">
+                        <select
+                          aria-label="Choose a quick raised date filter"
+                          value={raisedDateFilter}
+                          onChange={(event) => {
+                            setRaisedDateFilter(event.target.value);
+                            setSelectedRaisedDate(null);
+                            setDatePickerOpen(false);
+                          }}
+                          className={`h-10 min-w-0 flex-1 rounded-md border px-3 text-sm outline-none transition-colors ${pageTheme.field}`}
+                        >
+                          {raisedDateFilter === "custom" ? (
+                            <option value="custom">Custom date</option>
+                          ) : null}
+                          {raisedDateFilterOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+
+                        <button
+                          type="button"
+                          disabled={!hasActiveDateFilter}
+                          onClick={clearRaisedDateFilter}
+                          className={`h-10 rounded-md border px-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${pageTheme.button}`}
+                        >
+                          Clear
+                        </button>
+                      </div>
+
+                      <div
+                        className={`mt-3 rounded-md border ${pageTheme.divider}`}
+                      >
+                        <Calendar
+                          mode="single"
+                          selected={selectedRaisedDate || undefined}
+                          onSelect={(date) => {
+                            if (!date) return;
+                            setSelectedRaisedDate(date);
+                            setRaisedDateFilter("custom");
+                            setDatePickerOpen(false);
+                          }}
+                          className="mx-auto"
+                        />
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
 
                 <Button

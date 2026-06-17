@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { Moon, Sun, Search } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CalendarDays, ChevronDown, Moon, Search, Sun } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { AppSidebar } from "../../../components/app-sidebar";
 import {
   Breadcrumb,
@@ -9,7 +10,8 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "../../../components/ui/breadcrumb";
-
+import { Calendar } from "../../../components/ui/calendar";
+import { Input } from "../../../components/ui/input";
 import { Separator } from "../../../components/ui/separator";
 import {
   SidebarInset,
@@ -18,87 +20,324 @@ import {
 } from "../../../components/ui/sidebar";
 import { showloggedinuser } from "../../../services/index";
 import { getRaisedComplaint } from "../../../services/user";
-import { useQuery } from "@tanstack/react-query";
+
+const formatLabel = (value) => {
+  if (!value) return "-";
+
+  return String(value)
+    .replaceAll("_", " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+};
+
+const formatDate = (value) => {
+  if (!value) return "-";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "-";
+
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+};
+
+const raisedDateFilterOptions = [
+  { value: "all", label: "All dates" },
+  { value: "today", label: "Today" },
+  { value: "last7", label: "Last 7 days" },
+  { value: "last30", label: "Last 30 days" },
+  { value: "thisMonth", label: "This month" },
+];
+
+const startOfDay = (date) => {
+  const nextDate = new Date(date);
+  nextDate.setHours(0, 0, 0, 0);
+  return nextDate;
+};
+
+const endOfDay = (date) => {
+  const nextDate = new Date(date);
+  nextDate.setHours(23, 59, 59, 999);
+  return nextDate;
+};
+
+const getRaisedDateParams = (filterValue, customDate) => {
+  const today = new Date();
+  const endDate = endOfDay(today);
+  let startDate;
+
+  if (filterValue === "custom" && customDate) {
+    return {
+      startDate: startOfDay(customDate).toISOString(),
+      endDate: endOfDay(customDate).toISOString(),
+    };
+  }
+
+  if (filterValue === "today") {
+    startDate = startOfDay(today);
+  }
+
+  if (filterValue === "last7") {
+    startDate = startOfDay(today);
+    startDate.setDate(startDate.getDate() - 6);
+  }
+
+  if (filterValue === "last30") {
+    startDate = startOfDay(today);
+    startDate.setDate(startDate.getDate() - 29);
+  }
+
+  if (filterValue === "thisMonth") {
+    startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+  }
+
+  if (!startDate) return {};
+
+  return {
+    startDate: startDate.toISOString(),
+    endDate: endDate.toISOString(),
+  };
+};
+
+const getRaisedDateFilterLabel = (filterValue, customDate) => {
+  if (filterValue === "custom" && customDate) {
+    return formatDate(customDate);
+  }
+
+  return (
+    raisedDateFilterOptions.find((option) => option.value === filterValue)
+      ?.label || "All dates"
+  );
+};
+
+const getStatusClasses = (status, isDarkTheme) => {
+  const normalizedStatus = String(status || "").toLowerCase();
+
+  if (["completed", "resolved"].includes(normalizedStatus)) {
+    return isDarkTheme
+      ? "bg-emerald-950 text-emerald-200"
+      : "bg-emerald-100 text-emerald-700";
+  }
+
+  if (normalizedStatus === "pending") {
+    return isDarkTheme
+      ? "bg-amber-950 text-amber-200"
+      : "bg-amber-100 text-amber-700";
+  }
+
+  if (["assigned", "in_progress"].includes(normalizedStatus)) {
+    return isDarkTheme
+      ? "bg-sky-950 text-sky-200"
+      : "bg-blue-100 text-blue-700";
+  }
+
+  if (normalizedStatus === "rejected") {
+    return isDarkTheme ? "bg-red-950 text-red-200" : "bg-red-100 text-red-700";
+  }
+
+  return isDarkTheme
+    ? "bg-slate-800 text-slate-200"
+    : "bg-slate-100 text-slate-700";
+};
 
 export default function Page() {
   const [theme, setTheme] = useState(false);
-  const isDarkTheme = theme;
-
-  // this is for the debouncing
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [raisedDateFilter, setRaisedDateFilter] = useState("all");
+  const [selectedRaisedDate, setSelectedRaisedDate] = useState(null);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+
+  const isDarkTheme = theme;
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const body = document.body;
+    const backgroundColor = isDarkTheme ? "#020617" : "#f8fbff";
+    const textColor = isDarkTheme ? "#f8fafc" : "#001a3a";
+
+    root.classList.toggle("dark", isDarkTheme);
+    root.style.backgroundColor = backgroundColor;
+    body.style.backgroundColor = backgroundColor;
+    body.style.color = textColor;
+  }, [isDarkTheme]);
+
+  const pageTheme = isDarkTheme
+    ? {
+        shell: "bg-slate-950 text-slate-100",
+        header: "border-blue-900/60 bg-slate-900",
+        panel: "border-blue-900/60 bg-slate-900 text-slate-100",
+        card: "border-blue-900/70 bg-slate-900 text-slate-100",
+        tableHead: "bg-slate-950 text-slate-200",
+        row: "border-blue-900/40 hover:bg-slate-800/70",
+        field:
+          "border-blue-900/70 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus-visible:ring-blue-500",
+        divider: "border-blue-900/60",
+        muted: "text-slate-400",
+        button: "border-blue-900/70 text-slate-100 hover:bg-slate-800",
+        suggestionHover: "hover:bg-slate-800",
+      }
+    : {
+        shell: "bg-[#f8fbff] text-[#001a3a]",
+        header: "border-[#c7ddff] bg-white",
+        panel: "border-[#b8d8ff] bg-white text-[#001a3a]",
+        card: "border-[#b8d8ff] bg-[#eef6ff] text-[#12365c] shadow-[0_14px_24px_-20px_rgba(37,99,235,0.95)]",
+        tableHead: "bg-[#f8fbff] text-[#001a3a]",
+        row: "border-[#c7ddff] hover:bg-[#f2f7ff]",
+        field:
+          "border-[#b8d8ff] bg-white text-[#001a3a] placeholder:text-[#6a7f9e] focus-visible:ring-blue-400",
+        divider: "border-[#c7ddff]",
+        muted: "text-[#4e678a]",
+        button: "border-[#b8d8ff] text-[#12365c] hover:bg-[#eef6ff]",
+        suggestionHover: "hover:bg-[#eef6ff]",
+      };
+
+  const raisedDateParams = useMemo(
+    () => getRaisedDateParams(raisedDateFilter, selectedRaisedDate),
+    [raisedDateFilter, selectedRaisedDate],
+  );
+  const raisedDateFilterLabel = useMemo(
+    () => getRaisedDateFilterLabel(raisedDateFilter, selectedRaisedDate),
+    [raisedDateFilter, selectedRaisedDate],
+  );
+  const hasActiveDateFilter =
+    raisedDateFilter !== "all" || Boolean(selectedRaisedDate);
+  const complaintFilters = useMemo(
+    () => ({
+      ...raisedDateParams,
+      ...(debouncedSearch ? { search: debouncedSearch } : {}),
+    }),
+    [debouncedSearch, raisedDateParams],
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-    }, 500);
+      setDebouncedSearch(search.trim().toLowerCase());
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [search]);
 
-  const toggleTheme = () => {
-    setTheme((prev) => !prev);
-  };
-
-  const { data } = useQuery({
-    queryKey: ["showRaisedTicket", debouncedSearch],
-    queryFn: () => getRaisedComplaint(debouncedSearch),
+  const { data, isLoading } = useQuery({
+    queryKey: [
+      "showRaisedTicket",
+      raisedDateFilter,
+      selectedRaisedDate?.toISOString(),
+      debouncedSearch,
+    ],
+    queryFn: () => getRaisedComplaint(complaintFilters),
   });
 
-  const { data: UserData } = useQuery({
+  const { data: userData } = useQuery({
     queryKey: ["showloginuser"],
     queryFn: showloggedinuser,
   });
 
-  // Calculate stats from data
-  const complaints = data?.result || [];
+  const complaints = useMemo(
+    () => (Array.isArray(data?.result) ? data.result : []),
+    [data],
+  );
+  const currentUser = userData?.result;
+
+  const filteredComplaints = useMemo(() => {
+    if (!debouncedSearch) return complaints;
+
+    return complaints.filter((ticket) => {
+      const searchableText = [
+        ticket?.name,
+        ticket?.email,
+        ticket?.subject,
+        ticket?.message,
+        ticket?.status,
+        ticket?.serviceType,
+        ticket?.raisedDate,
+        ticket?.createdAt,
+        ticket?._id,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return searchableText.includes(debouncedSearch);
+    });
+  }, [complaints, debouncedSearch]);
+
+  const suggestions = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+
+    if (!needle) return [];
+
+    return complaints
+      .filter((ticket) =>
+        String(ticket?.subject || "")
+          .toLowerCase()
+          .includes(needle),
+      )
+      .slice(0, 5);
+  }, [complaints, search]);
+
   const totalComplaints = complaints.length;
-  const resolvedComplaints = complaints.filter(
-    (c) => c.status === "resolved",
+  const resolvedComplaints = complaints.filter((ticket) =>
+    ["completed", "resolved"].includes(
+      String(ticket?.status || "").toLowerCase(),
+    ),
+  ).length;
+  const activeComplaints = complaints.filter((ticket) =>
+    ["assigned", "in_progress"].includes(
+      String(ticket?.status || "").toLowerCase(),
+    ),
   ).length;
   const pendingComplaints = complaints.filter(
-    (c) => c.status === "pending",
+    (ticket) => String(ticket?.status || "").toLowerCase() === "pending",
   ).length;
 
-  // Theme constants
-  const pageStyle = {
-    minHeight: "100vh",
-    backgroundColor: isDarkTheme ? "#0f172a" : "#f8fafc",
-    color: isDarkTheme ? "#f1f5f9" : "#1e293b",
+  const clearRaisedDateFilter = () => {
+    setRaisedDateFilter("all");
+    setSelectedRaisedDate(null);
+    setDatePickerOpen(false);
   };
 
-  const headerStyle = {
-    backgroundColor: isDarkTheme ? "#1e293b" : "#ffffff",
-  };
-
-  const cardBg = isDarkTheme ? "bg-slate-800" : "bg-blue-50";
-  const cardBorder = isDarkTheme ? "border-slate-700" : "border-blue-200";
-  const tableBg = isDarkTheme ? "bg-slate-800" : "bg-white";
-  const tableHeaderBg = isDarkTheme ? "bg-slate-900" : "bg-slate-50";
-  const tableRowHover = isDarkTheme
-    ? "hover:bg-slate-700"
-    : "hover:bg-slate-100";
-  const tableText = isDarkTheme ? "text-slate-200" : "text-slate-800";
-  const tableHeaderText = isDarkTheme ? "text-slate-300" : "text-slate-900";
-
-  const filteredComplaints = complaints.filter((ticket) => {
-    ticket.subject.toLowerCase().includes(debouncedSearch.toLowerCase());
-  });
-
-  const suggestions = complaints.filter((ticket) =>
-    ticket.subject.toLowerCase().includes(search.toLowerCase()),
-  );
+  const stats = [
+    {
+      label: "Total Complaints",
+      value: totalComplaints,
+      helper: "All raised complaints",
+      accent: isDarkTheme ? "text-blue-300" : "text-blue-600",
+    },
+    {
+      label: "Resolved",
+      value: resolvedComplaints,
+      helper: "Completed complaints",
+      accent: isDarkTheme ? "text-emerald-300" : "text-emerald-600",
+    },
+    {
+      label: "In Progress",
+      value: activeComplaints,
+      helper: "Currently being handled",
+      accent: isDarkTheme ? "text-sky-300" : "text-sky-600",
+    },
+    {
+      label: "Pending",
+      value: pendingComplaints,
+      helper: "Waiting for resolution",
+      accent: isDarkTheme ? "text-orange-300" : "text-orange-500",
+    },
+  ];
 
   return (
-    <div className={isDarkTheme ? "dark" : ""} style={pageStyle}>
-      <SidebarProvider style={{ backgroundColor: pageStyle.backgroundColor }}>
+    <div className={`${pageTheme.shell} min-h-screen`}>
+      <SidebarProvider style={{ backgroundColor: "transparent" }}>
         <AppSidebar />
-        <SidebarInset style={{ backgroundColor: pageStyle.backgroundColor }}>
+        <SidebarInset style={{ backgroundColor: "transparent" }}>
           <header
-            className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 border-b"
-            style={headerStyle}
+            className={`sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b ${pageTheme.header}`}
           >
-            <div className="flex items-center gap-2 px-4 w-full justify-between">
+            <div className="flex w-full items-center justify-between gap-3 px-4">
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="-ml-1" />
                 <Separator
@@ -109,11 +348,7 @@ export default function Page() {
                   <BreadcrumbList>
                     <BreadcrumbItem className="hidden md:block">
                       <BreadcrumbLink
-                        className={`text-sm ${
-                          isDarkTheme
-                            ? "text-slate-400 hover:text-slate-200"
-                            : "text-slate-600 hover:text-slate-900"
-                        }`}
+                        className={`text-sm ${pageTheme.muted}`}
                         href="#"
                       >
                         Customer Dashboard
@@ -121,13 +356,7 @@ export default function Page() {
                     </BreadcrumbItem>
                     <BreadcrumbSeparator className="hidden md:block" />
                     <BreadcrumbItem>
-                      <BreadcrumbPage
-                        className={`text-sm ${
-                          isDarkTheme
-                            ? "text-slate-400 hover:text-slate-200"
-                            : "text-slate-600 hover:text-slate-900"
-                        }`}
-                      >
+                      <BreadcrumbPage className={`text-sm ${pageTheme.muted}`}>
                         Overview
                       </BreadcrumbPage>
                     </BreadcrumbItem>
@@ -136,215 +365,231 @@ export default function Page() {
               </div>
 
               <button
-                className={`border-2 p-1 rounded-md transition-all ${
-                  isDarkTheme
-                    ? "text-slate-200 border-slate-600 hover:bg-slate-700"
-                    : "text-slate-800 border-slate-400 hover:bg-slate-200"
-                }`}
-                onClick={toggleTheme}
+                type="button"
+                aria-label="Toggle theme"
+                className={`inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors ${pageTheme.button}`}
+                onClick={() => setTheme((prev) => !prev)}
               >
-                {isDarkTheme ? <Moon size={20} /> : <Sun size={20} />}
+                {isDarkTheme ? (
+                  <Moon className="h-4 w-4" />
+                ) : (
+                  <Sun className="h-4 w-4" />
+                )}
               </button>
             </div>
           </header>
 
-          <div className="flex flex-1 flex-col gap-6 p-6">
-            {/* Stats Cards */}
-            <div className="flex justify-between">
-              <h2 className="text-2xl font-bold">Dashboard</h2>
-              <div className="relative w-64">
-                <div className="flex items-center border-2 border-black rounded-md">
-                  <input
-                    type="text"
+          <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 lg:p-6">
+            <section className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+              <div>
+                <h1 className="text-2xl font-bold tracking-normal">
+                  Dashboard
+                </h1>
+                <p className={`mt-1 text-sm ${pageTheme.muted}`}>
+                  Review your complaint activity and quickly filter the current
+                  queue.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="relative w-full sm:w-80">
+                  <Search
+                    className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`}
+                  />
+                  <Input
+                    type="search"
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="flex-1 p-2 outline-none"
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Search complaints"
+                    className={`pl-9 ${pageTheme.field}`}
                   />
 
-                  <button className="px-3">
-                    <Search size={20} />
-                  </button>
+                  {suggestions.length > 0 ? (
+                    <div
+                      className={`absolute left-0 top-full z-50 mt-1 w-full rounded-md border shadow-lg ${pageTheme.panel}`}
+                    >
+                      {suggestions.map((item) => (
+                        <button
+                          key={item?._id}
+                          type="button"
+                          className={`block w-full px-3 py-2 text-left text-sm transition-colors ${pageTheme.suggestionHover}`}
+                          onClick={() => setSearch(item?.subject || "")}
+                        >
+                          {item?.subject || "Untitled complaint"}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
 
-                {search && suggestions.length > 0 && (
-                  <div className="absolute top-full left-0 w-full bg-white border shadow-md z-50">
-                    {suggestions.map((item) => (
-                      <div
-                        key={item._id}
-                        className="p-2 hover:bg-gray-100 cursor-pointer"
-                      >
-                        {item.subject}
+                <div className="relative w-full sm:w-64">
+                  <CalendarDays
+                    className={`pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`}
+                  />
+                  <button
+                    type="button"
+                    aria-expanded={datePickerOpen}
+                    aria-label="Filter complaints by raised date"
+                    onClick={() => setDatePickerOpen((open) => !open)}
+                    className={`h-10 w-full rounded-md border py-2 pl-9 pr-9 text-left text-sm outline-none transition-colors ${pageTheme.field}`}
+                  >
+                    {raisedDateFilterLabel}
+                  </button>
+                  <ChevronDown
+                    className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`}
+                  />
+
+                  {datePickerOpen ? (
+                    <div
+                      className={`absolute right-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-lg border p-3 shadow-xl ${pageTheme.panel}`}
+                    >
+                      <div className="flex gap-2">
+                        <select
+                          aria-label="Choose a quick raised date filter"
+                          value={raisedDateFilter}
+                          onChange={(event) => {
+                            setRaisedDateFilter(event.target.value);
+                            setSelectedRaisedDate(null);
+                            setDatePickerOpen(false);
+                          }}
+                          className={`h-10 min-w-0 flex-1 rounded-md border px-3 text-sm outline-none transition-colors ${pageTheme.field}`}
+                        >
+                          {raisedDateFilter === "custom" ? (
+                            <option value="custom">Custom date</option>
+                          ) : null}
+                          {raisedDateFilterOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+
+                        <button
+                          type="button"
+                          disabled={!hasActiveDateFilter}
+                          onClick={clearRaisedDateFilter}
+                          className={`h-10 rounded-md border px-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${pageTheme.button}`}
+                        >
+                          Clear
+                        </button>
                       </div>
-                    ))}
+
+                      <div
+                        className={`mt-3 rounded-md border ${pageTheme.divider}`}
+                      >
+                        <Calendar
+                          mode="single"
+                          selected={selectedRaisedDate || undefined}
+                          onSelect={(date) => {
+                            if (!date) return;
+                            setSelectedRaisedDate(date);
+                            setRaisedDateFilter("custom");
+                            setDatePickerOpen(false);
+                          }}
+                          className="mx-auto"
+                        />
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </section>
+
+            <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {stats.map((stat) => (
+                <article
+                  key={stat.label}
+                  className={`rounded-lg border p-4 ${pageTheme.card}`}
+                >
+                  <p className={`text-sm font-medium ${pageTheme.muted}`}>
+                    {stat.label}
+                  </p>
+                  <div className="mt-2 flex items-end justify-between gap-3">
+                    <h2 className={`text-2xl font-bold ${stat.accent}`}>
+                      {stat.value}
+                    </h2>
+                    <span className={`text-xs ${pageTheme.muted}`}>
+                      {stat.helper}
+                    </span>
                   </div>
-                )}
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div
-                className={`${cardBg} border-2 ${cardBorder} rounded-lg p-6 transition-all hover:shadow-lg`}
-              >
-                <p
-                  className={`text-sm font-medium ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}
-                >
-                  Total Complaints
-                </p>
+                </article>
+              ))}
+            </section>
 
-                <p
-                  className={`text-3xl font-bold mt-2 ${isDarkTheme ? "text-blue-400" : "text-blue-600"}`}
-                >
-                  {totalComplaints}
-                </p>
-                <p
-                  className={`text-xs mt-3 ${isDarkTheme ? "text-slate-500" : "text-slate-500"}`}
-                >
-                  All raised complaints
-                </p>
-              </div>
-
-              <div
-                className={`${cardBg} border-2 ${cardBorder} rounded-lg p-6 transition-all hover:shadow-lg`}
-              >
-                <p
-                  className={`text-sm font-medium ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}
-                >
-                  Resolved
-                </p>
-                <p
-                  className={`text-3xl font-bold mt-2 ${isDarkTheme ? "text-green-400" : "text-green-600"}`}
-                >
-                  {resolvedComplaints}
-                </p>
-                <p
-                  className={`text-xs mt-3 ${isDarkTheme ? "text-slate-500" : "text-slate-500"}`}
-                >
-                  Completed complaints
-                </p>
-              </div>
-
-              <div
-                className={`${cardBg} border-2 ${cardBorder} rounded-lg p-6 transition-all hover:shadow-lg`}
-              >
-                <p
-                  className={`text-sm font-medium ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}
-                >
-                  Resolved
-                </p>
-                <p
-                  className={`text-3xl font-bold mt-2 ${isDarkTheme ? "text-green-400" : "text-green-600"}`}
-                >
-                  {resolvedComplaints}
-                </p>
-                <p
-                  className={`text-xs mt-3 ${isDarkTheme ? "text-slate-500" : "text-slate-500"}`}
-                >
-                  Completed complaints
-                </p>
-              </div>
-
-              <div
-                className={`${cardBg} border-2 ${cardBorder} rounded-lg p-6 transition-all hover:shadow-lg`}
-              >
-                <p
-                  className={`text-sm font-medium ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}
-                >
-                  Pending
-                </p>
-                <p
-                  className={`text-3xl font-bold mt-2 ${isDarkTheme ? "text-amber-400" : "text-amber-600"}`}
-                >
-                  {pendingComplaints}
-                </p>
-                <p
-                  className={`text-xs mt-3 ${isDarkTheme ? "text-slate-500" : "text-slate-500"}`}
-                >
-                  Waiting for resolution
-                </p>
-              </div>
-            </div>
-
-            {/* Complaints Table */}
-            <div
-              className={`${tableBg} rounded-lg border-2 ${cardBorder} overflow-hidden`}
+            <section
+              className={`overflow-hidden rounded-lg border ${pageTheme.panel}`}
             >
               <div
-                className={`${tableHeaderBg} px-6 py-4 border-b ${cardBorder}`}
+                className={`border-b px-4 py-4 sm:px-5 ${pageTheme.divider}`}
               >
-                <h2 className={`text-lg font-semibold ${tableHeaderText}`}>
-                  Your Complaints
-                </h2>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <h2 className="text-lg font-bold">Your Complaints</h2>
+                  <p className={`text-sm ${pageTheme.muted}`}>
+                    {isLoading
+                      ? "Loading complaints"
+                      : `${filteredComplaints.length} of ${totalComplaints} shown`}
+                  </p>
+                </div>
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className={`${tableHeaderBg} border-b ${cardBorder}`}>
-                      <th
-                        className={`px-6 py-3 text-left font-semibold text-sm ${tableHeaderText}`}
-                      >
+                <table className="w-full min-w-[760px] border-separate border-spacing-0 text-left text-sm">
+                  <thead className={pageTheme.tableHead}>
+                    <tr>
+                      <th className="border-b border-inherit px-4 py-3 font-semibold">
                         Name
                       </th>
-                      <th
-                        className={`px-6 py-3 text-left font-semibold text-sm ${tableHeaderText}`}
-                      >
+                      <th className="border-b border-inherit px-4 py-3 font-semibold">
                         Email
                       </th>
-                      <th
-                        className={`px-6 py-3 text-left font-semibold text-sm ${tableHeaderText}`}
-                      >
+                      <th className="border-b border-inherit px-4 py-3 font-semibold">
                         Subject
                       </th>
-                      <th
-                        className={`px-6 py-3 text-left font-semibold text-sm ${tableHeaderText}`}
-                      >
+                      <th className="border-b border-inherit px-4 py-3 font-semibold">
                         Message
                       </th>
-                      <th
-                        className={`px-6 py-3 text-left font-semibold text-sm ${tableHeaderText}`}
-                      >
+                      <th className="border-b border-inherit px-4 py-3 font-semibold">
+                        Raised Date
+                      </th>
+                      <th className="border-b border-inherit px-4 py-3 font-semibold">
                         Status
                       </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {complaints && complaints.length > 0 ? (
-                      complaints.map((complaint, index) => (
+                    {filteredComplaints.length > 0 ? (
+                      filteredComplaints.map((complaint) => (
                         <tr
-                          key={index}
-                          className={`border-b ${cardBorder} ${tableRowHover} transition-colors`}
+                          key={complaint?._id}
+                          className={`transition-colors ${pageTheme.row}`}
                         >
-                          <td className={`px-6 py-4 text-sm ${tableText}`}>
-                            {UserData?.result?.name}
+                          <td className="border-b border-inherit px-4 py-3 font-medium">
+                            {complaint?.name || currentUser?.name || "-"}
                           </td>
-                          <td className={`px-6 py-4 text-sm ${tableText}`}>
-                            {UserData?.result?.email}
+                          <td className="border-b border-inherit px-4 py-3">
+                            {complaint?.email || currentUser?.email || "-"}
                           </td>
-                          <td className={`px-6 py-4 text-sm ${tableText}`}>
-                            {complaint.subject}
+                          <td className="border-b border-inherit px-4 py-3">
+                            {complaint?.subject || "-"}
                           </td>
-                          <td
-                            className={`px-6 py-4 text-sm ${tableText} truncate max-w-xs`}
-                          >
-                            {complaint.message}
+                          <td className="max-w-sm border-b border-inherit px-4 py-3">
+                            <p className="line-clamp-2">
+                              {complaint?.message || "-"}
+                            </p>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="border-b border-inherit px-4 py-3 whitespace-nowrap">
+                            {formatDate(
+                              complaint?.raisedDate || complaint?.createdAt,
+                            )}
+                          </td>
+                          <td className="border-b border-inherit px-4 py-3">
                             <span
-                              className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                complaint.status === "resolved"
-                                  ? isDarkTheme
-                                    ? "bg-green-900 text-green-200"
-                                    : "bg-green-100 text-green-800"
-                                  : complaint.status === "pending"
-                                    ? isDarkTheme
-                                      ? "bg-amber-900 text-amber-200"
-                                      : "bg-amber-100 text-amber-800"
-                                    : isDarkTheme
-                                      ? "bg-blue-900 text-blue-200"
-                                      : "bg-blue-100 text-blue-800"
-                              }`}
+                              className={`inline-flex rounded-md px-2 py-1 text-xs font-semibold ${getStatusClasses(
+                                complaint?.status,
+                                isDarkTheme,
+                              )}`}
                             >
-                              {complaint.status.charAt(0).toUpperCase() +
-                                complaint.status.slice(1)}
+                              {formatLabel(complaint?.status || "pending")}
                             </span>
                           </td>
                         </tr>
@@ -352,20 +597,22 @@ export default function Page() {
                     ) : (
                       <tr>
                         <td
-                          colSpan="5"
-                          className={`px-6 py-12 text-center text-sm ${
-                            isDarkTheme ? "text-slate-400" : "text-slate-500"
-                          }`}
+                          colSpan={6}
+                          className={`px-4 py-12 text-center ${pageTheme.muted}`}
                         >
-                          No complaints found. You're all caught up! 🎉
+                          {isLoading
+                            ? "Loading complaints..."
+                            : search
+                              ? "No complaints match your search."
+                              : "No complaints raised yet."}
                         </td>
                       </tr>
                     )}
                   </tbody>
                 </table>
               </div>
-            </div>
-          </div>
+            </section>
+          </main>
         </SidebarInset>
       </SidebarProvider>
     </div>
