@@ -6,7 +6,10 @@ import {
   PlusCircle,
   Search,
   Sun,
+  MoveUpRight,
+  X,
 } from "lucide-react";
+import { Dialog as DialogPrimitive } from "radix-ui";
 import { useQuery } from "@tanstack/react-query";
 import { AppSidebar } from "../../../components/app-sidebar";
 import {
@@ -143,6 +146,7 @@ export default function Page() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [raisedDateFilter, setRaisedDateFilter] = useState("all");
+  const [selectedComplaint, setSelectedComplaint] = useState(null);
 
   const isDarkTheme = theme;
   const raisedDateParams = useMemo(
@@ -263,6 +267,40 @@ export default function Page() {
         suggestionHover: "hover:bg-[#eef6ff]",
       };
 
+  const detailTheme = isDarkTheme
+    ? {
+        overlay: "bg-slate-950/70",
+        modal: "border-blue-900/70 bg-slate-900 text-slate-100",
+        header: "border-blue-900/60 bg-slate-950/90",
+        body: "bg-slate-900",
+        surface: "border-blue-900/60 bg-slate-950/60",
+        surfaceAlt: "border-blue-900/50 bg-slate-900/80",
+        label: "text-slate-400",
+        muted: "text-slate-300",
+        close: "border-blue-900/70 text-slate-100 hover:bg-slate-800",
+        scrollbarStyle: {
+          "--complaint-scroll-thumb": "#3b82f6",
+          "--complaint-scroll-track": "#0f172a",
+          "--complaint-scroll-thumb-hover": "#60a5fa",
+        },
+      }
+    : {
+        overlay: "bg-[#001a3a]/35",
+        modal: "border-[#b8d8ff] bg-white text-[#001a3a]",
+        header: "border-[#c7ddff] bg-[#f8fbff]",
+        body: "bg-white",
+        surface: "border-[#c7ddff] bg-[#f8fbff]",
+        surfaceAlt: "border-[#b8d8ff] bg-[#eef6ff]",
+        label: "text-[#4e678a]",
+        muted: "text-[#4e678a]",
+        close: "border-[#b8d8ff] text-[#12365c] hover:bg-[#eef6ff]",
+        scrollbarStyle: {
+          "--complaint-scroll-thumb": "#2563eb",
+          "--complaint-scroll-track": "#dbeafe",
+          "--complaint-scroll-thumb-hover": "#1d4ed8",
+        },
+      };
+
   const stats = [
     {
       label: "Total Complaints",
@@ -340,7 +378,7 @@ export default function Page() {
             </div>
           </header>
 
-          <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-8 p-4 lg:p-6">
+          <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 lg:p-6">
             <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <h1 className="text-2xl font-bold tracking-normal">
@@ -417,29 +455,35 @@ export default function Page() {
               </div>
             </section>
 
-            <section className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+            <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {stats.map((stat) => (
                 <article
                   key={stat.label}
-                  className={`min-h-44 rounded-lg border-2 p-9 transition-shadow hover:shadow-lg ${pageTheme.card}`}
+                  className={`rounded-lg border p-4 ${pageTheme.card}`}
                 >
-                  <p className="text-lg font-medium">{stat.label}</p>
-                  <p className={`mt-5 text-4xl font-bold ${stat.accent}`}>
-                    {stat.value}
+                  <p className={`text-sm font-medium ${pageTheme.muted}`}>
+                    {stat.label}
                   </p>
-                  <p className={`mt-6 text-base ${pageTheme.muted}`}>
-                    {stat.helper}
-                  </p>
+                  <div className="mt-2 flex items-end justify-between gap-3">
+                    <h2 className={`text-2xl font-bold ${stat.accent}`}>
+                      {stat.value}
+                    </h2>
+                    <span className={`text-xs ${pageTheme.muted}`}>
+                      {stat.helper}
+                    </span>
+                  </div>
                 </article>
               ))}
             </section>
 
             <section
-              className={`overflow-hidden rounded-lg border-2 ${pageTheme.panel}`}
+              className={`overflow-hidden rounded-lg border ${pageTheme.panel}`}
             >
-              <div className={`border-b px-9 py-7 ${pageTheme.divider}`}>
+              <div
+                className={`border-b px-4 py-4 sm:px-5 ${pageTheme.divider}`}
+              >
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <h2 className="text-2xl font-bold">Your Complaints</h2>
+                  <h2 className="text-lg font-bold">Your Complaints</h2>
                   <p className={`text-sm ${pageTheme.muted}`}>
                     {isLoading
                       ? "Loading complaints"
@@ -449,26 +493,26 @@ export default function Page() {
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[1080px] border-separate border-spacing-0 text-left text-base">
+                <table className="w-full min-w-[760px] border-separate border-spacing-0 text-left text-sm">
                   <thead className={pageTheme.tableHead}>
                     <tr>
-                      <th className="border-b border-inherit px-9 py-5 font-bold">
+                      <th className="border-b border-inherit px-4 py-3 font-semibold">
                         Name
                       </th>
-                      <th className="border-b border-inherit px-9 py-5 font-bold">
+                      <th className="border-b border-inherit px-4 py-3 font-semibold">
                         Email
                       </th>
-                      <th className="border-b border-inherit px-9 py-5 font-bold">
+                      <th className="border-b border-inherit px-4 py-3 font-semibold">
                         Subject
                       </th>
-                      <th className="border-b border-inherit px-9 py-5 font-bold">
+                      <th className="border-b border-inherit px-4 py-3 font-semibold">
                         Message
                       </th>
-                      <th className="border-b border-inherit px-9 py-5 font-bold">
+                      <th className="border-b border-inherit px-4 py-3 font-semibold">
                         Raised Date
                       </th>
-                      <th className="border-b border-inherit px-9 py-5 font-bold">
-                        Status
+                      <th className="border-b border-inherit px-4 py-3 font-semibold">
+                        View More
                       </th>
                     </tr>
                   </thead>
@@ -479,34 +523,36 @@ export default function Page() {
                           key={ticket?._id}
                           className={`transition-colors ${pageTheme.row}`}
                         >
-                          <td className="border-b border-inherit px-9 py-7 font-medium">
+                          <td className="border-b border-inherit px-4 py-3 font-medium">
                             {ticket?.name || currentUser?.name || "-"}
                           </td>
-                          <td className="border-b border-inherit px-9 py-7">
+                          <td className="border-b border-inherit px-4 py-3">
                             {ticket?.email || currentUser?.email || "-"}
                           </td>
-                          <td className="border-b border-inherit px-9 py-7">
+                          <td className="border-b border-inherit px-4 py-3">
                             {ticket?.subject || "-"}
                           </td>
-                          <td className="max-w-md border-b border-inherit px-9 py-7">
+                          <td className="max-w-sm border-b border-inherit px-4 py-3">
                             <p className="line-clamp-2">
                               {ticket?.message || "-"}
                             </p>
                           </td>
-                          <td className="border-b border-inherit px-9 py-7">
+                          <td className="border-b border-inherit px-4 py-3 whitespace-nowrap">
                             {formatDate(
                               ticket?.raisedDate || ticket?.createdAt,
                             )}
                           </td>
-                          <td className="border-b border-inherit px-9 py-7">
-                            <span
-                              className={`inline-flex rounded-full border px-4 py-1.5 text-sm font-bold ${getStatusClasses(
-                                ticket?.status,
-                                isDarkTheme,
-                              )}`}
+                          <td className="border-b border-inherit px-4 py-3">
+                            <button
+                              type="button"
+                              aria-label={`View details for ${ticket?.subject || "complaint"}`}
+                              onClick={() => setSelectedComplaint(ticket)}
+                              className={`inline-flex h-9 w-9 items-center justify-center rounded-md border transition-colors ${pageTheme.button}`}
                             >
-                              {formatLabel(ticket?.status)}
-                            </span>
+                              <span className="inline-flex text-xs font-semibold">
+                                <MoveUpRight className="h-4 w-4" />
+                              </span>
+                            </button>
                           </td>
                         </tr>
                       ))
@@ -514,7 +560,7 @@ export default function Page() {
                       <tr>
                         <td
                           colSpan={6}
-                          className={`px-9 py-16 text-center ${pageTheme.muted}`}
+                          className={`px-4 py-12 text-center ${pageTheme.muted}`}
                         >
                           {isLoading
                             ? "Loading complaints..."
@@ -537,6 +583,226 @@ export default function Page() {
         onOpenChange={setComplaintModalOpen}
         theme={isDarkTheme}
       />
+
+      <DialogPrimitive.Root
+        open={Boolean(selectedComplaint)}
+        onOpenChange={(open) => !open && setSelectedComplaint(null)}
+      >
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay
+            className={`fixed inset-0 z-50 backdrop-blur-sm data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 ${detailTheme.overlay}`}
+          />
+          <DialogPrimitive.Content
+            className={`fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100vh-2rem)] w-[calc(100%-2rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border shadow-2xl outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 ${detailTheme.modal}`}
+          >
+            <DialogPrimitive.Close asChild>
+              <button
+                type="button"
+                aria-label="Close complaint details"
+                className={`absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-md border transition-colors ${detailTheme.close}`}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </DialogPrimitive.Close>
+
+            <div className={`border-b px-6 py-5 ${detailTheme.header}`}>
+              <div className="space-y-2 text-left">
+                <div className="flex items-start justify-between gap-4 pr-10">
+                  <div>
+                    <DialogPrimitive.Title className="text-xl font-bold">
+                      Complaint Details
+                    </DialogPrimitive.Title>
+                    <DialogPrimitive.Description
+                      className={`text-sm ${detailTheme.muted}`}
+                    >
+                      Full information for the selected complaint.
+                    </DialogPrimitive.Description>
+                  </div>
+
+                  {selectedComplaint ? (
+                    <span
+                      className={`inline-flex rounded-md border px-3 py-1 text-xs font-semibold ${getStatusClasses(
+                        selectedComplaint?.status,
+                        isDarkTheme,
+                      )}`}
+                    >
+                      {formatLabel(selectedComplaint?.status || "pending")}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+
+            {selectedComplaint ? (
+              <div
+                className={`complaint-details-scrollbar space-y-5 overflow-y-auto px-6 py-5 ${detailTheme.body}`}
+                style={detailTheme.scrollbarStyle}
+              >
+                <section
+                  className={`rounded-lg border p-4 ${detailTheme.surface}`}
+                >
+                  <p
+                    className={`text-xs font-semibold uppercase ${detailTheme.label}`}
+                  >
+                    Subject
+                  </p>
+                  <h3 className="mt-2 text-lg font-bold">
+                    {selectedComplaint?.subject || "Untitled complaint"}
+                  </h3>
+                  <p className={`mt-2 text-sm ${detailTheme.muted}`}>
+                    Ticket ID: {selectedComplaint?._id || "-"}
+                  </p>
+                </section>
+
+                <section className="grid gap-3 sm:grid-cols-2">
+                  {[
+                    {
+                      label: "Name",
+                      value:
+                        selectedComplaint?.name || currentUser?.name || "-",
+                    },
+                    {
+                      label: "Email",
+                      value:
+                        selectedComplaint?.email || currentUser?.email || "-",
+                    },
+                    {
+                      label: "Service Type",
+                      value: formatLabel(selectedComplaint?.serviceType),
+                    },
+                    {
+                      label: "Priority",
+                      value: formatLabel(
+                        selectedComplaint?.priority || "medium",
+                      ),
+                    },
+                    {
+                      label: "Raised Date",
+                      value: formatDate(
+                        selectedComplaint?.raisedDate ||
+                          selectedComplaint?.createdAt,
+                      ),
+                    },
+                    {
+                      label: "Assigned Date",
+                      value: formatDate(selectedComplaint?.assignedDate),
+                    },
+                    {
+                      label: "Due Date",
+                      value: formatDate(selectedComplaint?.deadline),
+                    },
+                    {
+                      label: "Completed Date",
+                      value: formatDate(selectedComplaint?.completedDate),
+                    },
+                  ].map((item) => (
+                    <div
+                      key={item.label}
+                      className={`rounded-lg border p-3 ${detailTheme.surfaceAlt}`}
+                    >
+                      <p
+                        className={`text-xs font-semibold uppercase ${detailTheme.label}`}
+                      >
+                        {item.label}
+                      </p>
+                      <p className="mt-1 break-words font-medium">
+                        {item.value}
+                      </p>
+                    </div>
+                  ))}
+                </section>
+
+                {selectedComplaint?.task?.title ||
+                selectedComplaint?.task?.notes ? (
+                  <section
+                    className={`rounded-lg border p-4 ${detailTheme.surfaceAlt}`}
+                  >
+                    <p
+                      className={`text-xs font-semibold uppercase ${detailTheme.label}`}
+                    >
+                      Assigned Task
+                    </p>
+                    <p className="mt-2 font-semibold">
+                      {selectedComplaint?.task?.title || "-"}
+                    </p>
+                    <p
+                      className={`mt-2 text-sm leading-6 ${detailTheme.muted}`}
+                    >
+                      {selectedComplaint?.task?.notes || "No task notes added."}
+                    </p>
+                  </section>
+                ) : null}
+
+                <section
+                  className={`rounded-lg border p-4 ${detailTheme.surface}`}
+                >
+                  <p
+                    className={`text-xs font-semibold uppercase ${detailTheme.label}`}
+                  >
+                    Message
+                  </p>
+                  <p className="mt-2 whitespace-pre-wrap text-sm leading-6">
+                    {selectedComplaint?.message || "-"}
+                  </p>
+                </section>
+
+                {selectedComplaint?.resolutionNote ? (
+                  <section
+                    className={`rounded-lg border p-4 ${detailTheme.surface}`}
+                  >
+                    <p
+                      className={`text-xs font-semibold uppercase ${detailTheme.label}`}
+                    >
+                      Resolution Note
+                    </p>
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6">
+                      {selectedComplaint.resolutionNote}
+                    </p>
+                  </section>
+                ) : null}
+
+                {Array.isArray(selectedComplaint?.workUpdates) &&
+                selectedComplaint.workUpdates.length > 0 ? (
+                  <section
+                    className={`rounded-lg border p-4 ${detailTheme.surface}`}
+                  >
+                    <p
+                      className={`text-xs font-semibold uppercase ${detailTheme.label}`}
+                    >
+                      Work Updates
+                    </p>
+                    <div className="mt-3 space-y-3">
+                      {selectedComplaint.workUpdates.map((update, index) => (
+                        <div
+                          key={update?._id || `${update?.updatedAt}-${index}`}
+                          className={`rounded-md border p-3 ${detailTheme.surfaceAlt}`}
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span
+                              className={`inline-flex rounded-md border px-2 py-1 text-xs font-semibold ${getStatusClasses(
+                                update?.status,
+                                isDarkTheme,
+                              )}`}
+                            >
+                              {formatLabel(update?.status || "update")}
+                            </span>
+                            <span className={`text-xs ${detailTheme.muted}`}>
+                              {formatDate(update?.updatedAt)}
+                            </span>
+                          </div>
+                          <p className="mt-2 whitespace-pre-wrap text-sm leading-6">
+                            {update?.message || "-"}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
+              </div>
+            ) : null}
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
     </div>
   );
 }

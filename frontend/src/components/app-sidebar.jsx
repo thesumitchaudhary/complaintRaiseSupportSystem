@@ -31,10 +31,10 @@ import {
   MessageSquareWarning,
   // BriefcaseBusiness,
 } from "lucide-react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { userLogout, getRaisedComplaint } from "../services/user";
+import { useMutation } from "@tanstack/react-query";
+import { userLogout } from "../services/user";
 // This is sample data.
-const data = {
+const sidebarData = {
   user: {
     name: "shadcn",
     email: "m@example.com",
@@ -128,10 +128,6 @@ const data = {
 
 export function AppSidebar({ ...props }) {
   const navigate = useNavigate();
-  const { data } = useQuery({
-    queryKey: ["showRaisedTicked"],
-    queryFn: getRaisedComplaint,
-  });
 
   const handleLogoutSuccess = useCallback(() => {
     toast.success("logout successful");
@@ -150,14 +146,17 @@ export function AppSidebar({ ...props }) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <TeamSwitcher teams={sidebarData.teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={sidebarData.navMain} />
         {/* <NavProjects projects={data.projects} /> */}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} onLogout={() => logoutMutation.mutate()} />
+        <NavUser
+          user={sidebarData.user}
+          onLogout={() => logoutMutation.mutate()}
+        />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

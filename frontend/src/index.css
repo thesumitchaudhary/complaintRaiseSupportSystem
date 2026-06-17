@@ -184,3 +184,31 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .complaint-details-scrollbar {
+    scrollbar-color: var(--complaint-scroll-thumb, #2563eb)
+      var(--complaint-scroll-track, #dbeafe);
+    scrollbar-width: thin;
+  }
+
+  .complaint-details-scrollbar::-webkit-scrollbar {
+    height: 10px;
+    width: 10px;
+  }
+
+  .complaint-details-scrollbar::-webkit-scrollbar-track {
+    background: var(--complaint-scroll-track, #dbeafe);
+    border-radius: 9999px;
+  }
+
+  .complaint-details-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--complaint-scroll-thumb, #2563eb);
+    border: 2px solid var(--complaint-scroll-track, #dbeafe);
+    border-radius: 9999px;
+  }
+
+  .complaint-details-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--complaint-scroll-thumb-hover, #1d4ed8);
+  }
+}

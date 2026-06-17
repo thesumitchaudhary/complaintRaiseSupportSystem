@@ -1,7 +1,5 @@
 "use client";
 
-import * as React from "react";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,9 +17,9 @@ import {
 } from "@/components/ui/sidebar";
 // import { CaretUpDownIcon, PlusIcon } from "@phosphor-icons/react"
 
-export function TeamSwitcher({ teams }) {
+export function TeamSwitcher({ teams = [] }) {
   const { isMobile } = useSidebar();
-  const [activeTeam, setActiveTeam] = React.useState(teams[0]);
+  const activeTeam = teams[0];
 
   if (!activeTeam) {
     return null;
