@@ -1,15 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  BadgeCheck,
-  CalendarDays,
-  Clock3,
-  LoaderCircle,
-  Moon,
-  Search,
-  ShieldAlert,
-  Sun,
-} from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Clock3, Loader2, Moon, Search, Send, Sun } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
 import { EmployeeAppSidebar as AppSidebar } from "../../../components/employee-app-sidebar";
 import { Button } from "../../../components/ui/button";
 import {
@@ -20,7 +12,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "../../../components/ui/breadcrumb";
-import { Input } from "../../../components/ui/input";
 import { Separator } from "../../../components/ui/separator";
 import {
   Sheet,
@@ -34,54 +25,200 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "../../../components/ui/sidebar";
-import { showAssignedComplaint } from "../../../services/employee";
+import { Textarea } from "../../../components/ui/textarea";
+import { showAssignedComplaint, workUpdate } from "../../../services/employee";
 
-const dateFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-});
+const getStatusKey = (status) =>
+  String(status || "pending")
+    .trim()
+    .replace(/([a-z])([A-Z])/g, "$1_$2")
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_")
+    .replace(/_+/g, "_");
+
+const formatStatusLabel = (status) =>
+  getStatusKey(status)
+    .split("_")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+
+const formatDate = (value) => {
+  if (!value) return "-";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "-";
+
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+};
+
+const getStatusBadgeClass = (status, isDarkTheme) => {
+  const statusKey = getStatusKey(status);
+  const statusClasses = isDarkTheme
+    ? {
+        assigned: "bg-violet-950 text-violet-200",
+        in_progress: "bg-blue-950 text-blue-200",
+        completed: "bg-emerald-950 text-emerald-200",
+        overdue: "bg-rose-950 text-rose-200",
+      }
+    : {
+        assigned: "bg-violet-100 text-violet-700",
+        in_progress: "bg-blue-100 text-blue-700",
+        completed: "bg-emerald-100 text-emerald-700",
+        overdue: "bg-rose-100 text-rose-700",
+      };
+
+  return (
+    statusClasses[statusKey] ||
+    (isDarkTheme
+      ? "bg-slate-800 text-slate-200"
+      : "bg-amber-100 text-amber-700")
+  );
+};
+
+const getPriorityBadgeClass = (priority, isDarkTheme) => {
+  const priorityKey = String(priority || "medium").toLowerCase();
+  const priorityClasses = isDarkTheme
+    ? {
+        low: "bg-emerald-950 text-emerald-200",
+        medium: "bg-amber-950 text-amber-200",
+        high: "bg-rose-950 text-rose-200",
+      }
+    : {
+        low: "bg-emerald-100 text-emerald-700",
+        medium: "bg-amber-100 text-amber-700",
+        high: "bg-rose-100 text-rose-700",
+      };
+
+  return priorityClasses[priorityKey] || priorityClasses.medium;
+};
+
+const initialWorkUpdateForm = {
+  status: "in_progress",
+  message: "",
+};
 
 export default function Page() {
   const [theme, setTheme] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTask, setSelectedTask] = useState(null);
+  const [workUpdateForm, setWorkUpdateForm] = useState(initialWorkUpdateForm);
+  const [formError, setFormError] = useState("");
 
-  const toggleTheme = () => {
-    setTheme((currentTheme) => !currentTheme);
-  };
-
-  const pageTheme = theme
+  const isDarkTheme = theme;
+  const queryClient = useQueryClient();
+  const pageTheme = isDarkTheme
     ? {
         shell: "bg-slate-950 text-slate-100",
-        panel: "border-slate-800 bg-slate-900/70 text-slate-100",
-        muted: "text-slate-400",
-        border: "border-slate-800",
-        header: "bg-slate-900/90",
-        tableHead: "bg-slate-900 text-slate-200",
-        tableRow: "border-slate-800 hover:bg-slate-800/40",
-        button: "border-slate-700 text-slate-100 hover:bg-slate-800",
+        header: "border-blue-900/60 bg-slate-900",
+        panel: "border-blue-900/60 bg-slate-900 text-slate-100",
+        card: "border-blue-900/70 bg-slate-900 text-slate-100",
+        tableHead: "bg-slate-950 text-slate-200",
+        tableRow: "border-blue-900/40 hover:bg-slate-800/70",
         field:
-          "border-slate-700 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-sky-500",
-        heroCard: "border-slate-800 bg-slate-900/60",
+          "border-blue-900/70 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus-visible:ring-blue-500",
+        divider: "border-blue-900/60",
+        muted: "text-slate-400",
+        button: "border-blue-900/70 text-slate-100 hover:bg-slate-800",
+        details: "border-blue-900/60 bg-slate-950/70",
       }
     : {
-        shell: "bg-slate-50 text-slate-900",
-        panel: "border-slate-200 bg-white text-slate-900",
-        muted: "text-slate-500",
-        border: "border-slate-200",
-        header: "bg-white/90",
-        tableHead: "bg-slate-100 text-slate-700",
-        tableRow: "border-slate-200 hover:bg-slate-50",
-        button: "border-slate-300 text-slate-900 hover:bg-slate-100",
+        shell: "bg-[#f8fbff] text-[#001a3a]",
+        header: "border-[#c7ddff] bg-white",
+        panel: "border-[#b8d8ff] bg-white text-[#001a3a]",
+        card: "border-[#b8d8ff] bg-[#eef6ff] text-[#12365c] shadow-[0_14px_24px_-20px_rgba(37,99,235,0.95)]",
+        tableHead: "bg-[#f8fbff] text-[#001a3a]",
+        tableRow: "border-[#c7ddff] hover:bg-[#f2f7ff]",
         field:
-          "border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-sky-500",
-        heroCard: "border-slate-200 bg-sky-50/70",
+          "border-[#b8d8ff] bg-white text-[#001a3a] placeholder:text-[#6a7f9e] focus-visible:ring-blue-400",
+        divider: "border-[#c7ddff]",
+        muted: "text-[#4e678a]",
+        button: "border-[#b8d8ff] text-[#12365c] hover:bg-[#eef6ff]",
+        details: "border-[#b8d8ff] bg-[#eef6ff]",
       };
 
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme);
-  }, [theme]);
+    const root = document.documentElement;
+    const body = document.body;
+    const backgroundColor = isDarkTheme ? "#020617" : "#f8fbff";
+    const textColor = isDarkTheme ? "#f8fafc" : "#001a3a";
+
+    root.classList.toggle("dark", isDarkTheme);
+    root.style.backgroundColor = backgroundColor;
+    body.style.backgroundColor = backgroundColor;
+    body.style.color = textColor;
+  }, [isDarkTheme]);
+
+  const workUpdateMutation = useMutation({
+    mutationFn: workUpdate,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["showAssignedComplaints"],
+      });
+      toast.success("Work update added successfully");
+      setSelectedTask(null);
+      setWorkUpdateForm(initialWorkUpdateForm);
+      setFormError("");
+    },
+    onError: (error) => {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to add work update";
+      setFormError(message);
+      toast.error(message);
+    },
+  });
+
+  const openWorkUpdateForm = (task) => {
+    const currentStatus = getStatusKey(task?.status);
+    const allowedStatuses = ["assigned", "in_progress", "on_hold", "completed"];
+
+    setSelectedTask(task);
+    setWorkUpdateForm({
+      status: allowedStatuses.includes(currentStatus)
+        ? currentStatus
+        : "in_progress",
+      message: "",
+    });
+    setFormError("");
+  };
+
+  const handleWorkUpdateChange = (event) => {
+    const { name, value } = event.target;
+    setWorkUpdateForm((currentForm) => ({
+      ...currentForm,
+      [name]: value,
+    }));
+    setFormError("");
+  };
+
+  const handleWorkUpdateSubmit = (event) => {
+    event.preventDefault();
+
+    const message = workUpdateForm.message.trim();
+
+    if (!message) {
+      setFormError("Work update message is required");
+      return;
+    }
+
+    if (!selectedTask?._id) {
+      setFormError("Unable to identify the selected task");
+      return;
+    }
+
+    workUpdateMutation.mutate({
+      complaintId: selectedTask._id,
+      message,
+      status: workUpdateForm.status,
+    });
+  };
 
   const {
     data: showAssignedComplaints,
@@ -93,124 +230,95 @@ export default function Page() {
   });
 
   const allComplaints = useMemo(() => {
-    const d = showAssignedComplaints;
-    if (!d) return [];
-    if (Array.isArray(d)) return d;
-    if (Array.isArray(d.assignedComplaints)) return d.assignedComplaints;
-    if (Array.isArray(d.result)) return d.result;
-    if (Array.isArray(d.data)) return d.data;
+    const data = showAssignedComplaints;
+
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data.assignedComplaints)) {
+      return data.assignedComplaints;
+    }
+    if (Array.isArray(data.result)) return data.result;
+    if (Array.isArray(data.data)) return data.data;
+
     return [];
   }, [showAssignedComplaints]);
 
-  const tasks = useMemo(() => {
-    return allComplaints.filter((complaint) => {
-      const status = String(complaint?.status || "").toLowerCase();
-      return ["assigned", "in_progress", "completed", "overdue"].includes(
-        status,
-      );
-    });
-  }, [allComplaints]);
+  const tasks = useMemo(
+    () =>
+      allComplaints.filter((complaint) =>
+        ["assigned", "in_progress", "completed", "overdue"].includes(
+          getStatusKey(complaint?.status),
+        ),
+      ),
+    [allComplaints],
+  );
 
   const filteredTasks = useMemo(() => {
     const needle = searchTerm.trim().toLowerCase();
 
-    if (!needle) {
-      return tasks;
-    }
+    if (!needle) return tasks;
 
-    return tasks.filter((task) => {
-      const customerName = String(task?.customerId?.name || "").toLowerCase();
-      const customerEmail = String(task?.customerId?.email || "").toLowerCase();
-      const subject = String(task?.subject || "").toLowerCase();
-      const taskTitle = String(task?.task?.title || "").toLowerCase();
-
-      return (
-        customerName.includes(needle) ||
-        customerEmail.includes(needle) ||
-        subject.includes(needle) ||
-        taskTitle.includes(needle)
-      );
-    });
+    return tasks.filter((task) =>
+      [
+        task?.customerId?.name,
+        task?.customerId?.email,
+        task?.name,
+        task?.email,
+        task?.subject,
+        task?.task?.title,
+        task?.status,
+        task?.priority,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(needle),
+    );
   }, [searchTerm, tasks]);
 
   const stats = [
     {
-      label: "All tasks",
+      label: "All Tasks",
       value: tasks.length,
-      detail: "Assigned work items",
-      icon: BadgeCheck,
-      accent: theme ? "text-sky-400" : "text-sky-600",
+      detail: "Total assigned work",
+      accent: isDarkTheme ? "text-blue-300" : "text-blue-600",
     },
     {
-      label: "In progress",
+      label: "Assigned",
+      value: tasks.filter((task) => getStatusKey(task?.status) === "assigned")
+        .length,
+      detail: "Ready to begin",
+      accent: isDarkTheme ? "text-violet-300" : "text-violet-600",
+    },
+    {
+      label: "In Progress",
       value: tasks.filter(
-        (task) => String(task?.status || "").toLowerCase() === "in_progress",
+        (task) => getStatusKey(task?.status) === "in_progress",
       ).length,
       detail: "Currently active",
-      icon: LoaderCircle,
-      accent: theme ? "text-amber-400" : "text-amber-600",
+      accent: isDarkTheme ? "text-orange-300" : "text-orange-500",
     },
     {
-      label: "Due dates",
-      value: tasks.filter((task) => Boolean(task?.deadline)).length,
-      detail: "Tasks with deadlines",
-      icon: CalendarDays,
-      accent: theme ? "text-emerald-400" : "text-emerald-600",
+      label: "Completed",
+      value: tasks.filter((task) => getStatusKey(task?.status) === "completed")
+        .length,
+      detail: "Finished work",
+      accent: isDarkTheme ? "text-emerald-300" : "text-emerald-600",
     },
   ];
-
-  const formatDate = (value) => {
-    if (!value) {
-      return "-";
-    }
-
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-      return "-";
-    }
-
-    return dateFormatter.format(date);
-  };
-
-  const getStatusBadgeClass = (status) => {
-    const normalizedStatus = String(status || "pending").toLowerCase();
-
-    if (normalizedStatus === "completed") {
-      return theme
-        ? "bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/30"
-        : "bg-emerald-100 text-emerald-700";
-    }
-
-    if (normalizedStatus === "in_progress") {
-      return theme
-        ? "bg-amber-500/15 text-amber-300 ring-1 ring-amber-400/30"
-        : "bg-amber-100 text-amber-700";
-    }
-
-    if (normalizedStatus === "overdue") {
-      return theme
-        ? "bg-rose-500/15 text-rose-300 ring-1 ring-rose-400/30"
-        : "bg-rose-100 text-rose-700";
-    }
-
-    return theme
-      ? "bg-sky-500/15 text-sky-300 ring-1 ring-sky-400/30"
-      : "bg-sky-100 text-sky-700";
-  };
 
   return (
     <div className={`${pageTheme.shell} min-h-screen`}>
       <SidebarProvider style={{ backgroundColor: "transparent" }}>
         <AppSidebar />
         <SidebarInset
-          className={pageTheme.shell}
+          className="min-w-0 w-0 overflow-x-hidden"
           style={{ backgroundColor: "transparent" }}
         >
           <header
-            className={`sticky top-0 z-10 border-b ${pageTheme.border} ${pageTheme.header} backdrop-blur`}
+            className={`sticky top-0 z-10 flex h-16 shrink-0 items-center border-b ${pageTheme.header}`}
           >
-            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4">
+            <div className="flex w-full items-center justify-between gap-3 px-4">
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="-ml-1" />
                 <Separator
@@ -221,7 +329,7 @@ export default function Page() {
                   <BreadcrumbList>
                     <BreadcrumbItem className="hidden md:block">
                       <BreadcrumbLink
-                        className={`${pageTheme.muted} transition-colors hover:text-current`}
+                        className={`text-sm ${pageTheme.muted}`}
                         href="#"
                       >
                         Employee dashboard
@@ -229,8 +337,8 @@ export default function Page() {
                     </BreadcrumbItem>
                     <BreadcrumbSeparator className="hidden md:block" />
                     <BreadcrumbItem>
-                      <BreadcrumbPage className={pageTheme.muted}>
-                        All Task
+                      <BreadcrumbPage className={`text-sm ${pageTheme.muted}`}>
+                        All Tasks
                       </BreadcrumbPage>
                     </BreadcrumbItem>
                   </BreadcrumbList>
@@ -241,9 +349,9 @@ export default function Page() {
                 type="button"
                 aria-label="Toggle theme"
                 className={`inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors ${pageTheme.button}`}
-                onClick={toggleTheme}
+                onClick={() => setTheme((currentTheme) => !currentTheme)}
               >
-                {theme ? (
+                {isDarkTheme ? (
                   <Moon className="h-4 w-4" />
                 ) : (
                   <Sun className="h-4 w-4" />
@@ -252,124 +360,130 @@ export default function Page() {
             </div>
           </header>
 
-          <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 lg:p-6">
-            <section
-              className={`rounded-3xl border ${pageTheme.border} ${pageTheme.panel} overflow-hidden shadow-sm`}
-            >
-              <div className="grid gap-6 p-6 xl:grid-cols-[1.25fr_0.75fr] xl:p-8">
-                <div className="space-y-4">
-                  <div className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
-                    <ShieldAlert className="h-3.5 w-3.5" />
-                    Employee workbench
-                  </div>
-                  <h1 className="max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
-                    Track every assigned task from one focused workspace.
-                  </h1>
-                  <p
-                    className={`max-w-2xl text-sm leading-7 sm:text-base ${pageTheme.muted}`}
-                  >
-                    Search the queue, inspect customer context, and monitor
-                    progress without jumping between screens.
-                  </p>
-                </div>
+          <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 lg:p-6">
+            <section className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+              <div>
+                <h1 className="text-2xl font-bold tracking-normal">My Tasks</h1>
+                <p className={`mt-1 max-w-2xl text-sm ${pageTheme.muted}`}>
+                  Review assigned complaints, track active work, and inspect
+                  task details from one place.
+                </p>
+              </div>
 
-                <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-                  {stats.map((item) => {
-                    const Icon = item.icon;
-
-                    return (
-                      <article
-                        key={item.label}
-                        className={`rounded-2xl border p-4 shadow-sm ${pageTheme.heroCard}`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className={`text-sm ${pageTheme.muted}`}>
-                              {item.label}
-                            </p>
-                            <h2
-                              className={`mt-2 text-3xl font-semibold ${item.accent}`}
-                            >
-                              {item.value}
-                            </h2>
-                            <p className={`mt-2 text-sm ${pageTheme.muted}`}>
-                              {item.detail}
-                            </p>
-                          </div>
-                          <div className="rounded-2xl border border-white/40 bg-white p-3 shadow-sm">
-                            <Icon className={`h-5 w-5 ${item.accent}`} />
-                          </div>
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
+              <div className="relative w-full xl:w-[30rem]">
+                <Search
+                  className={`absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 ${pageTheme.muted}`}
+                />
+                <input
+                  type="search"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Search tasks, customers, or status"
+                  className={`h-12 w-full rounded-none border py-2 pl-12 pr-4 text-sm outline-none transition-colors focus-visible:ring-2 ${pageTheme.field}`}
+                />
               </div>
             </section>
 
-            <section
-              className={`rounded-3xl border ${pageTheme.border} ${pageTheme.panel} overflow-hidden shadow-sm`}
-            >
-              <div className="flex flex-col gap-4 border-b border-inherit p-6 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <h2 className="text-2xl font-semibold">All tasks</h2>
-                  <p className={`mt-1 text-sm ${pageTheme.muted}`}>
-                    {isLoading
-                      ? "Loading assigned work..."
-                      : isError
-                        ? "Failed to load assigned work."
-                        : `${filteredTasks.length} task${filteredTasks.length === 1 ? "" : "s"} in the queue`}
+            <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {stats.map((stat) => (
+                <article
+                  key={stat.label}
+                  className={`min-h-24 rounded-lg border p-4 ${pageTheme.card}`}
+                >
+                  <p className={`text-sm font-medium ${pageTheme.muted}`}>
+                    {stat.label}
                   </p>
-                </div>
+                  <div className="mt-3 flex items-end justify-between gap-3">
+                    <h2 className={`text-2xl font-bold ${stat.accent}`}>
+                      {stat.value}
+                    </h2>
+                    <span className={`text-right text-xs ${pageTheme.muted}`}>
+                      {stat.detail}
+                    </span>
+                  </div>
+                </article>
+              ))}
+            </section>
 
-                <div className="relative w-full md:max-w-md">
-                  <Search
-                    className={`pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`}
-                  />
-                  <Input
-                    value={searchTerm}
-                    onChange={(event) => setSearchTerm(event.target.value)}
-                    placeholder="Search customer, subject, or task"
-                    className={`pl-9 ${pageTheme.field}`}
-                  />
+            <section
+              className={`overflow-hidden rounded-lg border ${pageTheme.panel}`}
+            >
+              <div
+                className={`border-b px-4 py-4 sm:px-5 ${pageTheme.divider}`}
+              >
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-lg font-bold">Assigned Tasks</h2>
+                    <p className={`mt-1 text-sm ${pageTheme.muted}`}>
+                      Open a task to review its customer, deadline, and work
+                      instructions.
+                    </p>
+                  </div>
+                  <p className={`text-sm ${pageTheme.muted}`}>
+                    {isLoading
+                      ? "Loading tasks"
+                      : `${filteredTasks.length} of ${tasks.length} shown`}
+                  </p>
                 </div>
               </div>
 
               <div className="overflow-x-auto">
-                <table className="min-w-full border-collapse text-left">
+                <table className="w-full min-w-[1080px] border-separate border-spacing-0 text-left text-sm">
                   <thead className={pageTheme.tableHead}>
                     <tr>
-                      <th className="px-6 py-4 text-sm font-medium">
+                      <th className="border-b border-inherit px-5 py-4 font-semibold">
                         Customer
                       </th>
-                      <th className="px-6 py-4 text-sm font-medium">Task</th>
-                      <th className="px-6 py-4 text-sm font-medium">Status</th>
-                      <th className="px-6 py-4 text-sm font-medium">
+                      <th className="border-b border-inherit px-5 py-4 font-semibold">
+                        Task
+                      </th>
+                      <th className="border-b border-inherit px-5 py-4 font-semibold">
+                        Status
+                      </th>
+                      <th className="border-b border-inherit px-5 py-4 font-semibold">
                         Priority
                       </th>
-                      <th className="px-6 py-4 text-sm font-medium">
-                        Due date
+                      <th className="border-b border-inherit px-5 py-4 font-semibold">
+                        Due Date
                       </th>
-                      <th className="px-6 py-4 text-sm font-medium">Action</th>
+                      <th className="border-b border-inherit px-5 py-4 font-semibold">
+                        Action
+                      </th>
                     </tr>
                   </thead>
+
                   <tbody>
-                    {filteredTasks.length === 0 ? (
+                    {isLoading ? (
                       <tr>
-                        <td colSpan={6} className="px-6 py-16 text-center">
-                          <div className="mx-auto max-w-sm space-y-2">
-                            <p className="text-lg font-semibold">
-                              No tasks found
-                            </p>
-                            <p className={`text-sm ${pageTheme.muted}`}>
-                              Try clearing the search or check back once tasks
-                              are assigned.
-                            </p>
-                          </div>
+                        <td
+                          colSpan={6}
+                          className={`px-5 py-12 text-center ${pageTheme.muted}`}
+                        >
+                          Loading assigned tasks...
+                        </td>
+                      </tr>
+                    ) : isError ? (
+                      <tr>
+                        <td
+                          colSpan={6}
+                          className="px-5 py-12 text-center text-rose-600"
+                        >
+                          Failed to load assigned tasks.
+                        </td>
+                      </tr>
+                    ) : filteredTasks.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={6}
+                          className={`px-5 py-12 text-center ${pageTheme.muted}`}
+                        >
+                          {searchTerm
+                            ? "No assigned tasks match your search."
+                            : "No assigned tasks found."}
                         </td>
                       </tr>
                     ) : (
-                      filteredTasks.map((task) => {
+                      filteredTasks.map((task, index) => {
                         const customerName =
                           task?.customerId?.name ||
                           task?.name ||
@@ -379,64 +493,70 @@ export default function Page() {
                         const title =
                           task?.task?.title || task?.subject || "Untitled task";
                         const status = task?.status || "pending";
+                        const priority = task?.priority || "medium";
 
                         return (
                           <tr
-                            key={task?._id}
-                            className={`border-t ${pageTheme.tableRow}`}
+                            key={
+                              task?._id || `${customerEmail}-${title}-${index}`
+                            }
+                            className={`transition-colors ${pageTheme.tableRow}`}
                           >
-                            <td className="px-6 py-5 align-top">
-                              <div className="space-y-1">
-                                <p className="font-semibold">{customerName}</p>
-                                <p className={`text-sm ${pageTheme.muted}`}>
-                                  {customerEmail}
-                                </p>
-                              </div>
-                            </td>
-                            <td className="px-6 py-5 align-top">
-                              <p className="max-w-xs font-medium leading-6">
-                                {title}
+                            <td className="border-b border-inherit px-5 py-4">
+                              <p className="font-medium">{customerName}</p>
+                              <p className={`mt-1 text-xs ${pageTheme.muted}`}>
+                                {customerEmail}
                               </p>
+                            </td>
+                            <td className="max-w-sm border-b border-inherit px-5 py-4">
+                              <p className="font-medium">{title}</p>
                               <p
-                                className={`mt-1 text-sm ${pageTheme.muted} line-clamp-2`}
+                                className={`mt-1 line-clamp-2 text-xs leading-5 ${pageTheme.muted}`}
                               >
                                 {task?.task?.notes ||
                                   task?.message ||
                                   "No additional notes provided."}
                               </p>
                             </td>
-                            <td className="px-6 py-5 align-top">
+                            <td className="border-b border-inherit px-5 py-4">
                               <span
-                                className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold capitalize ${getStatusBadgeClass(status)}`}
+                                className={`inline-flex whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold ${getStatusBadgeClass(
+                                  status,
+                                  isDarkTheme,
+                                )}`}
                               >
-                                {String(status).replace(/_/g, " ")}
+                                {formatStatusLabel(status)}
                               </span>
                             </td>
-                            <td className="px-6 py-5 align-top">
-                              <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
-                                {task?.priority || "medium"}
+                            <td className="border-b border-inherit px-5 py-4">
+                              <span
+                                className={`inline-flex rounded-md px-2 py-1 text-xs font-semibold capitalize ${getPriorityBadgeClass(
+                                  priority,
+                                  isDarkTheme,
+                                )}`}
+                              >
+                                {priority}
                               </span>
                             </td>
-                            <td className="px-6 py-5 align-top">
-                              <div
-                                className={`flex items-center gap-2 text-sm ${pageTheme.muted}`}
-                              >
-                                <Clock3 className="h-4 w-4" />
+                            <td className="whitespace-nowrap border-b border-inherit px-5 py-4">
+                              <span className="inline-flex items-center gap-2">
+                                <Clock3
+                                  className={`h-4 w-4 ${pageTheme.muted}`}
+                                />
                                 {formatDate(
                                   task?.deadline ||
                                     task?.acceptedDate ||
                                     task?.createdAt,
                                 )}
-                              </div>
+                              </span>
                             </td>
-                            <td className="px-6 py-5 align-top">
+                            <td className="border-b border-inherit px-5 py-4">
                               <Button
                                 type="button"
-                                variant="outline"
-                                className="rounded-xl"
-                                onClick={() => setSelectedTask(task)}
+                                className="h-9 rounded-none bg-blue-600 px-4 text-white hover:bg-blue-700"
+                                onClick={() => openWorkUpdateForm(task)}
                               >
-                                View
+                                Update Work
                               </Button>
                             </td>
                           </tr>
@@ -447,85 +567,164 @@ export default function Page() {
                 </table>
               </div>
             </section>
-          </div>
+          </main>
         </SidebarInset>
       </SidebarProvider>
 
       <Sheet
         open={Boolean(selectedTask)}
-        onOpenChange={(open) => !open && setSelectedTask(null)}
+        onOpenChange={(open) => {
+          if (!open && !workUpdateMutation.isPending) {
+            setSelectedTask(null);
+            setWorkUpdateForm(initialWorkUpdateForm);
+            setFormError("");
+          }
+        }}
       >
         <SheetContent
-          className={`${pageTheme.panel} ${pageTheme.border} overflow-y-auto`}
+          side="right"
+          className={`${pageTheme.panel} flex h-screen w-full flex-col overflow-hidden p-0 sm:max-w-lg`}
         >
-          <SheetHeader>
-            <SheetTitle>Task details</SheetTitle>
+          <SheetHeader
+            className={`border-b px-5 pb-5 pt-7 text-left ${pageTheme.divider}`}
+          >
+            <SheetTitle
+              className={isDarkTheme ? "text-slate-100" : "text-[#001a3a]"}
+            >
+              Add Work Update
+            </SheetTitle>
             <SheetDescription className={pageTheme.muted}>
-              Review the customer, task, and status information for the selected
-              item.
+              Record progress and update the current task status.
             </SheetDescription>
           </SheetHeader>
 
           {selectedTask ? (
-            <div className="mt-6 space-y-5">
-              <div>
-                <p className={`text-sm ${pageTheme.muted}`}>Customer</p>
-                <p className="mt-1 font-medium">
-                  {selectedTask?.customerId?.name ||
-                    selectedTask?.name ||
-                    "Unknown customer"}
-                </p>
-                <p className={`text-sm ${pageTheme.muted}`}>
-                  {selectedTask?.customerId?.email ||
-                    selectedTask?.email ||
-                    "-"}
-                </p>
+            <form
+              className="flex flex-1 flex-col overflow-hidden"
+              onSubmit={handleWorkUpdateSubmit}
+            >
+              <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
+                <section
+                  className={`rounded-lg border p-4 ${pageTheme.details}`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <p className={`text-xs uppercase ${pageTheme.muted}`}>
+                      Task
+                    </p>
+                    <span
+                      className={`inline-flex rounded-md px-2 py-1 text-xs font-semibold ${getStatusBadgeClass(
+                        selectedTask?.status,
+                        isDarkTheme,
+                      )}`}
+                    >
+                      {formatStatusLabel(selectedTask?.status)}
+                    </span>
+                  </div>
+                  <p className="mt-1 font-semibold">
+                    {selectedTask?.task?.title ||
+                      selectedTask?.subject ||
+                      "Untitled task"}
+                  </p>
+                  <p className={`mt-2 text-sm leading-6 ${pageTheme.muted}`}>
+                    {selectedTask?.task?.notes ||
+                      selectedTask?.message ||
+                      "No task notes available."}
+                  </p>
+                  <p className={`mt-3 text-xs ${pageTheme.muted}`}>
+                    Customer:{" "}
+                    {selectedTask?.customerId?.name ||
+                      selectedTask?.name ||
+                      "Unknown customer"}
+                  </p>
+                </section>
+
+                <div className="space-y-2">
+                  <label
+                    htmlFor="work-update-status"
+                    className="text-sm font-semibold"
+                  >
+                    Work status
+                  </label>
+                  <select
+                    id="work-update-status"
+                    name="status"
+                    value={workUpdateForm.status}
+                    onChange={handleWorkUpdateChange}
+                    disabled={workUpdateMutation.isPending}
+                    className={`h-11 w-full rounded-none border px-3 text-sm outline-none transition-colors focus-visible:ring-2 ${pageTheme.field}`}
+                  >
+                    <option value="assigned">Assigned</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="on_hold">On Hold</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label
+                    htmlFor="work-update-message"
+                    className="text-sm font-semibold"
+                  >
+                    Update message
+                  </label>
+                  <Textarea
+                    id="work-update-message"
+                    name="message"
+                    value={workUpdateForm.message}
+                    onChange={handleWorkUpdateChange}
+                    disabled={workUpdateMutation.isPending}
+                    placeholder="Describe the work completed, current progress, or any blocker..."
+                    rows={7}
+                    className={`min-h-40 resize-none text-sm ${pageTheme.field}`}
+                  />
+                  <p className={`text-xs ${pageTheme.muted}`}>
+                    This update will be added to the complaint&apos;s work
+                    history.
+                  </p>
+                </div>
+
+                {formError ? (
+                  <p className="text-sm font-medium text-rose-600">
+                    {formError}
+                  </p>
+                ) : null}
               </div>
 
-              <div>
-                <p className={`text-sm ${pageTheme.muted}`}>Task</p>
-                <p className="mt-1 font-medium">
-                  {selectedTask?.task?.title ||
-                    selectedTask?.subject ||
-                    "Untitled task"}
-                </p>
-                <p className={`mt-2 text-sm leading-6 ${pageTheme.muted}`}>
-                  {selectedTask?.task?.notes ||
-                    selectedTask?.message ||
-                    "No task notes available."}
-                </p>
+              <div
+                className={`flex gap-3 border-t px-5 py-4 ${pageTheme.divider}`}
+              >
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={`flex-1 rounded-none ${pageTheme.button}`}
+                  disabled={workUpdateMutation.isPending}
+                  onClick={() => {
+                    setSelectedTask(null);
+                    setWorkUpdateForm(initialWorkUpdateForm);
+                    setFormError("");
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="flex-1 rounded-none bg-blue-600 text-white hover:bg-blue-700"
+                  disabled={workUpdateMutation.isPending}
+                >
+                  {workUpdateMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4" />
+                      Save Update
+                    </>
+                  )}
+                </Button>
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-2xl border p-4">
-                  <p className={`text-sm ${pageTheme.muted}`}>Status</p>
-                  <p className="mt-1 font-medium capitalize">
-                    {String(selectedTask?.status || "pending").replace(
-                      /_/g,
-                      " ",
-                    )}
-                  </p>
-                </div>
-                <div className="rounded-2xl border p-4">
-                  <p className={`text-sm ${pageTheme.muted}`}>Priority</p>
-                  <p className="mt-1 font-medium capitalize">
-                    {selectedTask?.priority || "medium"}
-                  </p>
-                </div>
-                <div className="rounded-2xl border p-4">
-                  <p className={`text-sm ${pageTheme.muted}`}>Due date</p>
-                  <p className="mt-1 font-medium">
-                    {formatDate(selectedTask?.deadline)}
-                  </p>
-                </div>
-                <div className="rounded-2xl border p-4">
-                  <p className={`text-sm ${pageTheme.muted}`}>Service type</p>
-                  <p className="mt-1 font-medium">
-                    {selectedTask?.serviceType || "-"}
-                  </p>
-                </div>
-              </div>
-            </div>
+            </form>
           ) : null}
         </SheetContent>
       </Sheet>

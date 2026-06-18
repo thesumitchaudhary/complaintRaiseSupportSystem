@@ -53,7 +53,7 @@ export const addWorkUpdate = async (req, res) => {
     try {
         const employeeId = req.user.id;
         const { complaintId } = req.params;
-        const { message, status = "in_progress", progress, images } = req.body || {};
+        const { message, status = "in_progress", progress } = req.body || {};
 
         if (!mongoose.Types.ObjectId.isValid(complaintId)) {
             return res.status(400).json({
@@ -93,13 +93,6 @@ export const addWorkUpdate = async (req, res) => {
             }
         }
 
-        if (images !== undefined && !Array.isArray(images)) {
-            return res.status(400).json({
-                success: false,
-                message: "images must be an array",
-            });
-        }
-
         const employee = await userModel.findOne({ _id: employeeId, role: "employee" });
 
         if (!employee) {
@@ -131,10 +124,6 @@ export const addWorkUpdate = async (req, res) => {
 
         if (normalizedProgress !== undefined) {
             update.progress = normalizedProgress;
-        }
-
-        if (images !== undefined) {
-            update.images = images.map((image) => String(image).trim()).filter(Boolean);
         }
 
         assignedComplaint.workUpdates.push(update);

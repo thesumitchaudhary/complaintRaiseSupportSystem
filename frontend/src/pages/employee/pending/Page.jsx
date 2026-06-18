@@ -20,50 +20,49 @@ import {
 export default function Page() {
   const [theme, setTheme] = useState(false);
 
-  const pageTheme = theme
+  const isDarkTheme = theme;
+  const pageTheme = isDarkTheme
     ? {
         shell: "bg-slate-950 text-slate-100",
-        header: "border-slate-800 bg-slate-950/80",
-        border: "border-slate-800",
+        header: "border-blue-900/60 bg-slate-900",
+        panel: "border-blue-900/60 bg-slate-900 text-slate-100",
+        details: "border-blue-900/60 bg-slate-950/70",
         muted: "text-slate-400",
-        card: "border-slate-800 bg-slate-900/70 text-slate-100",
-        cardTitle: "text-slate-50",
-        cardText: "text-slate-400",
-        button:
-          "border-slate-700 text-slate-100 hover:border-slate-500 hover:bg-slate-800",
+        button: "border-blue-900/70 text-slate-100 hover:bg-slate-800",
       }
     : {
-        shell: "bg-slate-50 text-slate-900",
-        header: "border-slate-200 bg-white/90",
-        border: "border-slate-200",
-        muted: "text-slate-500",
-        card: "border-slate-200 bg-white text-slate-900",
-        cardTitle: "text-slate-900",
-        cardText: "text-slate-500",
-        button:
-          "border-slate-300 text-slate-900 hover:border-slate-400 hover:bg-slate-100",
+        shell: "bg-[#f8fbff] text-[#001a3a]",
+        header: "border-[#c7ddff] bg-white",
+        panel: "border-[#b8d8ff] bg-white text-[#001a3a]",
+        details: "border-[#b8d8ff] bg-[#eef6ff]",
+        muted: "text-[#4e678a]",
+        button: "border-[#b8d8ff] text-[#12365c] hover:bg-[#eef6ff]",
       };
 
-  const toggleTheme = () => {
-    setTheme((currentTheme) => !currentTheme);
-  };
-
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme);
-  }, [theme]);
+    const root = document.documentElement;
+    const body = document.body;
+    const backgroundColor = isDarkTheme ? "#020617" : "#f8fbff";
+    const textColor = isDarkTheme ? "#f8fafc" : "#001a3a";
+
+    root.classList.toggle("dark", isDarkTheme);
+    root.style.backgroundColor = backgroundColor;
+    body.style.backgroundColor = backgroundColor;
+    body.style.color = textColor;
+  }, [isDarkTheme]);
 
   return (
     <div className={`${pageTheme.shell} min-h-screen`}>
       <SidebarProvider style={{ backgroundColor: "transparent" }}>
         <AppSidebar />
         <SidebarInset
-          className={pageTheme.shell}
+          className="min-w-0 w-0 overflow-x-hidden"
           style={{ backgroundColor: "transparent" }}
         >
           <header
-            className={`sticky top-0 z-10 border-b ${pageTheme.border} ${pageTheme.header} backdrop-blur`}
+            className={`sticky top-0 z-10 flex h-16 shrink-0 items-center border-b ${pageTheme.header}`}
           >
-            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4">
+            <div className="flex w-full items-center justify-between gap-3 px-4">
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="-ml-1" />
                 <Separator
@@ -74,7 +73,7 @@ export default function Page() {
                   <BreadcrumbList>
                     <BreadcrumbItem className="hidden md:block">
                       <BreadcrumbLink
-                        className={`${pageTheme.muted} transition-colors hover:text-current`}
+                        className={`text-sm ${pageTheme.muted}`}
                         href="#"
                       >
                         Employee dashboard
@@ -82,8 +81,8 @@ export default function Page() {
                     </BreadcrumbItem>
                     <BreadcrumbSeparator className="hidden md:block" />
                     <BreadcrumbItem>
-                      <BreadcrumbPage className={pageTheme.muted}>
-                        pending
+                      <BreadcrumbPage className={`text-sm ${pageTheme.muted}`}>
+                        Pending Tasks
                       </BreadcrumbPage>
                     </BreadcrumbItem>
                   </BreadcrumbList>
@@ -94,9 +93,9 @@ export default function Page() {
                 type="button"
                 aria-label="Toggle theme"
                 className={`inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors ${pageTheme.button}`}
-                onClick={toggleTheme}
+                onClick={() => setTheme((currentTheme) => !currentTheme)}
               >
-                {theme ? (
+                {isDarkTheme ? (
                   <Moon className="h-4 w-4" />
                 ) : (
                   <Sun className="h-4 w-4" />
@@ -105,73 +104,56 @@ export default function Page() {
             </div>
           </header>
 
-          <main className="flex flex-1 flex-col gap-6 p-4 pt-6">
-            <section
-              className={`rounded-2xl border p-6 shadow-sm ${pageTheme.card}`}
-            >
-              <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-                <div className="max-w-2xl space-y-4">
-                  <div
-                    className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-medium ${pageTheme.muted}`}
-                  >
-                    <Clock3 className="h-4 w-4" />
-                    Waiting queue
-                  </div>
-                  <div className="space-y-2">
-                    <h1
-                      className={`text-3xl font-semibold tracking-tight ${pageTheme.cardTitle}`}
-                    >
-                      Pending tasks
-                    </h1>
-                    <p className={`max-w-xl leading-7 ${pageTheme.cardText}`}>
-                      Keep an eye on tickets that are waiting for assignment,
-                      approval, or the next action before work begins.
-                    </p>
-                  </div>
-                </div>
-
-                <div
-                  className={`rounded-xl border px-4 py-3 text-sm ${pageTheme.border}`}
-                >
-                  <p className={`font-medium ${pageTheme.cardTitle}`}>
-                    Current view
-                  </p>
-                  <p className={`mt-1 ${pageTheme.cardText}`}>
-                    Pending task queue
-                  </p>
-                </div>
-              </div>
+          <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 lg:p-6">
+            <section>
+              <h1 className="text-2xl font-bold tracking-normal">
+                Pending Tasks
+              </h1>
+              <p className={`mt-1 max-w-2xl text-sm ${pageTheme.muted}`}>
+                Keep an eye on assigned work that is waiting for you to begin.
+              </p>
             </section>
 
-            <section className="grid gap-4 md:grid-cols-3">
-              {[
-                {
-                  title: "Awaiting action",
-                  body: "Shows tickets that have not started or are waiting on a response.",
-                },
-                {
-                  title: "Queue clarity",
-                  body: "Separates upcoming work from active and completed items.",
-                },
-                {
-                  title: "Ready for data",
-                  body: "This area can be connected to the live pending-task list next.",
-                },
-              ].map((item) => (
-                <article
-                  key={item.title}
-                  className={`rounded-xl border p-4 shadow-sm ${pageTheme.card}`}
-                >
-                  <h2
-                    className={`text-sm font-semibold uppercase tracking-wide ${pageTheme.cardTitle}`}
-                  >
-                    {item.title}
-                  </h2>
-                  <p className={`mt-2 text-sm leading-6 ${pageTheme.cardText}`}>
-                    {item.body}
+            <section
+              className={`overflow-hidden rounded-lg border ${pageTheme.panel}`}
+            >
+              <div
+                className={`flex flex-col gap-2 border-b px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 ${pageTheme.details}`}
+              >
+                <div>
+                  <h2 className="text-lg font-bold">Pending Task Queue</h2>
+                  <p className={`mt-1 text-sm ${pageTheme.muted}`}>
+                    Tasks assigned to you will appear here before work starts.
                   </p>
-                </article>
-              ))}
+                </div>
+                <div
+                  className={`inline-flex items-center gap-2 text-sm ${pageTheme.muted}`}
+                >
+                  <Clock3 className="h-4 w-4" />
+                  Waiting queue
+                </div>
+              </div>
+
+              <div className="px-5 py-14 text-center">
+                <div
+                  className={`mx-auto flex h-12 w-12 items-center justify-center rounded-lg border ${pageTheme.details}`}
+                >
+                  <Clock3
+                    className={`h-6 w-6 ${
+                      isDarkTheme ? "text-orange-300" : "text-orange-500"
+                    }`}
+                  />
+                </div>
+                <h3 className="mt-4 font-bold">
+                  Pending tasks will appear here
+                </h3>
+                <p
+                  className={`mx-auto mt-2 max-w-md text-sm ${pageTheme.muted}`}
+                >
+                  This queue is ready to display tasks that have been assigned
+                  but are not yet in progress.
+                </p>
+              </div>
             </section>
           </main>
         </SidebarInset>

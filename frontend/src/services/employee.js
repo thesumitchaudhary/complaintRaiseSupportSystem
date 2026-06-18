@@ -62,3 +62,19 @@ export const showAssignedComplaint = async () => {
     throw error;
   }
 };
+
+export const workUpdate = async ({ complaintId, message, status }) => {
+  try {
+    const response = await api.post(
+      `/employee/complaints/${complaintId}/work-updates`,
+      {
+        message,
+        status,
+      },
+    );
+    return response.data;
+  } catch (error) {
+    console.log("Failed to Work Update Task", error.response?.status);
+    throw error;
+  }
+};

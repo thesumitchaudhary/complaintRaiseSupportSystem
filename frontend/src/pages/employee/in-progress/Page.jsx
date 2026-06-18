@@ -20,50 +20,53 @@ import {
 export default function Page() {
   const [theme, setTheme] = useState(false);
 
-  const pageTheme = theme
+  const isDarkTheme = theme;
+  const pageTheme = isDarkTheme
     ? {
         shell: "bg-slate-950 text-slate-100",
-        header: "border-slate-800 bg-slate-950/80",
-        border: "border-slate-800",
+        header: "border-blue-900/60 bg-slate-900",
+        border: "border-blue-900/60",
         muted: "text-slate-400",
-        card: "border-slate-800 bg-slate-900/70 text-slate-100",
+        card: "border-blue-900/70 bg-slate-900 text-slate-100",
         cardTitle: "text-slate-50",
         cardText: "text-slate-400",
-        button:
-          "border-slate-700 text-slate-100 hover:border-slate-500 hover:bg-slate-800",
+        button: "border-blue-900/70 text-slate-100 hover:bg-slate-800",
       }
     : {
-        shell: "bg-slate-50 text-slate-900",
-        header: "border-slate-200 bg-white/90",
-        border: "border-slate-200",
-        muted: "text-slate-500",
-        card: "border-slate-200 bg-white text-slate-900",
-        cardTitle: "text-slate-900",
-        cardText: "text-slate-500",
-        button:
-          "border-slate-300 text-slate-900 hover:border-slate-400 hover:bg-slate-100",
+        shell: "bg-[#f8fbff] text-[#001a3a]",
+        header: "border-[#c7ddff] bg-white",
+        border: "border-[#b8d8ff]",
+        muted: "text-[#4e678a]",
+        card: "border-[#b8d8ff] bg-[#eef6ff] text-[#12365c] shadow-[0_14px_24px_-20px_rgba(37,99,235,0.95)]",
+        cardTitle: "text-[#001a3a]",
+        cardText: "text-[#4e678a]",
+        button: "border-[#b8d8ff] text-[#12365c] hover:bg-[#eef6ff]",
       };
 
-  const toggleTheme = () => {
-    setTheme((currentTheme) => !currentTheme);
-  };
-
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme);
-  }, [theme]);
+    const root = document.documentElement;
+    const body = document.body;
+    const backgroundColor = isDarkTheme ? "#020617" : "#f8fbff";
+    const textColor = isDarkTheme ? "#f8fafc" : "#001a3a";
+
+    root.classList.toggle("dark", isDarkTheme);
+    root.style.backgroundColor = backgroundColor;
+    body.style.backgroundColor = backgroundColor;
+    body.style.color = textColor;
+  }, [isDarkTheme]);
 
   return (
     <div className={`${pageTheme.shell} min-h-screen`}>
       <SidebarProvider style={{ backgroundColor: "transparent" }}>
         <AppSidebar />
         <SidebarInset
-          className={pageTheme.shell}
+          className="min-w-0 w-0 overflow-x-hidden"
           style={{ backgroundColor: "transparent" }}
         >
           <header
-            className={`sticky top-0 z-10 border-b ${pageTheme.border} ${pageTheme.header} backdrop-blur`}
+            className={`sticky top-0 z-10 flex h-16 shrink-0 items-center border-b ${pageTheme.header}`}
           >
-            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4">
+            <div className="flex w-full items-center justify-between gap-3 px-4">
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="-ml-1" />
                 <Separator
@@ -74,7 +77,7 @@ export default function Page() {
                   <BreadcrumbList>
                     <BreadcrumbItem className="hidden md:block">
                       <BreadcrumbLink
-                        className={`${pageTheme.muted} transition-colors hover:text-current`}
+                        className={`text-sm ${pageTheme.muted}`}
                         href="#"
                       >
                         Employee dashboard
@@ -82,8 +85,8 @@ export default function Page() {
                     </BreadcrumbItem>
                     <BreadcrumbSeparator className="hidden md:block" />
                     <BreadcrumbItem>
-                      <BreadcrumbPage className={pageTheme.muted}>
-                        In progress
+                      <BreadcrumbPage className={`text-sm ${pageTheme.muted}`}>
+                        In Progress Tasks
                       </BreadcrumbPage>
                     </BreadcrumbItem>
                   </BreadcrumbList>
@@ -94,9 +97,9 @@ export default function Page() {
                 type="button"
                 aria-label="Toggle theme"
                 className={`inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors ${pageTheme.button}`}
-                onClick={toggleTheme}
+                onClick={() => setTheme((currentTheme) => !currentTheme)}
               >
-                {theme ? (
+                {isDarkTheme ? (
                   <Moon className="h-4 w-4" />
                 ) : (
                   <Sun className="h-4 w-4" />
@@ -105,7 +108,7 @@ export default function Page() {
             </div>
           </header>
 
-          <main className="flex flex-1 flex-col gap-6 p-4 pt-6">
+          <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 lg:p-6">
             <section
               className={`rounded-2xl border p-6 shadow-sm ${pageTheme.card}`}
             >
