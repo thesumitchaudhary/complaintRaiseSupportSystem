@@ -31,6 +31,19 @@ app.get("/", (req, res) => {
     res.json("hey this is woking")
 })
 
+app.get("/api/health", (req, res) => {
+    const isDatabaseConnected = mongoose.connection.readyState === 1;
+
+    if (!isDatabaseConnected) {
+        return res.status(503).json({
+            status: "error",
+            message: "Backend is not working",
+        });
+    }
+
+    return res.status(200).json({ status: "ok" });
+});
+
 app.use("/api/admin", adminRouter);
 app.use("/api", index);
 app.use("/api/user", userRouter);

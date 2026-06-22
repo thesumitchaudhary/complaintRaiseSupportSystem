@@ -6,8 +6,8 @@ import {
 } from "react-router-dom";
 
 import Home from "../pages/Home";
-import Dashboard from "../pages/Dashbord";
 import ResetPassword from "../pages/ResetPassword";
+import NotFound from "../pages/NotFound";
 
 // this is for the user pages direction
 import UserDashboardPage from "../pages/user/dashboard/Page";
@@ -33,7 +33,10 @@ const Routers = () => {
       <Router>
         <Routes>
           <Route path={"/"} element={<Home />} />
-          <Route path={"/dashboard"} element={<Dashboard />} />
+          <Route
+            path={"/dashboad"}
+            element={<Navigate to="/dashboard" replace />}
+          />
           <Route path={"/reset-password"} element={<ResetPassword />} />
 
           {/* this is for user dashboard blocks */}
@@ -75,6 +78,9 @@ const Routers = () => {
             path={"/Employee/TaskPendingPage"}
             element={<EmployeeTaskPendingPage />}
           />
+
+          {/* Show this page when no route above matches the URL */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
     </div>

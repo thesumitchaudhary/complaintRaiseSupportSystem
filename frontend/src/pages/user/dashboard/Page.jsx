@@ -13,6 +13,7 @@ import {
 import { Calendar } from "../../../components/ui/calendar";
 import { Input } from "../../../components/ui/input";
 import { Separator } from "../../../components/ui/separator";
+import { DataTable } from "../../../components/DataTable";
 import {
   SidebarInset,
   SidebarProvider,
@@ -44,6 +45,44 @@ const formatDate = (value) => {
     month: "short",
     year: "numeric",
   }).format(date);
+};
+
+const renderHighlightedText = (value, searchTerm, highlightClassName) => {
+  const text = String(value || "-");
+  const needle = String(searchTerm || "").trim();
+
+  if (!needle) return text;
+
+  const lowerText = text.toLowerCase();
+  const lowerNeedle = needle.toLowerCase();
+  const parts = [];
+  let cursor = 0;
+  let matchIndex = lowerText.indexOf(lowerNeedle);
+
+  while (matchIndex !== -1) {
+    if (matchIndex > cursor) {
+      parts.push(text.slice(cursor, matchIndex));
+    }
+
+    const matchEnd = matchIndex + needle.length;
+    parts.push(
+      <mark
+        key={`${matchIndex}-${matchEnd}`}
+        className={`rounded px-0.5 ${highlightClassName}`}
+      >
+        {text.slice(matchIndex, matchEnd)}
+      </mark>,
+    );
+
+    cursor = matchEnd;
+    matchIndex = lowerText.indexOf(lowerNeedle, cursor);
+  }
+
+  if (cursor < text.length) {
+    parts.push(text.slice(cursor));
+  }
+
+  return parts;
 };
 
 const raisedDateFilterOptions = [
@@ -145,6 +184,83 @@ const getStatusClasses = (status, isDarkTheme) => {
     : "bg-slate-100 text-slate-700";
 };
 
+const MobileComplaintCard = ({
+  complaint,
+  currentUser,
+  debouncedSearch,
+  isDarkTheme,
+  pageTheme,
+}) => {
+  const statusLabel = formatLabel(complaint?.status || "pending");
+  const details = [
+    {
+      label: "Name",
+      value: complaint?.name || currentUser?.name || "-",
+    },
+    {
+      label: "Email",
+      value: complaint?.email || currentUser?.email || "-",
+    },
+    {
+      label: "Raised",
+      value: formatDate(complaint?.raisedDate || complaint?.createdAt),
+    },
+  ];
+
+  return (
+    <article className={`p-4 ${pageTheme.row}`}>
+      <header className="flex min-w-0 items-start justify-between gap-3">
+        <h3 className="min-w-0 flex-1 break-words text-sm font-semibold">
+          {renderHighlightedText(
+            complaint?.subject || "Untitled complaint",
+            debouncedSearch,
+            pageTheme.highlight,
+          )}
+        </h3>
+        <span
+          className={`inline-flex shrink-0 rounded-md px-2 py-1 text-xs font-semibold ${getStatusClasses(
+            complaint?.status,
+            isDarkTheme,
+          )}`}
+        >
+          {renderHighlightedText(
+            statusLabel,
+            debouncedSearch,
+            pageTheme.highlight,
+          )}
+        </span>
+      </header>
+
+      <p className={`mt-3 break-words text-sm leading-6 ${pageTheme.muted}`}>
+        {renderHighlightedText(
+          complaint?.message || "-",
+          debouncedSearch,
+          pageTheme.highlight,
+        )}
+      </p>
+
+      <dl className="mt-4 grid gap-3 min-[480px]:grid-cols-2">
+        {details.map((detail) => (
+          <div key={detail.label} className="min-w-0">
+            <dt
+              className={`text-xs font-medium uppercase tracking-wide ${pageTheme.muted}`}
+            >
+              {detail.label}
+            </dt>
+            <dd className="mt-1 break-all text-sm">
+              {renderHighlightedText(
+                detail.value,
+                debouncedSearch,
+                pageTheme.highlight,
+              )}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </article>
+  );
+};
+
 export default function Page() {
   const [theme, setTheme] = useState(false);
   const [search, setSearch] = useState("");
@@ -169,6 +285,7 @@ export default function Page() {
         muted: "text-slate-400",
         button: "border-blue-900/70 text-slate-100 hover:bg-slate-800",
         suggestionHover: "hover:bg-slate-800",
+        highlight: "bg-yellow-300 text-slate-950",
       }
     : {
         shell: "bg-[#f8fbff] text-[#001a3a]",
@@ -183,6 +300,7 @@ export default function Page() {
         muted: "text-[#4e678a]",
         button: "border-[#b8d8ff] text-[#12365c] hover:bg-[#eef6ff]",
         suggestionHover: "hover:bg-[#eef6ff]",
+        highlight: "bg-yellow-200 text-slate-950",
       };
 
   const raisedDateParams = useMemo(
@@ -232,6 +350,96 @@ export default function Page() {
   );
   const currentUser = userData?.result;
 
+  const complaintColumns = useMemo(
+    () => [
+      {
+        key: "name",
+        header: "Name",
+        cellClassName: "font-medium",
+        render: (complaint) =>
+          renderHighlightedText(
+            complaint?.name || currentUser?.name || "-",
+            debouncedSearch,
+            pageTheme.highlight,
+          ),
+      },
+      {
+        key: "email",
+        header: "Email",
+        render: (complaint) =>
+          renderHighlightedText(
+            complaint?.email || currentUser?.email || "-",
+            debouncedSearch,
+            pageTheme.highlight,
+          ),
+      },
+      {
+        key: "subject",
+        header: "Subject",
+        render: (complaint) =>
+          renderHighlightedText(
+            complaint?.subject || "-",
+            debouncedSearch,
+            pageTheme.highlight,
+          ),
+      },
+      {
+        key: "message",
+        header: "Message",
+        cellClassName: "max-w-sm",
+        render: (complaint) => (
+          <p className="line-clamp-2">
+            {renderHighlightedText(
+              complaint?.message || "-",
+              debouncedSearch,
+              pageTheme.highlight,
+            )}
+          </p>
+        ),
+      },
+      {
+        key: "raisedDate",
+        header: "Raised Date",
+        cellClassName: "whitespace-nowrap",
+        render: (complaint) =>
+          renderHighlightedText(
+            formatDate(complaint?.raisedDate || complaint?.createdAt),
+            debouncedSearch,
+            pageTheme.highlight,
+          ),
+      },
+      {
+        key: "status",
+        header: "Status",
+        render: (complaint) => {
+          const statusLabel = formatLabel(complaint?.status || "pending");
+
+          return (
+            <span
+              className={`inline-flex rounded-md px-2 py-1 text-xs font-semibold ${getStatusClasses(
+                complaint?.status,
+                isDarkTheme,
+              )}`}
+            >
+              {renderHighlightedText(
+                statusLabel,
+                debouncedSearch,
+                pageTheme.highlight,
+              )}
+            </span>
+          );
+        },
+      },
+    ],
+    [
+      currentUser?.email,
+      currentUser?.name,
+      debouncedSearch,
+      isDarkTheme,
+      pageTheme.highlight,
+    ],
+  );
+
   const filteredComplaints = useMemo(() => {
     if (!debouncedSearch) return complaints;
 
@@ -256,7 +464,7 @@ export default function Page() {
   }, [complaints, debouncedSearch]);
 
   const suggestions = useMemo(() => {
-    const needle = search.trim().toLowerCase();
+    const needle = debouncedSearch;
 
     if (!needle) return [];
 
@@ -267,7 +475,7 @@ export default function Page() {
           .includes(needle),
       )
       .slice(0, 5);
-  }, [complaints, search]);
+  }, [complaints, debouncedSearch]);
 
   const totalComplaints = complaints.length;
   const resolvedComplaints = complaints.filter((ticket) =>
@@ -318,21 +526,33 @@ export default function Page() {
   ];
 
   return (
-    <div className={`${pageTheme.shell} min-h-screen`}>
+    <section
+      aria-label="Customer support dashboard"
+      className={`${pageTheme.shell} min-h-screen overflow-x-hidden`}
+    >
       <SidebarProvider style={{ backgroundColor: "transparent" }}>
         <AppSidebar />
-        <SidebarInset style={{ backgroundColor: "transparent" }}>
+        <SidebarInset
+          className="min-w-0"
+          style={{ backgroundColor: "transparent" }}
+        >
           <header
             className={`sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b ${pageTheme.header}`}
           >
-            <div className="flex w-full items-center justify-between gap-3 px-4">
-              <div className="flex items-center gap-2">
+            <section
+              aria-label="Dashboard toolbar"
+              className="flex min-w-0 w-full items-center justify-between gap-3 px-3 sm:px-4"
+            >
+              <section
+                aria-label="Dashboard navigation controls"
+                className="flex min-w-0 items-center gap-2"
+              >
                 <SidebarTrigger className="-ml-1" />
                 <Separator
                   orientation="vertical"
-                  className="mr-2 data-[orientation=vertical]:h-4"
+                  className="mr-1 data-[orientation=vertical]:h-4 sm:mr-2"
                 />
-                <Breadcrumb>
+                <Breadcrumb className="min-w-0">
                   <BreadcrumbList>
                     <BreadcrumbItem className="hidden md:block">
                       <BreadcrumbLink
@@ -344,18 +564,20 @@ export default function Page() {
                     </BreadcrumbItem>
                     <BreadcrumbSeparator className="hidden md:block" />
                     <BreadcrumbItem>
-                      <BreadcrumbPage className={`text-sm ${pageTheme.muted}`}>
+                      <BreadcrumbPage
+                        className={`truncate text-sm ${pageTheme.muted}`}
+                      >
                         Overview
                       </BreadcrumbPage>
                     </BreadcrumbItem>
                   </BreadcrumbList>
                 </Breadcrumb>
-              </div>
+              </section>
 
               <button
                 type="button"
                 aria-label="Toggle theme"
-                className={`inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors ${pageTheme.button}`}
+                className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border transition-colors ${pageTheme.button}`}
                 onClick={() => setTheme((prev) => !prev)}
               >
                 {isDarkTheme ? (
@@ -364,28 +586,47 @@ export default function Page() {
                   <Sun className="h-4 w-4" />
                 )}
               </button>
-            </div>
+            </section>
           </header>
 
-          <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 lg:p-6">
-            <section className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-              <div>
-                <h1 className="text-2xl font-bold tracking-normal">
+          <section
+            aria-labelledby="dashboard-title"
+            className="mx-auto flex min-w-0 w-full max-w-7xl flex-1 flex-col gap-5 p-3 sm:gap-6 sm:p-4 lg:p-6"
+          >
+            <section
+              aria-labelledby="dashboard-title"
+              className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between"
+            >
+              <header className="min-w-0">
+                <h1
+                  id="dashboard-title"
+                  className="text-xl font-bold tracking-normal sm:text-2xl"
+                >
                   Dashboard
                 </h1>
                 <p className={`mt-1 text-sm ${pageTheme.muted}`}>
                   Review your complaint activity and quickly filter the current
                   queue.
                 </p>
-              </div>
+              </header>
 
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="relative w-full sm:w-80">
+              <form
+                aria-label="Complaint filters"
+                className="flex min-w-0 w-full flex-col gap-3 sm:flex-row sm:items-center xl:w-auto"
+                onSubmit={(event) => event.preventDefault()}
+              >
+                <search className="relative min-w-0 w-full sm:flex-1 xl:w-80 xl:flex-none">
                   <Search
                     className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`}
                   />
                   <Input
                     type="search"
+                    aria-label="Search complaints"
+                    aria-controls={
+                      suggestions.length > 0
+                        ? "complaint-search-suggestions"
+                        : undefined
+                    }
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
                     placeholder="Search complaints"
@@ -393,30 +634,41 @@ export default function Page() {
                   />
 
                   {suggestions.length > 0 ? (
-                    <div
+                    <ul
+                      id="complaint-search-suggestions"
+                      aria-label="Complaint search suggestions"
                       className={`absolute left-0 top-full z-50 mt-1 w-full rounded-md border shadow-lg ${pageTheme.panel}`}
                     >
                       {suggestions.map((item) => (
-                        <button
-                          key={item?._id}
-                          type="button"
-                          className={`block w-full px-3 py-2 text-left text-sm transition-colors ${pageTheme.suggestionHover}`}
-                          onClick={() => setSearch(item?.subject || "")}
-                        >
-                          {item?.subject || "Untitled complaint"}
-                        </button>
+                        <li key={item?._id}>
+                          <button
+                            type="button"
+                            className={`block w-full px-3 py-2 text-left text-sm transition-colors ${pageTheme.suggestionHover}`}
+                            onClick={() => setSearch(item?.subject || "")}
+                          >
+                            {renderHighlightedText(
+                              item?.subject || "Untitled complaint",
+                              debouncedSearch,
+                              pageTheme.highlight,
+                            )}
+                          </button>
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                   ) : null}
-                </div>
+                </search>
 
-                <div className="relative w-full sm:w-64">
+                <section
+                  aria-label="Raised date filter"
+                  className="relative min-w-0 w-full sm:w-64 sm:shrink-0"
+                >
                   <CalendarDays
                     className={`pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`}
                   />
                   <button
                     type="button"
                     aria-expanded={datePickerOpen}
+                    aria-controls="raised-date-options"
                     aria-label="Filter complaints by raised date"
                     onClick={() => setDatePickerOpen((open) => !open)}
                     className={`h-10 w-full rounded-md border py-2 pl-9 pr-9 text-left text-sm outline-none transition-colors ${pageTheme.field}`}
@@ -428,10 +680,15 @@ export default function Page() {
                   />
 
                   {datePickerOpen ? (
-                    <div
-                      className={`absolute right-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-lg border p-3 shadow-xl ${pageTheme.panel}`}
+                    <aside
+                      id="raised-date-options"
+                      aria-label="Raised date options"
+                      className={`absolute left-0 top-full z-50 mt-2 w-full rounded-lg border p-2 shadow-xl sm:left-auto sm:right-0 sm:w-80 sm:p-3 ${pageTheme.panel}`}
                     >
-                      <div className="flex gap-2">
+                      <fieldset className="flex min-w-0 gap-2 border-0 p-0">
+                        <legend className="sr-only">
+                          Quick raised date range
+                        </legend>
                         <select
                           aria-label="Choose a quick raised date filter"
                           value={raisedDateFilter}
@@ -460,9 +717,10 @@ export default function Page() {
                         >
                           Clear
                         </button>
-                      </div>
+                      </fieldset>
 
-                      <div
+                      <section
+                        aria-label="Choose a specific raised date"
                         className={`mt-3 rounded-md border ${pageTheme.divider}`}
                       >
                         <Calendar
@@ -474,135 +732,113 @@ export default function Page() {
                             setRaisedDateFilter("custom");
                             setDatePickerOpen(false);
                           }}
-                          className="mx-auto"
+                          className="mx-auto max-w-full p-1 sm:p-3"
+                          classNames={{
+                            weekday:
+                              "w-8 rounded-md text-center text-[0.75rem] font-normal text-muted-foreground sm:w-9 sm:text-[0.8rem]",
+                            day: "relative size-8 p-0 text-center text-sm sm:size-9",
+                            day_button:
+                              "inline-flex size-8 items-center justify-center rounded-md text-sm font-normal transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 sm:size-9",
+                          }}
                         />
-                      </div>
-                    </div>
+                      </section>
+                    </aside>
                   ) : null}
-                </div>
-              </div>
+                </section>
+              </form>
             </section>
 
-            <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <section
+              aria-labelledby="complaint-statistics-title"
+              className="grid gap-3 min-[480px]:grid-cols-2 xl:grid-cols-4"
+            >
+              <h2 id="complaint-statistics-title" className="sr-only">
+                Complaint statistics
+              </h2>
               {stats.map((stat) => (
                 <article
                   key={stat.label}
                   className={`rounded-lg border p-4 ${pageTheme.card}`}
                 >
-                  <p className={`text-sm font-medium ${pageTheme.muted}`}>
+                  <h3 className={`text-sm font-medium ${pageTheme.muted}`}>
                     {stat.label}
-                  </p>
-                  <div className="mt-2 flex items-end justify-between gap-3">
-                    <h2 className={`text-2xl font-bold ${stat.accent}`}>
+                  </h3>
+                  <footer className="mt-2 flex items-end justify-between gap-3">
+                    <p className={`text-2xl font-bold ${stat.accent}`}>
                       {stat.value}
-                    </h2>
-                    <span className={`text-xs ${pageTheme.muted}`}>
+                    </p>
+                    <span
+                      className={`max-w-36 text-right text-xs ${pageTheme.muted}`}
+                    >
                       {stat.helper}
                     </span>
-                  </div>
+                  </footer>
                 </article>
               ))}
             </section>
 
             <section
+              aria-labelledby="complaints-title"
               className={`overflow-hidden rounded-lg border ${pageTheme.panel}`}
             >
-              <div
-                className={`border-b px-4 py-4 sm:px-5 ${pageTheme.divider}`}
+              <header
+                className={`flex flex-col gap-2 border-b px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 ${pageTheme.divider}`}
               >
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <h2 className="text-lg font-bold">Your Complaints</h2>
-                  <p className={`text-sm ${pageTheme.muted}`}>
-                    {isLoading
-                      ? "Loading complaints"
-                      : `${filteredComplaints.length} of ${totalComplaints} shown`}
-                  </p>
-                </div>
-              </div>
+                <h2 id="complaints-title" className="text-lg font-bold">
+                  Your Complaints
+                </h2>
+                <p className={`text-sm ${pageTheme.muted}`} aria-live="polite">
+                  {isLoading
+                    ? "Loading complaints"
+                    : `${filteredComplaints.length} of ${totalComplaints} shown`}
+                </p>
+              </header>
 
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[760px] border-separate border-spacing-0 text-left text-sm">
-                  <thead className={pageTheme.tableHead}>
-                    <tr>
-                      <th className="border-b border-inherit px-4 py-3 font-semibold">
-                        Name
-                      </th>
-                      <th className="border-b border-inherit px-4 py-3 font-semibold">
-                        Email
-                      </th>
-                      <th className="border-b border-inherit px-4 py-3 font-semibold">
-                        Subject
-                      </th>
-                      <th className="border-b border-inherit px-4 py-3 font-semibold">
-                        Message
-                      </th>
-                      <th className="border-b border-inherit px-4 py-3 font-semibold">
-                        Raised Date
-                      </th>
-                      <th className="border-b border-inherit px-4 py-3 font-semibold">
-                        Status
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredComplaints.length > 0 ? (
-                      filteredComplaints.map((complaint) => (
-                        <tr
-                          key={complaint?._id}
-                          className={`transition-colors ${pageTheme.row}`}
-                        >
-                          <td className="border-b border-inherit px-4 py-3 font-medium">
-                            {complaint?.name || currentUser?.name || "-"}
-                          </td>
-                          <td className="border-b border-inherit px-4 py-3">
-                            {complaint?.email || currentUser?.email || "-"}
-                          </td>
-                          <td className="border-b border-inherit px-4 py-3">
-                            {complaint?.subject || "-"}
-                          </td>
-                          <td className="max-w-sm border-b border-inherit px-4 py-3">
-                            <p className="line-clamp-2">
-                              {complaint?.message || "-"}
-                            </p>
-                          </td>
-                          <td className="border-b border-inherit px-4 py-3 whitespace-nowrap">
-                            {formatDate(
-                              complaint?.raisedDate || complaint?.createdAt,
-                            )}
-                          </td>
-                          <td className="border-b border-inherit px-4 py-3">
-                            <span
-                              className={`inline-flex rounded-md px-2 py-1 text-xs font-semibold ${getStatusClasses(
-                                complaint?.status,
-                                isDarkTheme,
-                              )}`}
-                            >
-                              {formatLabel(complaint?.status || "pending")}
-                            </span>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan={6}
-                          className={`px-4 py-12 text-center ${pageTheme.muted}`}
-                        >
-                          {isLoading
-                            ? "Loading complaints..."
-                            : search
-                              ? "No complaints match your search."
-                              : "No complaints raised yet."}
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              {filteredComplaints.length > 0 ? (
+                <>
+                  <ul aria-label="Complaints" className="divide-y lg:hidden">
+                    {filteredComplaints.map((complaint, index) => (
+                      <li key={complaint?._id || complaint?.id || index}>
+                        <MobileComplaintCard
+                          complaint={complaint}
+                          currentUser={currentUser}
+                          debouncedSearch={debouncedSearch}
+                          isDarkTheme={isDarkTheme}
+                          pageTheme={pageTheme}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+
+                  <section
+                    aria-label="Complaint table"
+                    className="hidden overflow-x-auto lg:block"
+                  >
+                    <DataTable
+                      columns={complaintColumns}
+                      data={filteredComplaints}
+                      tableClassName="min-w-[760px] border-separate border-spacing-0 text-left text-sm"
+                      headerClassName={pageTheme.tableHead}
+                      rowClassName={`transition-colors ${pageTheme.row}`}
+                    />
+                  </section>
+                </>
+              ) : (
+                <p
+                  className={`px-4 py-12 text-center ${pageTheme.muted}`}
+                  role="status"
+                >
+                  {isLoading
+                    ? "Loading complaints..."
+                    : search
+                      ? "No complaints match your search."
+                      : "No complaints raised yet."}
+                </p>
+              )}
             </section>
-          </main>
+          </section>
         </SidebarInset>
       </SidebarProvider>
-    </div>
+    </section>
   );
 }
