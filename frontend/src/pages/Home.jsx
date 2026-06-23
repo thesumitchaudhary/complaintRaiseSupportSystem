@@ -59,14 +59,18 @@ const Home = () => {
   ];
 
   const quickLinks = [
-    "Home",
-    "User Dashboard",
-    "Admin Portal",
-    "Employee Portal",
-    "Raise Complaint",
+    { label: "Home", href: "#top" },
+    { label: "Service metrics", href: "#performance" },
+    { label: "Platform features", href: "#features" },
+    { label: "Get support", href: "#get-support" },
   ];
 
-  const resources = ["Knowledge Base", "Live Chat", "FAQ", "Status Page"];
+  const resources = [
+    { label: "24/7 live support", href: "#features" },
+    { label: "Complaint tracking", href: "#features" },
+    { label: "Secure role-based access", href: "#features" },
+    { label: "Contact information", href: "#contact" },
+  ];
 
   const toggleTheme = () => {
     setTheme(!theme);
@@ -82,6 +86,7 @@ const Home = () => {
 
   return (
     <div
+      id="top"
       className={`min-h-screen transition-colors duration-300 ${
         theme ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"
       }`}
@@ -104,9 +109,13 @@ const Home = () => {
             >
               Customer Care Platform
             </p>
-            <h1 className="text-3xl font-black leading-tight sm:text-4xl lg:text-5xl">
+            <Link
+              to="/"
+              className="block text-3xl font-black leading-tight sm:text-4xl lg:text-5xl"
+              aria-label="Support System home"
+            >
               Support System
-            </h1>
+            </Link>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -136,6 +145,7 @@ const Home = () => {
 
         <main className="space-y-10 sm:space-y-12">
           <section
+            id="performance"
             className={`overflow-hidden rounded-3xl border p-6 shadow-xl sm:p-8 lg:p-10 ${
               theme
                 ? "border-slate-700 bg-slate-900/70"
@@ -154,9 +164,9 @@ const Home = () => {
                   <Sparkles size={14} />
                   Trusted By Growing Teams
                 </div>
-                <h2 className="mt-4 text-3xl font-black leading-tight sm:text-4xl lg:text-5xl">
+                <h1 className="mt-4 text-3xl font-black leading-tight sm:text-4xl lg:text-5xl">
                   Fast, Human-Centered Support For Every Ticket
-                </h2>
+                </h1>
                 <p
                   className={`mt-4 max-w-2xl text-sm leading-relaxed sm:text-base ${
                     theme ? "text-slate-300" : "text-slate-700"
@@ -234,6 +244,7 @@ const Home = () => {
           </section>
 
           <section
+            id="features"
             className={`rounded-3xl border p-6 sm:p-8 ${
               theme
                 ? "border-slate-700 bg-slate-900/60"
@@ -245,9 +256,9 @@ const Home = () => {
                 size={18}
                 className={theme ? "text-sky-300" : "text-sky-700"}
               />
-              <h4 className="text-2xl font-bold sm:text-3xl">
+              <h2 className="text-2xl font-bold sm:text-3xl">
                 Why Teams Choose Our Support Center
-              </h4>
+              </h2>
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -272,7 +283,7 @@ const Home = () => {
                     >
                       <Icon size={18} />
                     </div>
-                    <h5 className="mt-4 text-lg font-semibold">{item.title}</h5>
+                    <h3 className="mt-4 text-lg font-semibold">{item.title}</h3>
                     <p
                       className={`mt-2 text-sm leading-relaxed ${
                         theme ? "text-slate-300" : "text-slate-600"
@@ -287,6 +298,7 @@ const Home = () => {
           </section>
 
           <section
+            id="get-support"
             className={`rounded-3xl border p-6 sm:p-8 ${
               theme
                 ? "border-slate-700 bg-slate-900/50"
@@ -298,11 +310,15 @@ const Home = () => {
                 <p className="text-sm font-semibold uppercase tracking-[0.15em] text-amber-600">
                   Need Immediate Help?
                 </p>
-                <h4 className="mt-1 text-2xl font-black sm:text-3xl">
+                <h2 className="mt-1 text-2xl font-black sm:text-3xl">
                   Raise A Complaint In Under 2 Minutes
-                </h4>
+                </h2>
               </div>
-              <button className="inline-flex items-center gap-2 self-start rounded-xl bg-amber-500 px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-amber-400">
+              <button
+                type="button"
+                onClick={() => setOpenUserLogin(true)}
+                className="inline-flex items-center gap-2 self-start rounded-xl bg-amber-500 px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-amber-400"
+              >
                 Start New Ticket
                 <ArrowRight size={16} />
               </button>
@@ -320,8 +336,11 @@ const Home = () => {
       >
         <div className="mx-auto w-full max-w-6xl">
           <section className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            <h2 className="sr-only">
+              Support System links and contact information
+            </h2>
             <article>
-              <h4 className="text-lg font-semibold">Support Center</h4>
+              <h3 className="text-lg font-semibold">Support Center</h3>
               <p
                 className={`mt-2 text-sm ${
                   theme ? "text-slate-300" : "text-slate-600"
@@ -330,81 +349,70 @@ const Home = () => {
                 Your trusted partner for exceptional customer support and
                 service excellence.
               </p>
-              <div className="mt-4 flex items-center gap-2">
-                <a
-                  href="#"
-                  className={`rounded-lg border p-2 transition ${
-                    theme
-                      ? "border-slate-700 hover:bg-slate-800"
-                      : "border-slate-200 hover:bg-slate-100"
-                  }`}
-                >
-                  {/* <Linkedin size={16} /> */}
-                </a>
-                <a
-                  href="#"
-                  className={`rounded-lg border p-2 transition ${
-                    theme
-                      ? "border-slate-700 hover:bg-slate-800"
-                      : "border-slate-200 hover:bg-slate-100"
-                  }`}
-                >
-                  {/* <Twitter size={16} /> */}
-                </a>
-                <a
-                  href="#"
-                  className={`rounded-lg border p-2 transition ${
-                    theme
-                      ? "border-slate-700 hover:bg-slate-800"
-                      : "border-slate-200 hover:bg-slate-100"
-                  }`}
-                >
-                  {/* <Instagram size={16} /> */}
-                </a>
-              </div>
             </article>
 
-            <article>
-              <h4 className="text-lg font-semibold">Quick Links</h4>
+            <nav aria-label="Quick links">
+              <h3 className="text-lg font-semibold">Quick Links</h3>
               <ul
                 className={`mt-2 space-y-1 text-sm ${
                   theme ? "text-slate-300" : "text-slate-600"
                 }`}
               >
                 {quickLinks.map((link) => (
-                  <li key={link}>{link}</li>
+                  <li key={link.label}>
+                    <a
+                      href={link.href}
+                      className="transition hover:text-sky-600 hover:underline"
+                    >
+                      {link.label}
+                    </a>
+                  </li>
                 ))}
               </ul>
-            </article>
+            </nav>
 
-            <article>
-              <h4 className="text-lg font-semibold">Resources</h4>
+            <nav aria-label="Support resources">
+              <h3 className="text-lg font-semibold">Resources</h3>
               <ul
                 className={`mt-2 space-y-1 text-sm ${
                   theme ? "text-slate-300" : "text-slate-600"
                 }`}
               >
                 {resources.map((resource) => (
-                  <li key={resource}>{resource}</li>
+                  <li key={resource.label}>
+                    <a
+                      href={resource.href}
+                      className="transition hover:text-sky-600 hover:underline"
+                    >
+                      {resource.label}
+                    </a>
+                  </li>
                 ))}
               </ul>
-            </article>
+            </nav>
 
-            <article>
-              <h4 className="text-lg font-semibold">Contact</h4>
+            <article id="contact">
+              <h3 className="text-lg font-semibold">Contact</h3>
               <div
                 className={`mt-2 space-y-1 text-sm ${
                   theme ? "text-slate-300" : "text-slate-600"
                 }`}
               >
+                <a
+                  href="mailto:support@example.com"
+                  className="flex items-center gap-2 transition hover:text-sky-600 hover:underline"
+                >
+                  <Mail size={14} aria-hidden="true" /> support@example.com
+                </a>
+                <a
+                  href="tel:+919465645534"
+                  className="flex items-center gap-2 transition hover:text-sky-600 hover:underline"
+                >
+                  <Phone size={14} aria-hidden="true" /> +91-9465645534
+                </a>
                 <p className="inline-flex items-center gap-2">
-                  <Mail size={14} /> support@example.com
-                </p>
-                <p className="inline-flex items-center gap-2">
-                  <Phone size={14} /> +91-9465645534
-                </p>
-                <p className="inline-flex items-center gap-2">
-                  <MapPin size={14} /> Old High Court, Ahmedabad
+                  <MapPin size={14} aria-hidden="true" /> Old High Court,
+                  Ahmedabad
                 </p>
               </div>
             </article>
@@ -418,7 +426,7 @@ const Home = () => {
             }`}
           >
             <p>
-              2026 Support System. Built to keep your customer conversations
+              © 2026 Support System. Built to keep your customer conversations
               clear, secure, and fast.
             </p>
           </div>

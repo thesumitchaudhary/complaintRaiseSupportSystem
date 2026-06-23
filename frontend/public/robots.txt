@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+Disallow: /reset-password
+Disallow: /User/
+Disallow: /user/
+Disallow: /Admin/
+Disallow: /admin/
+Disallow: /Employee/
+Disallow: /employee/

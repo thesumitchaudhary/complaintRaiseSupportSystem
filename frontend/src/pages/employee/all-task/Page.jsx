@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Clock3, Loader2, Moon, Search, Send, Sun } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
@@ -26,60 +26,14 @@ import {
   SidebarTrigger,
 } from "../../../components/ui/sidebar";
 import { Textarea } from "../../../components/ui/textarea";
+import { useDocumentTheme } from "../../../hooks/useDocumentTheme";
+import {
+  formatDate,
+  formatStatusLabel,
+  getStatusBadgeClass,
+  getStatusKey,
+} from "../../../lib/complaints";
 import { showAssignedComplaint, workUpdate } from "../../../services/employee";
-
-const getStatusKey = (status) =>
-  String(status || "pending")
-    .trim()
-    .replace(/([a-z])([A-Z])/g, "$1_$2")
-    .toLowerCase()
-    .replace(/[\s-]+/g, "_")
-    .replace(/_+/g, "_");
-
-const formatStatusLabel = (status) =>
-  getStatusKey(status)
-    .split("_")
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-
-const formatDate = (value) => {
-  if (!value) return "-";
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) return "-";
-
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(date);
-};
-
-const getStatusBadgeClass = (status, isDarkTheme) => {
-  const statusKey = getStatusKey(status);
-  const statusClasses = isDarkTheme
-    ? {
-        assigned: "bg-violet-950 text-violet-200",
-        in_progress: "bg-blue-950 text-blue-200",
-        completed: "bg-emerald-950 text-emerald-200",
-        overdue: "bg-rose-950 text-rose-200",
-      }
-    : {
-        assigned: "bg-violet-100 text-violet-700",
-        in_progress: "bg-blue-100 text-blue-700",
-        completed: "bg-emerald-100 text-emerald-700",
-        overdue: "bg-rose-100 text-rose-700",
-      };
-
-  return (
-    statusClasses[statusKey] ||
-    (isDarkTheme
-      ? "bg-slate-800 text-slate-200"
-      : "bg-amber-100 text-amber-700")
-  );
-};
 
 const getPriorityBadgeClass = (priority, isDarkTheme) => {
   const priorityKey = String(priority || "medium").toLowerCase();
@@ -142,17 +96,7 @@ export default function Page() {
         details: "border-[#b8d8ff] bg-[#eef6ff]",
       };
 
-  useEffect(() => {
-    const root = document.documentElement;
-    const body = document.body;
-    const backgroundColor = isDarkTheme ? "#020617" : "#f8fbff";
-    const textColor = isDarkTheme ? "#f8fafc" : "#001a3a";
-
-    root.classList.toggle("dark", isDarkTheme);
-    root.style.backgroundColor = backgroundColor;
-    body.style.backgroundColor = backgroundColor;
-    body.style.color = textColor;
-  }, [isDarkTheme]);
+  useDocumentTheme(isDarkTheme);
 
   const workUpdateMutation = useMutation({
     mutationFn: workUpdate,

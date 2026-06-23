@@ -1,63 +1,34 @@
-import { useEffect, useState } from "react";
-import { Moon, Search, Sun } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Search } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { AppSidebar } from "../../../components/admin-app-sidebar";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "../../../components/ui/breadcrumb";
-import { Separator } from "../../../components/ui/separator";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "../../../components/ui/sidebar";
+import { DashboardShell } from "../../../components/DashboardShell";
+import { DataTable } from "../../../components/DataTable";
+import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
+import { useDocumentTheme } from "../../../hooks/useDocumentTheme";
+import { formatDate } from "../../../lib/complaints";
 import { showUser } from "../../../services/admin";
 import { getRaisedComplaint } from "../../../services/user";
 
-const formatDate = (value) => {
-  if (!value) return "-";
+const getStatusBadgeClass = (count, isDarkTheme) => {
+  if (count > 0) {
+    return isDarkTheme
+      ? "bg-amber-950 text-amber-200"
+      : "bg-amber-100 text-amber-700";
+  }
 
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) return "-";
-
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(date);
+  return isDarkTheme
+    ? "bg-emerald-950 text-emerald-200"
+    : "bg-emerald-100 text-emerald-700";
 };
 
 export default function Page() {
   const [theme, setTheme] = useState(false);
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search);
   const isDarkTheme = theme;
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search.trim());
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [search]);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const body = document.body;
-    const backgroundColor = isDarkTheme ? "#020617" : "#f8fbff";
-    const textColor = isDarkTheme ? "#f8fafc" : "#001a3a";
-
-    root.classList.toggle("dark", isDarkTheme);
-    root.style.backgroundColor = backgroundColor;
-    body.style.backgroundColor = backgroundColor;
-    body.style.color = textColor;
-  }, [isDarkTheme]);
+  useDocumentTheme(isDarkTheme);
 
   const { data: complaintData } = useQuery({
     queryKey: ["showRaisedTicked"],
@@ -116,17 +87,51 @@ export default function Page() {
         suggestionHover: "hover:bg-[#eef6ff]",
       };
 
-  const getStatusBadgeClass = (count) => {
-    if (count > 0) {
-      return isDarkTheme
-        ? "bg-amber-950 text-amber-200"
-        : "bg-amber-100 text-amber-700";
-    }
+  const userColumns = useMemo(
+    () => [
+      {
+        key: "name",
+        header: "Name",
+        cellClassName: "font-medium",
+        render: (user) => user?.name || "-",
+      },
+      {
+        key: "email",
+        header: "Email",
+        render: (user) => user?.email || "-",
+      },
+      {
+        key: "complaints",
+        header: "Complaints",
+        render: (user) => (user?.complaints || []).length,
+      },
+      {
+        key: "joinDate",
+        header: "Join Date",
+        cellClassName: "whitespace-nowrap",
+        render: (user) => formatDate(user?.createdAt),
+      },
+      {
+        key: "status",
+        header: "Status",
+        render: (user) => {
+          const complaintCount = (user?.complaints || []).length;
 
-    return isDarkTheme
-      ? "bg-emerald-950 text-emerald-200"
-      : "bg-emerald-100 text-emerald-700";
-  };
+          return (
+            <span
+              className={`inline-flex whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold ${getStatusBadgeClass(
+                complaintCount,
+                isDarkTheme,
+              )}`}
+            >
+              {complaintCount > 0 ? "Has complaints" : "Clear"}
+            </span>
+          );
+        },
+      },
+    ],
+    [isDarkTheme],
+  );
 
   const stats = [
     {
@@ -157,59 +162,15 @@ export default function Page() {
   ];
 
   return (
-    <div className={`${pageTheme.shell} min-h-screen`}>
-      <SidebarProvider style={{ backgroundColor: "transparent" }}>
-        <AppSidebar />
-        <SidebarInset
-          className="min-w-0 w-0 overflow-x-hidden"
-          style={{ backgroundColor: "transparent" }}
-        >
-          <header
-            className={`sticky top-0 z-10 flex h-16 shrink-0 items-center border-b ${pageTheme.header}`}
-          >
-            <div className="flex w-full items-center justify-between gap-3 px-4">
-              <div className="flex items-center gap-2">
-                <SidebarTrigger className="-ml-1" />
-                <Separator
-                  orientation="vertical"
-                  className="mr-2 data-[orientation=vertical]:h-4"
-                />
-                <Breadcrumb>
-                  <BreadcrumbList>
-                    <BreadcrumbItem className="hidden md:block">
-                      <BreadcrumbLink
-                        className={`text-sm ${pageTheme.muted}`}
-                        href="#"
-                      >
-                        Admin dashboard
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator className="hidden md:block" />
-                    <BreadcrumbItem>
-                      <BreadcrumbPage className={`text-sm ${pageTheme.muted}`}>
-                        Users
-                      </BreadcrumbPage>
-                    </BreadcrumbItem>
-                  </BreadcrumbList>
-                </Breadcrumb>
-              </div>
-
-              <button
-                type="button"
-                aria-label="Toggle theme"
-                className={`inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors ${pageTheme.button}`}
-                onClick={() => setTheme((currentTheme) => !currentTheme)}
-              >
-                {isDarkTheme ? (
-                  <Moon className="h-4 w-4" />
-                ) : (
-                  <Sun className="h-4 w-4" />
-                )}
-              </button>
-            </div>
-          </header>
-
-          <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 lg:p-6">
+    <DashboardShell
+      sidebar={<AppSidebar />}
+      sectionLabel="Admin dashboard"
+      pageLabel="Users"
+      pageTheme={pageTheme}
+      isDarkTheme={isDarkTheme}
+      onToggleTheme={() => setTheme((currentTheme) => !currentTheme)}
+    >
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 lg:p-6">
             <section className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
               <div>
                 <h1 className="text-2xl font-bold tracking-normal">
@@ -298,89 +259,27 @@ export default function Page() {
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[860px] border-separate border-spacing-0 text-left text-sm">
-                  <thead className={pageTheme.tableHead}>
-                    <tr>
-                      <th className="border-b border-inherit px-5 py-4 font-semibold">
-                        Name
-                      </th>
-                      <th className="border-b border-inherit px-5 py-4 font-semibold">
-                        Email
-                      </th>
-                      <th className="border-b border-inherit px-5 py-4 font-semibold">
-                        Complaints
-                      </th>
-                      <th className="border-b border-inherit px-5 py-4 font-semibold">
-                        Join Date
-                      </th>
-                      <th className="border-b border-inherit px-5 py-4 font-semibold">
-                        Status
-                      </th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {isUsersLoading ? (
-                      <tr>
-                        <td
-                          colSpan={5}
-                          className={`px-5 py-12 text-center ${pageTheme.muted}`}
-                        >
-                          Loading registered users...
-                        </td>
-                      </tr>
-                    ) : filteredUsers.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={5}
-                          className={`px-5 py-12 text-center ${pageTheme.muted}`}
-                        >
-                          {search
-                            ? "No registered users match your search."
-                            : "No registered users found."}
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredUsers.map((user) => {
-                        const complaintCount = (user?.complaints || []).length;
-
-                        return (
-                          <tr
-                            key={user?._id || user?.email}
-                            className={`transition-colors ${pageTheme.tableRow}`}
-                          >
-                            <td className="border-b border-inherit px-5 py-4 font-medium">
-                              {user?.name || "-"}
-                            </td>
-                            <td className="border-b border-inherit px-5 py-4">
-                              {user?.email || "-"}
-                            </td>
-                            <td className="border-b border-inherit px-5 py-4">
-                              {complaintCount}
-                            </td>
-                            <td className="whitespace-nowrap border-b border-inherit px-5 py-4">
-                              {formatDate(user?.createdAt)}
-                            </td>
-                            <td className="border-b border-inherit px-5 py-4">
-                              <span
-                                className={`inline-flex whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold ${getStatusBadgeClass(complaintCount)}`}
-                              >
-                                {complaintCount > 0
-                                  ? "Has complaints"
-                                  : "Clear"}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
+                <DataTable
+                  columns={userColumns}
+                  data={filteredUsers}
+                  getRowKey={(user, index) => user?._id || user?.email || index}
+                  isLoading={isUsersLoading}
+                  loadingMessage="Loading registered users..."
+                  emptyMessage={
+                    search
+                      ? "No registered users match your search."
+                      : "No registered users found."
+                  }
+                  tableClassName="min-w-[860px] border-separate border-spacing-0 text-left text-sm"
+                  headerClassName={pageTheme.tableHead}
+                  headerCellClassName="border-b border-inherit px-5 py-4 font-semibold"
+                  rowClassName={`transition-colors ${pageTheme.tableRow}`}
+                  cellClassName="border-b border-inherit px-5 py-4"
+                  emptyClassName={`px-5 py-12 ${pageTheme.muted}`}
+                />
               </div>
             </section>
-          </main>
-        </SidebarInset>
-      </SidebarProvider>
-    </div>
+      </main>
+    </DashboardShell>
   );
 }

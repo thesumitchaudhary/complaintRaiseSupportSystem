@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { Moon, Search, Sun } from "lucide-react";
-import { toast } from "react-hot-toast";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { AddEmployeeModal } from "../../../components/AddEmployeeModal";
 import { AppSidebar } from "../../../components/admin-app-sidebar";
 import {
   Breadcrumb,
@@ -12,74 +12,36 @@ import {
   BreadcrumbSeparator,
 } from "../../../components/ui/breadcrumb";
 import { Button } from "../../../components/ui/button";
-import { Input } from "../../../components/ui/input";
 import { Separator } from "../../../components/ui/separator";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "../../../components/ui/sheet";
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
 } from "../../../components/ui/sidebar";
+import { DataTable } from "../../../components/DataTable";
+import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
+import { useDocumentTheme } from "../../../hooks/useDocumentTheme";
+import { formatDate } from "../../../lib/complaints";
 import { showEmployee } from "../../../services/admin";
-import { createEmployee } from "../../../services/employee";
 
-const initialEmployeeForm = {
-  name: "",
-  email: "",
-  password: "",
-  confirmPassword: "",
-};
+const getTaskCounts = (row) => {
+  const tasks = Array.isArray(row?.tasks) ? row.tasks : [];
 
-const formatDate = (value) => {
-  if (!value) return "-";
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) return "-";
-
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(date);
+  return {
+    pending: tasks.filter((task) => task?.status !== "completed").length,
+    completed: tasks.filter((task) => task?.status === "completed").length,
+  };
 };
 
 export default function Page() {
   const [theme, setTheme] = useState(false);
   const [employeeModalOpen, setEmployeeModalOpen] = useState(false);
-  const [error, setError] = useState("");
-  const [employeeForm, setEmployeeForm] = useState(initialEmployeeForm);
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search);
 
   const isDarkTheme = theme;
-  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search.trim());
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [search]);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const body = document.body;
-    const backgroundColor = isDarkTheme ? "#020617" : "#f8fbff";
-    const textColor = isDarkTheme ? "#f8fafc" : "#001a3a";
-
-    root.classList.toggle("dark", isDarkTheme);
-    root.style.backgroundColor = backgroundColor;
-    body.style.backgroundColor = backgroundColor;
-    body.style.color = textColor;
-  }, [isDarkTheme]);
+  useDocumentTheme(isDarkTheme);
 
   const { data, isLoading: isEmployeesLoading } = useQuery({
     queryKey: ["showActiveEmployee", debouncedSearch],
@@ -129,7 +91,6 @@ export default function Page() {
         muted: "text-slate-400",
         button: "border-blue-900/70 text-slate-100 hover:bg-slate-800",
         suggestionHover: "hover:bg-slate-800",
-        error: "border-red-900/70 bg-red-950/50 text-red-200",
       }
     : {
         shell: "bg-[#f8fbff] text-[#001a3a]",
@@ -144,8 +105,72 @@ export default function Page() {
         muted: "text-[#4e678a]",
         button: "border-[#b8d8ff] text-[#12365c] hover:bg-[#eef6ff]",
         suggestionHover: "hover:bg-[#eef6ff]",
-        error: "border-red-200 bg-red-50 text-red-700",
       };
+
+  const employeeColumns = useMemo(
+    () => [
+      {
+        key: "name",
+        header: "Name",
+        cellClassName: "font-medium",
+        render: (row) => row?.employee?.name || "-",
+      },
+      {
+        key: "email",
+        header: "Email",
+        render: (row) => row?.employee?.email || "-",
+      },
+      {
+        key: "joinDate",
+        header: "Join Date",
+        cellClassName: "whitespace-nowrap",
+        render: (row) => formatDate(row?.employee?.createdAt),
+      },
+      {
+        key: "pendingTasks",
+        header: "Pending Tasks",
+        render: (row) => {
+          const { pending } = getTaskCounts(row);
+
+          return (
+            <span
+              className={`inline-flex min-w-8 justify-center rounded-md px-2 py-1 text-xs font-semibold ${
+                pending > 0
+                  ? isDarkTheme
+                    ? "bg-amber-950 text-amber-200"
+                    : "bg-amber-100 text-amber-700"
+                  : isDarkTheme
+                    ? "bg-slate-800 text-slate-300"
+                    : "bg-slate-100 text-slate-600"
+              }`}
+            >
+              {pending}
+            </span>
+          );
+        },
+      },
+      {
+        key: "completedTasks",
+        header: "Completed Tasks",
+        render: (row) => {
+          const { completed } = getTaskCounts(row);
+
+          return (
+            <span
+              className={`inline-flex min-w-8 justify-center rounded-md px-2 py-1 text-xs font-semibold ${
+                isDarkTheme
+                  ? "bg-emerald-950 text-emerald-200"
+                  : "bg-emerald-100 text-emerald-700"
+              }`}
+            >
+              {completed}
+            </span>
+          );
+        },
+      },
+    ],
+    [isDarkTheme],
+  );
 
   const stats = [
     {
@@ -168,101 +193,26 @@ export default function Page() {
     },
   ];
 
-  const resetForm = () => {
-    setEmployeeForm(initialEmployeeForm);
-    setError("");
-  };
-
-  const employeeMutation = useMutation({
-    mutationFn: createEmployee,
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["showActiveEmployee"],
-      });
-      toast.success("Employee created successfully");
-      resetForm();
-      setEmployeeModalOpen(false);
-    },
-    onError: (mutationError) => {
-      const message =
-        mutationError.response?.data?.message ||
-        mutationError.message ||
-        "Failed to create employee";
-
-      setError(message);
-      toast.error(message);
-    },
-  });
-
-  const handleEmployeeChange = (event) => {
-    const { name, value } = event.target;
-
-    setEmployeeForm((currentForm) => ({
-      ...currentForm,
-      [name]: value,
-    }));
-  };
-
-  const handleEmployeeSubmit = (event) => {
-    event.preventDefault();
-    setError("");
-
-    if (!employeeForm.name.trim()) {
-      setError("Name is required");
-      return;
-    }
-
-    if (!employeeForm.email.trim()) {
-      setError("Email is required");
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!emailRegex.test(employeeForm.email)) {
-      setError("Please enter a valid email address");
-      return;
-    }
-
-    if (!employeeForm.password.trim()) {
-      setError("Password is required");
-      return;
-    }
-
-    if (!employeeForm.confirmPassword.trim()) {
-      setError("Confirm password is required");
-      return;
-    }
-
-    if (employeeForm.password !== employeeForm.confirmPassword) {
-      setError("Passwords do not match");
-      toast.error("Passwords do not match");
-      return;
-    }
-
-    employeeMutation.mutate(employeeForm);
-  };
-
   return (
     <div className={`${pageTheme.shell} min-h-screen`}>
       <SidebarProvider style={{ backgroundColor: "transparent" }}>
         <AppSidebar />
         <SidebarInset
-          className="min-w-0 w-0 overflow-x-hidden"
+          className="w-0 min-w-0 overflow-x-hidden"
           style={{ backgroundColor: "transparent" }}
         >
           <header
             className={`sticky top-0 z-10 flex h-16 shrink-0 items-center border-b ${pageTheme.header}`}
           >
-            <div className="flex w-full items-center justify-between gap-3 px-4">
-              <div className="flex items-center gap-2">
+            <div className="flex w-full min-w-0 items-center justify-between gap-3 px-3 sm:px-4">
+              <div className="flex min-w-0 items-center gap-2">
                 <SidebarTrigger className="-ml-1" />
                 <Separator
                   orientation="vertical"
                   className="mr-2 data-[orientation=vertical]:h-4"
                 />
-                <Breadcrumb>
-                  <BreadcrumbList>
+                <Breadcrumb className="min-w-0">
+                  <BreadcrumbList className="flex-nowrap">
                     <BreadcrumbItem className="hidden md:block">
                       <BreadcrumbLink
                         className={`text-sm ${pageTheme.muted}`}
@@ -272,8 +222,10 @@ export default function Page() {
                       </BreadcrumbLink>
                     </BreadcrumbItem>
                     <BreadcrumbSeparator className="hidden md:block" />
-                    <BreadcrumbItem>
-                      <BreadcrumbPage className={`text-sm ${pageTheme.muted}`}>
+                    <BreadcrumbItem className="min-w-0">
+                      <BreadcrumbPage
+                        className={`truncate text-sm ${pageTheme.muted}`}
+                      >
                         Employees
                       </BreadcrumbPage>
                     </BreadcrumbItem>
@@ -296,10 +248,16 @@ export default function Page() {
             </div>
           </header>
 
-          <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 lg:p-6">
-            <section className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-5 p-3 sm:gap-6 sm:p-4 lg:p-6">
+            <section
+              aria-labelledby="employee-management-title"
+              className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between"
+            >
               <div>
-                <h1 className="text-2xl font-bold tracking-normal">
+                <h1
+                  id="employee-management-title"
+                  className="text-xl font-bold tracking-normal sm:text-2xl"
+                >
                   Employee Management
                 </h1>
                 <p className={`mt-1 max-w-2xl text-sm ${pageTheme.muted}`}>
@@ -309,48 +267,72 @@ export default function Page() {
               </div>
 
               <div className="flex w-full flex-col gap-3 sm:flex-row xl:w-auto">
-                <div className="relative w-full xl:w-[26rem]">
+                <form
+                  role="search"
+                  aria-label="Search employees"
+                  className="relative w-full xl:w-[26rem]"
+                  onSubmit={(event) => event.preventDefault()}
+                >
+                  <label htmlFor="employee-search" className="sr-only">
+                    Search employees
+                  </label>
                   <Search
                     className={`absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 ${pageTheme.muted}`}
+                    aria-hidden="true"
                   />
                   <input
+                    id="employee-search"
                     type="search"
+                    role="combobox"
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
                     placeholder="Search employees"
-                    className={`h-12 w-full rounded-none border py-2 pl-12 pr-4 text-sm outline-none transition-colors focus-visible:ring-2 ${pageTheme.field}`}
+                    autoComplete="off"
+                    aria-autocomplete="list"
+                    aria-controls={
+                      suggestions.length > 0
+                        ? "employee-search-suggestions"
+                        : undefined
+                    }
+                    aria-expanded={suggestions.length > 0}
+                    className={`h-11 w-full rounded-none border py-2 pl-12 pr-4 text-sm outline-none transition-colors focus-visible:ring-2 sm:h-12 ${pageTheme.field}`}
                   />
 
                   {suggestions.length > 0 ? (
-                    <div
+                    <ul
+                      id="employee-search-suggestions"
+                      aria-label="Employee suggestions"
                       className={`absolute left-0 top-full z-50 mt-1 w-full overflow-hidden border shadow-lg ${pageTheme.panel}`}
                     >
                       {suggestions.map((row) => {
                         const employee = row?.employee || {};
 
                         return (
-                          <button
-                            key={employee?._id || employee?.email}
-                            type="button"
-                            className={`block w-full px-4 py-3 text-left text-sm transition-colors ${pageTheme.suggestionHover}`}
-                            onClick={() => setSearch(employee?.name || "")}
-                          >
-                            <span className="font-medium">
-                              {employee?.name || "-"}
-                            </span>
-                            <span className={`ml-2 ${pageTheme.muted}`}>
-                              {employee?.email || ""}
-                            </span>
-                          </button>
+                          <li key={employee?._id || employee?.email}>
+                            <button
+                              type="button"
+                              className={`flex w-full min-w-0 flex-col px-4 py-3 text-left text-sm transition-colors sm:block ${pageTheme.suggestionHover}`}
+                              onClick={() => setSearch(employee?.name || "")}
+                            >
+                              <span className="truncate font-medium">
+                                {employee?.name || "-"}
+                              </span>
+                              <span
+                                className={`truncate sm:ml-2 ${pageTheme.muted}`}
+                              >
+                                {employee?.email || ""}
+                              </span>
+                            </button>
+                          </li>
                         );
                       })}
-                    </div>
+                    </ul>
                   ) : null}
-                </div>
+                </form>
 
                 <Button
                   type="button"
-                  className="h-12 rounded-none bg-blue-600 px-5 text-white hover:bg-blue-700"
+                  className="h-11 w-full rounded-none bg-blue-600 px-5 text-white hover:bg-blue-700 sm:h-12 sm:w-auto"
                   onClick={() => setEmployeeModalOpen(true)}
                 >
                   Add Employee
@@ -358,19 +340,26 @@ export default function Page() {
               </div>
             </section>
 
-            <section className="grid gap-3 md:grid-cols-3">
+            <section
+              aria-labelledby="employee-summary-title"
+              className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
+            >
+              <h2 id="employee-summary-title" className="sr-only">
+                Employee summary
+              </h2>
               {stats.map((stat) => (
                 <article
                   key={stat.label}
-                  className={`min-h-24 rounded-lg border p-4 ${pageTheme.card}`}
+                  aria-label={`${stat.label}: ${stat.value}`}
+                  className={`min-h-24 rounded-lg border p-4 sm:last:col-span-2 xl:last:col-span-1 ${pageTheme.card}`}
                 >
                   <p className={`text-sm font-medium ${pageTheme.muted}`}>
                     {stat.label}
                   </p>
                   <div className="mt-3 flex items-end justify-between gap-3">
-                    <h2 className={`text-2xl font-bold ${stat.accent}`}>
+                    <p className={`text-2xl font-bold ${stat.accent}`}>
                       {stat.value}
-                    </h2>
+                    </p>
                     <span className={`text-right text-xs ${pageTheme.muted}`}>
                       {stat.detail}
                     </span>
@@ -380,246 +369,156 @@ export default function Page() {
             </section>
 
             <section
+              aria-labelledby="team-roster-title"
               className={`overflow-hidden rounded-lg border ${pageTheme.panel}`}
             >
-              <div
+              <header
                 className={`border-b px-4 py-4 sm:px-5 ${pageTheme.divider}`}
               >
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h2 className="text-lg font-bold">Team Roster</h2>
+                    <h2 id="team-roster-title" className="text-lg font-bold">
+                      Team Roster
+                    </h2>
                     <p className={`mt-1 text-sm ${pageTheme.muted}`}>
                       View employee details and their current task workload.
                     </p>
                   </div>
-                  <p className={`text-sm ${pageTheme.muted}`}>
+                  <p
+                    className={`text-sm ${pageTheme.muted}`}
+                    aria-live="polite"
+                  >
                     {isEmployeesLoading
                       ? "Loading employees"
                       : `${filteredEmployees.length} of ${employeeRows.length} shown`}
                   </p>
                 </div>
+              </header>
+
+              <div className="lg:hidden">
+                {isEmployeesLoading || filteredEmployees.length === 0 ? (
+                  <p
+                    className={`px-4 py-12 text-center ${pageTheme.muted}`}
+                    role="status"
+                  >
+                    {isEmployeesLoading
+                      ? "Loading employees..."
+                      : search
+                        ? "No employees match your search."
+                        : "No employees found."}
+                  </p>
+                ) : (
+                  <ul aria-label="Employees" className="divide-y">
+                    {filteredEmployees.map((row, index) => {
+                      const employee = row?.employee || {};
+                      const { pending, completed } = getTaskCounts(row);
+
+                      return (
+                        <li
+                          key={employee?._id || employee?.email || index}
+                          className={pageTheme.divider}
+                        >
+                          <article className="space-y-4 p-4">
+                            <header className="min-w-0">
+                              <h3 className="truncate font-semibold">
+                                {employee?.name || "-"}
+                              </h3>
+                              {employee?.email ? (
+                                <a
+                                  href={`mailto:${employee.email}`}
+                                  className={`block break-all text-sm ${pageTheme.muted}`}
+                                >
+                                  {employee.email}
+                                </a>
+                              ) : (
+                                <p
+                                  className={`break-all text-sm ${pageTheme.muted}`}
+                                >
+                                  -
+                                </p>
+                              )}
+                            </header>
+
+                            <dl className="grid grid-cols-2 gap-3 text-sm">
+                              <div>
+                                <dt className={pageTheme.muted}>Join date</dt>
+                                <dd className="mt-1 font-medium">
+                                  {formatDate(employee?.createdAt)}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt className={pageTheme.muted}>Tasks</dt>
+                                <dd className="mt-1 flex flex-wrap gap-2">
+                                  <span
+                                    className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold ${
+                                      pending > 0
+                                        ? isDarkTheme
+                                          ? "bg-amber-950 text-amber-200"
+                                          : "bg-amber-100 text-amber-700"
+                                        : isDarkTheme
+                                          ? "bg-slate-800 text-slate-300"
+                                          : "bg-slate-100 text-slate-600"
+                                    }`}
+                                  >
+                                    {pending} pending
+                                  </span>
+                                  <span
+                                    className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold ${
+                                      isDarkTheme
+                                        ? "bg-emerald-950 text-emerald-200"
+                                        : "bg-emerald-100 text-emerald-700"
+                                    }`}
+                                  >
+                                    {completed} completed
+                                  </span>
+                                </dd>
+                              </div>
+                            </dl>
+                          </article>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[900px] border-separate border-spacing-0 text-left text-sm">
-                  <thead className={pageTheme.tableHead}>
-                    <tr>
-                      <th className="border-b border-inherit px-5 py-4 font-semibold">
-                        Name
-                      </th>
-                      <th className="border-b border-inherit px-5 py-4 font-semibold">
-                        Email
-                      </th>
-                      <th className="border-b border-inherit px-5 py-4 font-semibold">
-                        Join Date
-                      </th>
-                      <th className="border-b border-inherit px-5 py-4 font-semibold">
-                        Pending Tasks
-                      </th>
-                      <th className="border-b border-inherit px-5 py-4 font-semibold">
-                        Completed Tasks
-                      </th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {isEmployeesLoading ? (
-                      <tr>
-                        <td
-                          colSpan={5}
-                          className={`px-5 py-12 text-center ${pageTheme.muted}`}
-                        >
-                          Loading employees...
-                        </td>
-                      </tr>
-                    ) : filteredEmployees.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={5}
-                          className={`px-5 py-12 text-center ${pageTheme.muted}`}
-                        >
-                          {search
-                            ? "No employees match your search."
-                            : "No employees found."}
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredEmployees.map((row) => {
-                        const employee = row?.employee || {};
-                        const tasks = Array.isArray(row?.tasks)
-                          ? row.tasks
-                          : [];
-                        const pendingTasks = tasks.filter(
-                          (task) => task?.status !== "completed",
-                        ).length;
-                        const completedTasks = tasks.filter(
-                          (task) => task?.status === "completed",
-                        ).length;
-
-                        return (
-                          <tr
-                            key={employee?._id || employee?.email}
-                            className={`transition-colors ${pageTheme.tableRow}`}
-                          >
-                            <td className="border-b border-inherit px-5 py-4 font-medium">
-                              {employee?.name || "-"}
-                            </td>
-                            <td className="border-b border-inherit px-5 py-4">
-                              {employee?.email || "-"}
-                            </td>
-                            <td className="whitespace-nowrap border-b border-inherit px-5 py-4">
-                              {formatDate(employee?.createdAt)}
-                            </td>
-                            <td className="border-b border-inherit px-5 py-4">
-                              <span
-                                className={`inline-flex min-w-8 justify-center rounded-md px-2 py-1 text-xs font-semibold ${
-                                  pendingTasks > 0
-                                    ? isDarkTheme
-                                      ? "bg-amber-950 text-amber-200"
-                                      : "bg-amber-100 text-amber-700"
-                                    : isDarkTheme
-                                      ? "bg-slate-800 text-slate-300"
-                                      : "bg-slate-100 text-slate-600"
-                                }`}
-                              >
-                                {pendingTasks}
-                              </span>
-                            </td>
-                            <td className="border-b border-inherit px-5 py-4">
-                              <span
-                                className={`inline-flex min-w-8 justify-center rounded-md px-2 py-1 text-xs font-semibold ${
-                                  isDarkTheme
-                                    ? "bg-emerald-950 text-emerald-200"
-                                    : "bg-emerald-100 text-emerald-700"
-                                }`}
-                              >
-                                {completedTasks}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
+              <div
+                aria-label="Employee table"
+                role="region"
+                tabIndex={0}
+                className="hidden overflow-x-auto lg:block"
+              >
+                <DataTable
+                  columns={employeeColumns}
+                  data={filteredEmployees}
+                  getRowKey={(row, index) =>
+                    row?.employee?._id || row?.employee?.email || index
+                  }
+                  isLoading={isEmployeesLoading}
+                  loadingMessage="Loading employees..."
+                  emptyMessage={
+                    search
+                      ? "No employees match your search."
+                      : "No employees found."
+                  }
+                  tableClassName="min-w-[900px] border-separate border-spacing-0 text-left text-sm"
+                  headerClassName={pageTheme.tableHead}
+                  headerCellClassName="border-b border-inherit px-5 py-4 font-semibold"
+                  rowClassName={`transition-colors ${pageTheme.tableRow}`}
+                  cellClassName="border-b border-inherit px-5 py-4"
+                  emptyClassName={`px-5 py-12 ${pageTheme.muted}`}
+                />
               </div>
             </section>
           </main>
         </SidebarInset>
       </SidebarProvider>
 
-      <Sheet
+      <AddEmployeeModal
         open={employeeModalOpen}
-        onOpenChange={(open) => {
-          setEmployeeModalOpen(open);
-
-          if (!open && !employeeMutation.isPending) {
-            resetForm();
-          }
-        }}
-      >
-        <SheetContent
-          side="right"
-          className={`${pageTheme.panel} flex h-screen w-full flex-col overflow-hidden p-0 sm:max-w-md`}
-        >
-          <SheetHeader
-            className={`border-b px-6 pb-5 pt-7 text-left ${pageTheme.divider}`}
-          >
-            <SheetTitle
-              className={isDarkTheme ? "text-slate-100" : "text-[#001a3a]"}
-            >
-              Add Employee
-            </SheetTitle>
-            <SheetDescription className={pageTheme.muted}>
-              Capture the employee details before adding them to the roster.
-            </SheetDescription>
-          </SheetHeader>
-
-          <form
-            onSubmit={handleEmployeeSubmit}
-            className="flex flex-1 flex-col gap-5 overflow-y-auto px-6 py-6"
-          >
-            {error ? (
-              <p
-                className={`rounded-md border px-3 py-2 text-sm ${pageTheme.error}`}
-              >
-                {error}
-              </p>
-            ) : null}
-
-            <label className="space-y-2 text-sm font-semibold">
-              Name
-              <Input
-                name="name"
-                value={employeeForm.name}
-                onChange={handleEmployeeChange}
-                placeholder="Enter employee name"
-                className={`h-11 ${pageTheme.field}`}
-              />
-            </label>
-
-            <label className="space-y-2 text-sm font-semibold">
-              Email
-              <Input
-                name="email"
-                type="email"
-                value={employeeForm.email}
-                onChange={handleEmployeeChange}
-                placeholder="employee@company.com"
-                className={`h-11 ${pageTheme.field}`}
-              />
-            </label>
-
-            <label className="space-y-2 text-sm font-semibold">
-              Password
-              <Input
-                name="password"
-                type="password"
-                value={employeeForm.password}
-                onChange={handleEmployeeChange}
-                placeholder="Enter password"
-                className={`h-11 ${pageTheme.field}`}
-              />
-            </label>
-
-            <label className="space-y-2 text-sm font-semibold">
-              Confirm Password
-              <Input
-                name="confirmPassword"
-                type="password"
-                value={employeeForm.confirmPassword}
-                onChange={handleEmployeeChange}
-                placeholder="Confirm password"
-                className={`h-11 ${pageTheme.field}`}
-              />
-            </label>
-
-            <div
-              className={`mt-auto flex gap-3 border-t pt-5 ${pageTheme.divider}`}
-            >
-              <Button
-                type="button"
-                variant="outline"
-                disabled={employeeMutation.isPending}
-                onClick={() => {
-                  resetForm();
-                  setEmployeeModalOpen(false);
-                }}
-                className={`h-11 flex-1 rounded-none ${pageTheme.button}`}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={employeeMutation.isPending}
-                className="h-11 flex-1 rounded-none bg-blue-600 text-white hover:bg-blue-700"
-              >
-                {employeeMutation.isPending ? "Saving..." : "Save Employee"}
-              </Button>
-            </div>
-          </form>
-        </SheetContent>
-      </Sheet>
+        onOpenChange={setEmployeeModalOpen}
+        theme={isDarkTheme}
+      />
     </div>
   );
 }

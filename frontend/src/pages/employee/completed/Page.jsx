@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   BadgeCheck,
   CalendarCheck2,
@@ -23,29 +23,9 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "../../../components/ui/sidebar";
+import { useDocumentTheme } from "../../../hooks/useDocumentTheme";
+import { formatDate, getStatusKey } from "../../../lib/complaints";
 import { showAssignedComplaint } from "../../../services/employee";
-
-const getStatusKey = (status) =>
-  String(status || "")
-    .trim()
-    .replace(/([a-z])([A-Z])/g, "$1_$2")
-    .toLowerCase()
-    .replace(/[\s-]+/g, "_")
-    .replace(/_+/g, "_");
-
-const formatDate = (value) => {
-  if (!value) return "-";
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) return "-";
-
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(date);
-};
 
 const getPriorityBadgeClass = (priority, isDarkTheme) => {
   const priorityKey = String(priority || "medium").toLowerCase();
@@ -111,17 +91,7 @@ export default function Page() {
         details: "border-[#b8d8ff] bg-[#eef6ff]",
       };
 
-  useEffect(() => {
-    const root = document.documentElement;
-    const body = document.body;
-    const backgroundColor = isDarkTheme ? "#020617" : "#f8fbff";
-    const textColor = isDarkTheme ? "#f8fafc" : "#001a3a";
-
-    root.classList.toggle("dark", isDarkTheme);
-    root.style.backgroundColor = backgroundColor;
-    body.style.backgroundColor = backgroundColor;
-    body.style.color = textColor;
-  }, [isDarkTheme]);
+  useDocumentTheme(isDarkTheme);
 
   const {
     data: assignedComplaintResponse,

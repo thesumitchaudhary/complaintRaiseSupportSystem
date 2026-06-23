@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   CalendarDays,
   ChevronDown,
@@ -11,6 +11,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { AppSidebar } from "../../../components/app-sidebar";
 import { ComplaintDetailsDialog } from "../../../components/ComplaintDetailsDialog";
+import { HighlightedText } from "../../../components/HighlightedText";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -30,135 +31,26 @@ import {
 } from "../../../components/ui/sidebar";
 import { DataTable } from "../../../components/DataTable";
 import { RaiseComplaintModal } from "../../../components/RaiseComplaintModal";
+import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
+import {
+  formatDate,
+  getComplaintSearchText,
+  getRaisedDateFilterLabel,
+  getRaisedDateParams,
+  raisedDateFilterOptions,
+} from "../../../lib/complaints";
 import { showloggedinuser } from "../../../services/index";
 import { getRaisedComplaint } from "../../../services/user";
 
-const formatDate = (value) => {
-  if (!value) return "-";
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) return "-";
-
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(date);
-};
-
 const renderHighlightedText = (value, searchTerm) => {
-  const text = String(value || "-");
-  const needle = String(searchTerm || "").trim();
-
-  if (!needle) return text;
-
-  const lowerText = text.toLowerCase();
-  const lowerNeedle = needle.toLowerCase();
-  const parts = [];
-  let cursor = 0;
-  let matchIndex = lowerText.indexOf(lowerNeedle);
-
-  while (matchIndex !== -1) {
-    if (matchIndex > cursor) {
-      parts.push(text.slice(cursor, matchIndex));
-    }
-
-    const matchEnd = matchIndex + needle.length;
-    parts.push(
-      <mark
-        key={`${matchIndex}-${matchEnd}`}
-        className="rounded bg-yellow-300 px-0.5 text-slate-950"
-      >
-        {text.slice(matchIndex, matchEnd)}
-      </mark>,
-    );
-
-    cursor = matchEnd;
-    matchIndex = lowerText.indexOf(lowerNeedle, cursor);
-  }
-
-  if (cursor < text.length) {
-    parts.push(text.slice(cursor));
-  }
-
-  return parts;
-};
-
-const raisedDateFilterOptions = [
-  { value: "all", label: "All dates" },
-  { value: "today", label: "Today" },
-  { value: "last7", label: "Last 7 days" },
-  { value: "last30", label: "Last 30 days" },
-  { value: "thisMonth", label: "This month" },
-];
-
-const startOfDay = (date) => {
-  const nextDate = new Date(date);
-  nextDate.setHours(0, 0, 0, 0);
-  return nextDate;
-};
-
-const endOfDay = (date) => {
-  const nextDate = new Date(date);
-  nextDate.setHours(23, 59, 59, 999);
-  return nextDate;
-};
-
-const getRaisedDateParams = (filterValue, customDate) => {
-  const today = new Date();
-  const endDate = endOfDay(today);
-  let startDate;
-
-  if (filterValue === "custom" && customDate) {
-    return {
-      startDate: startOfDay(customDate).toISOString(),
-      endDate: endOfDay(customDate).toISOString(),
-    };
-  }
-
-  if (filterValue === "today") {
-    startDate = startOfDay(today);
-  }
-
-  if (filterValue === "last7") {
-    startDate = startOfDay(today);
-    startDate.setDate(startDate.getDate() - 6);
-  }
-
-  if (filterValue === "last30") {
-    startDate = startOfDay(today);
-    startDate.setDate(startDate.getDate() - 29);
-  }
-
-  if (filterValue === "thisMonth") {
-    startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-  }
-
-  if (!startDate) return {};
-
-  return {
-    startDate: startDate.toISOString(),
-    endDate: endDate.toISOString(),
-  };
-};
-
-const getRaisedDateFilterLabel = (filterValue, customDate) => {
-  if (filterValue === "custom" && customDate) {
-    return formatDate(customDate);
-  }
-
-  return (
-    raisedDateFilterOptions.find((option) => option.value === filterValue)
-      ?.label || "All dates"
-  );
+  return <HighlightedText value={value} searchTerm={searchTerm} />;
 };
 
 export default function Page() {
   const [theme, setTheme] = useState(false);
   const [complaintModalOpen, setComplaintModalOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, { lowercase: true });
   const [raisedDateFilter, setRaisedDateFilter] = useState("all");
   const [selectedRaisedDate, setSelectedRaisedDate] = useState(null);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
@@ -182,14 +74,6 @@ export default function Page() {
     }),
     [debouncedSearch, raisedDateParams],
   );
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search.trim().toLowerCase());
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [search]);
 
   const { data, isLoading } = useQuery({
     queryKey: [
@@ -216,22 +100,7 @@ export default function Page() {
     if (!debouncedSearch) return complaints;
 
     return complaints.filter((ticket) => {
-      const searchableText = [
-        ticket?.name,
-        ticket?.email,
-        ticket?.subject,
-        ticket?.message,
-        ticket?.status,
-        ticket?.serviceType,
-        ticket?.raisedDate,
-        ticket?.createdAt,
-        ticket?._id,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      return searchableText.includes(debouncedSearch);
+      return getComplaintSearchText(ticket).includes(debouncedSearch);
     });
   }, [complaints, debouncedSearch]);
 

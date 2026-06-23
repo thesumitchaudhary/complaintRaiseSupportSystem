@@ -1,35 +1,34 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   CalendarDays,
   ChevronDown,
   EllipsisVertical,
   Loader2,
-  Moon,
   Search,
-  Sun,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppSidebar } from "../../../components/admin-app-sidebar";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "../../../components/ui/breadcrumb";
+import { DashboardShell } from "../../../components/DashboardShell";
+import { HighlightedText } from "../../../components/HighlightedText";
 import { Calendar } from "../../../components/ui/calendar";
-import { Separator } from "../../../components/ui/separator";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "../../../components/ui/sidebar";
 import {
   deleteComplaint,
   showComplain,
   updateComplaint,
 } from "../../../services/admin";
+import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
+import { useDocumentTheme } from "../../../hooks/useDocumentTheme";
+import {
+  formatDate,
+  formatStatusLabel,
+  getComplaintDate,
+  getComplaintSearchText,
+  getRaisedDateFilterLabel,
+  getRaisedDateRange,
+  getStatusBadgeClass,
+  getStatusKey,
+  raisedDateFilterOptions,
+} from "../../../lib/complaints";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -40,204 +39,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "react-hot-toast";
 
-const raisedDateFilterOptions = [
-  { value: "all", label: "All dates" },
-  { value: "today", label: "Today" },
-  { value: "last7", label: "Last 7 days" },
-  { value: "last30", label: "Last 30 days" },
-  { value: "thisMonth", label: "This month" },
-];
-
-const startOfDay = (date) => {
-  const nextDate = new Date(date);
-  nextDate.setHours(0, 0, 0, 0);
-  return nextDate;
-};
-
-const endOfDay = (date) => {
-  const nextDate = new Date(date);
-  nextDate.setHours(23, 59, 59, 999);
-  return nextDate;
-};
-
-const formatDate = (value) => {
-  if (!value) return "-";
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) return "-";
-
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(date);
-};
-
-const formatStatusLabel = (status) => {
-  return String(status || "pending")
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/[_-]+/g, " ")
-    .split(" ")
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ");
-};
-
-const getStatusKey = (status) => {
-  return String(status || "pending")
-    .trim()
-    .replace(/([a-z])([A-Z])/g, "$1_$2")
-    .toLowerCase()
-    .replace(/[\s-]+/g, "_")
-    .replace(/_+/g, "_");
-};
-
-const getComplaintDate = (complaint) => {
-  const rawDate = complaint?.raisedDate || complaint?.createdAt;
-  const date = rawDate ? new Date(rawDate) : null;
-
-  return date && !Number.isNaN(date.getTime()) ? date : null;
-};
-
-const getRaisedDateRange = (filterValue, customDate) => {
-  const today = new Date();
-  const endDate = endOfDay(today);
-  let startDate;
-
-  if (filterValue === "custom" && customDate) {
-    return {
-      startDate: startOfDay(customDate),
-      endDate: endOfDay(customDate),
-    };
-  }
-
-  if (filterValue === "today") {
-    startDate = startOfDay(today);
-  }
-
-  if (filterValue === "last7") {
-    startDate = startOfDay(today);
-    startDate.setDate(startDate.getDate() - 6);
-  }
-
-  if (filterValue === "last30") {
-    startDate = startOfDay(today);
-    startDate.setDate(startDate.getDate() - 29);
-  }
-
-  if (filterValue === "thisMonth") {
-    startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-  }
-
-  if (!startDate) return null;
-
-  return { startDate, endDate };
-};
-
-const getRaisedDateFilterLabel = (filterValue, customDate) => {
-  if (filterValue === "custom" && customDate) {
-    return formatDate(customDate);
-  }
-
-  return (
-    raisedDateFilterOptions.find((option) => option.value === filterValue)
-      ?.label || "All dates"
-  );
-};
-
-const getSearchText = (complaint) => {
-  return [
-    complaint?.customerId?.name,
-    complaint?.customerId?.email,
-    complaint?.name,
-    complaint?.email,
-    complaint?.subject,
-    complaint?.message,
-    complaint?.status,
-    complaint?.serviceType,
-    complaint?._id,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-};
-
 const renderHighlightedText = (value, searchTerm, highlightClassName) => {
-  const text = String(value || "-");
-  const needle = String(searchTerm || "").trim();
-
-  if (!needle) return text;
-
-  const lowerText = text.toLowerCase();
-  const lowerNeedle = needle.toLowerCase();
-  const parts = [];
-  let cursor = 0;
-  let matchIndex = lowerText.indexOf(lowerNeedle);
-
-  while (matchIndex !== -1) {
-    if (matchIndex > cursor) {
-      parts.push(text.slice(cursor, matchIndex));
-    }
-
-    const matchEnd = matchIndex + needle.length;
-    parts.push(
-      <mark
-        key={`${matchIndex}-${matchEnd}`}
-        className={`rounded px-0.5 ${highlightClassName}`}
-      >
-        {text.slice(matchIndex, matchEnd)}
-      </mark>,
-    );
-
-    cursor = matchEnd;
-    matchIndex = lowerText.indexOf(lowerNeedle, cursor);
-  }
-
-  if (cursor < text.length) {
-    parts.push(text.slice(cursor));
-  }
-
-  return parts;
-};
-
-const getStatusBadgeClass = (status, isDarkTheme) => {
-  const statusKey = getStatusKey(status);
-
-  const statusClasses = isDarkTheme
-    ? {
-        pending: "bg-amber-950 text-amber-200",
-        accepted: "bg-cyan-950 text-cyan-200",
-        assigned: "bg-violet-950 text-violet-200",
-        in_progress: "bg-blue-950 text-blue-200",
-        completed: "bg-emerald-950 text-emerald-200",
-        resolved: "bg-emerald-950 text-emerald-200",
-        rejected: "bg-red-950 text-red-200",
-        overdue: "bg-rose-950 text-rose-200",
-      }
-    : {
-        pending: "bg-amber-100 text-amber-700",
-        accepted: "bg-cyan-100 text-cyan-700",
-        assigned: "bg-violet-100 text-violet-700",
-        in_progress: "bg-blue-100 text-blue-700",
-        completed: "bg-emerald-100 text-emerald-700",
-        resolved: "bg-emerald-100 text-emerald-700",
-        rejected: "bg-red-100 text-red-700",
-        overdue: "bg-rose-100 text-rose-700",
-      };
-
   return (
-    statusClasses[statusKey] ||
-    (isDarkTheme
-      ? "bg-slate-800 text-slate-200"
-      : "bg-slate-100 text-slate-700")
+    <HighlightedText
+      value={value}
+      searchTerm={searchTerm}
+      className={highlightClassName}
+    />
   );
 };
 
 export default function Page() {
   const [theme, setTheme] = useState(false);
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, { lowercase: true });
   const [raisedDateFilter, setRaisedDateFilter] = useState("all");
   const [selectedRaisedDate, setSelectedRaisedDate] = useState(null);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
@@ -290,25 +105,7 @@ export default function Page() {
   const hasActiveDateFilter =
     raisedDateFilter !== "all" || Boolean(selectedRaisedDate);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search.trim().toLowerCase());
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [search]);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const body = document.body;
-    const backgroundColor = isDarkTheme ? "#020617" : "#f8fbff";
-    const textColor = isDarkTheme ? "#f8fafc" : "#001a3a";
-
-    root.classList.toggle("dark", isDarkTheme);
-    root.style.backgroundColor = backgroundColor;
-    body.style.backgroundColor = backgroundColor;
-    body.style.color = textColor;
-  }, [isDarkTheme]);
+  useDocumentTheme(isDarkTheme);
 
   const { data, isLoading } = useQuery({
     queryKey: ["showComplaints"],
@@ -360,7 +157,7 @@ export default function Page() {
       if (!matchesDate) return false;
       if (!debouncedSearch) return true;
 
-      return getSearchText(complaint).includes(debouncedSearch);
+      return getComplaintSearchText(complaint).includes(debouncedSearch);
     });
   }, [complaints, debouncedSearch, raisedDateRange]);
 
@@ -426,7 +223,14 @@ export default function Page() {
     updateStatusMutation.isPending || deleteComplaintMutation.isPending;
 
   return (
-    <div className={`${pageTheme.shell} min-h-screen`}>
+    <DashboardShell
+      sidebar={<AppSidebar />}
+      sectionLabel="Admin dashboard"
+      pageLabel="Complaints"
+      pageTheme={pageTheme}
+      isDarkTheme={isDarkTheme}
+      onToggleTheme={() => setTheme((currentTheme) => !currentTheme)}
+    >
       {isMutating ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div
@@ -442,55 +246,7 @@ export default function Page() {
         </div>
       ) : null}
 
-      <SidebarProvider style={{ backgroundColor: "transparent" }}>
-        <AppSidebar />
-        <SidebarInset style={{ backgroundColor: "transparent" }}>
-          <header
-            className={`sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b ${pageTheme.header}`}
-          >
-            <div className="flex w-full items-center justify-between gap-3 px-4">
-              <div className="flex items-center gap-2">
-                <SidebarTrigger className="-ml-1" />
-                <Separator
-                  orientation="vertical"
-                  className="mr-2 data-[orientation=vertical]:h-4"
-                />
-                <Breadcrumb>
-                  <BreadcrumbList>
-                    <BreadcrumbItem className="hidden md:block">
-                      <BreadcrumbLink
-                        className={`text-sm ${pageTheme.muted}`}
-                        href="#"
-                      >
-                        Admin dashboard
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator className="hidden md:block" />
-                    <BreadcrumbItem>
-                      <BreadcrumbPage className={`text-sm ${pageTheme.muted}`}>
-                        Complaints
-                      </BreadcrumbPage>
-                    </BreadcrumbItem>
-                  </BreadcrumbList>
-                </Breadcrumb>
-              </div>
-
-              <button
-                type="button"
-                aria-label="Toggle theme"
-                className={`inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors ${pageTheme.button}`}
-                onClick={() => setTheme((currentTheme) => !currentTheme)}
-              >
-                {isDarkTheme ? (
-                  <Moon className="h-4 w-4" />
-                ) : (
-                  <Sun className="h-4 w-4" />
-                )}
-              </button>
-            </div>
-          </header>
-
-          <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 lg:p-6">
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 lg:p-6">
             <section className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
               <div>
                 <h1 className="text-2xl font-bold tracking-normal">
@@ -829,9 +585,7 @@ export default function Page() {
                 </table>
               </div>
             </section>
-          </main>
-        </SidebarInset>
-      </SidebarProvider>
-    </div>
+      </main>
+    </DashboardShell>
   );
 }

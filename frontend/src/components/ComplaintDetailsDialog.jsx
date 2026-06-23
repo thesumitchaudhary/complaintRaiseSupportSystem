@@ -1,30 +1,6 @@
 import { X } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
-
-const formatLabel = (value) => {
-  if (!value) return "-";
-
-  return String(value)
-    .replaceAll("_", " ")
-    .split(" ")
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ");
-};
-
-const formatDate = (value) => {
-  if (!value) return "-";
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) return "-";
-
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(date);
-};
+import { formatDate, formatStatusLabel } from "../lib/complaints";
 
 const getStatusClasses = (status, isDarkTheme) => {
   const normalizedStatus = String(status || "").toLowerCase();
@@ -137,7 +113,7 @@ export const ComplaintDetailsDialog = ({
                     isDarkTheme,
                   )}`}
                 >
-                  {formatLabel(complaint.status || "pending")}
+                  {formatStatusLabel(complaint.status || "pending")}
                 </span>
               ) : null}
             </div>
@@ -176,11 +152,11 @@ export const ComplaintDetailsDialog = ({
                   },
                   {
                     label: "Service Type",
-                    value: formatLabel(complaint.serviceType),
+                    value: formatStatusLabel(complaint.serviceType),
                   },
                   {
                     label: "Priority",
-                    value: formatLabel(complaint.priority || "medium"),
+                    value: formatStatusLabel(complaint.priority || "medium"),
                   },
                   {
                     label: "Raised Date",
@@ -284,7 +260,7 @@ export const ComplaintDetailsDialog = ({
                               isDarkTheme,
                             )}`}
                           >
-                            {formatLabel(update?.status || "update")}
+                            {formatStatusLabel(update?.status || "update")}
                           </span>
                           <span className={`text-xs ${detailTheme.muted}`}>
                             {formatDate(update?.updatedAt)}
