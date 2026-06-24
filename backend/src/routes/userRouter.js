@@ -4,6 +4,7 @@ import complaints from "../model/complaints.js";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 import authMiddleware from "../middleware/authMiddleware.js";
 import { sendEmailVerificationCodeTemplate, sendWelcomeMailTemplate } from "../helper/sendMail.js";
 
@@ -139,7 +140,13 @@ router.post("/login", async (req, res) => {
 router.get("/ticketDetails/filter", authMiddleware, async (req, res) => {
   try {
     const customerId = req.user.id;
-    const { date, startDate, endDate, search } = req.query;
+    const { date, startDate, endDate, search, page, limit } = req.query;
+    const shouldPaginate = page !== undefined || limit !== undefined;
+    const pageNumber = Math.max(Number.parseInt(page, 10) || 1, 1);
+    const pageSize = Math.min(
+      Math.max(Number.parseInt(limit, 10) || 10, 1),
+      50
+    );
 
     const filter = {
       customerId,
@@ -193,14 +200,85 @@ router.get("/ticketDetails/filter", authMiddleware, async (req, res) => {
       ];
     }
 
-    const tickets = await complaints
+    const ticketQuery = complaints
       .find(filter)
-      .sort({ raisedDate: -1 });
+      .select("name email subject message serviceType raisedDate status createdAt")
+      .sort({ raisedDate: -1, _id: -1 });
+
+    if (shouldPaginate) {
+      ticketQuery.skip((pageNumber - 1) * pageSize).limit(pageSize);
+    }
+
+    const statsFilter = {
+      ...filter,
+      customerId: new mongoose.Types.ObjectId(customerId),
+    };
+
+    const [tickets, complaintStats] = await Promise.all([
+      ticketQuery.lean(),
+      complaints.aggregate([
+        { $match: statsFilter },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: 1 },
+            resolved: {
+              $sum: {
+                $cond: [
+                  { $in: ["$status", ["completed", "resolved"]] },
+                  1,
+                  0,
+                ],
+              },
+            },
+            active: {
+              $sum: {
+                $cond: [
+                  { $in: ["$status", ["assigned", "in_progress"]] },
+                  1,
+                  0,
+                ],
+              },
+            },
+            pending: {
+              $sum: {
+                $cond: [{ $eq: ["$status", "pending"] }, 1, 0],
+              },
+            },
+          },
+        },
+      ]),
+    ]);
+    const {
+      total: totalComplaints = 0,
+      resolved: resolvedComplaints = 0,
+      active: activeComplaints = 0,
+      pending: pendingComplaints = 0,
+    } = complaintStats[0] || {};
+
+    const totalPages = shouldPaginate
+      ? Math.max(Math.ceil(totalComplaints / pageSize), 1)
+      : 1;
 
     return res.status(200).json({
       success: true,
       count: tickets.length,
+      total: totalComplaints,
       result: tickets,
+      stats: {
+        total: totalComplaints,
+        resolved: resolvedComplaints,
+        active: activeComplaints,
+        pending: pendingComplaints,
+      },
+      pagination: {
+        page: shouldPaginate ? pageNumber : 1,
+        limit: shouldPaginate ? pageSize : totalComplaints,
+        total: totalComplaints,
+        totalPages,
+        hasNextPage: shouldPaginate && pageNumber < totalPages,
+        hasPreviousPage: shouldPaginate && pageNumber > 1,
+      },
     });
   } catch (error) {
     console.error("Filter Error:", error);

@@ -2,20 +2,18 @@ import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate, BrowserRouter } from "react-router-dom";
 
 import SeoManager from "../components/SeoManager";
+import UserDashboardPage from "../pages/user/dashboard/Page";
 
 const Home = lazy(() => import("../pages/Home"));
 const ResetPassword = lazy(() => import("../pages/ResetPassword"));
 const NotFound = lazy(() => import("../pages/NotFound"));
-const UserDashboardPage = lazy(() => import("../pages/user/dashboard/Page"));
 const UserRaiseComplainPage = lazy(
   () => import("../pages/user/raisecomplaint/Page"),
 );
 const UserCompaintHistoryPage = lazy(
   () => import("../pages/user/complaint-history/Page"),
 );
-const AdminDashboardPage = lazy(
-  () => import("../pages/admin/dashboard/Page"),
-);
+const AdminDashboardPage = lazy(() => import("../pages/admin/dashboard/Page"));
 const AdminAssignTaskPage = lazy(
   () => import("../pages/admin/assign-task/Page"),
 );

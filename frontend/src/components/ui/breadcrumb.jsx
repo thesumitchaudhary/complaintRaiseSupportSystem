@@ -1,8 +1,8 @@
-import * as React from "react";
-import { Slot } from "radix-ui";
+import * as Slot from "@radix-ui/react-slot";
 
 import { cn } from "@/lib/utils";
-import { CaretRightIcon, DotsThreeIcon } from "@phosphor-icons/react";
+import { CaretRight as CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
+import { DotsThree as DotsThreeIcon } from "@phosphor-icons/react/dist/csr/DotsThree";
 
 function Breadcrumb({ className, ...props }) {
   return (

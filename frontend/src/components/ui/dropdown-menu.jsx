@@ -1,9 +1,10 @@
 "use client";
 
-import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
+import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 
 import { cn } from "@/lib/utils";
-import { CheckIcon, CaretRightIcon } from "@phosphor-icons/react";
+import { CaretRight as CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
+import { Check as CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
 
 function DropdownMenu({ ...props }) {
   return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />;

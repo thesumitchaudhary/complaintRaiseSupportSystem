@@ -1,18 +1,12 @@
 import { useMemo, useState } from "react";
-import { Moon, Search, Sun } from "lucide-react";
+import { Search } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppSidebar } from "../../../components/admin-app-sidebar";
 import { Button } from "../../../components/ui/button";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "../../../components/ui/breadcrumb";
+import { DashboardShell } from "../../../components/DashboardShell";
+import { DashboardStats } from "../../../components/DashboardStats";
+import { SearchSuggestions } from "../../../components/SearchSuggestions";
 import { Input } from "../../../components/ui/input";
-import { Separator } from "../../../components/ui/separator";
 import {
   Sheet,
   SheetContent,
@@ -20,11 +14,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "../../../components/ui/sheet";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "../../../components/ui/sidebar";
 import { Textarea } from "../../../components/ui/textarea";
 import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
 import { useDocumentTheme } from "../../../hooks/useDocumentTheme";
@@ -256,258 +245,188 @@ export default function Page() {
   };
 
   return (
-    <div className={`${pageTheme.shell} min-h-screen`}>
-      <SidebarProvider style={{ backgroundColor: "transparent" }}>
-        <AppSidebar />
-        <SidebarInset
-          className="min-w-0 w-0 overflow-x-hidden"
-          style={{ backgroundColor: "transparent" }}
-        >
-          <header
-            className={`sticky top-0 z-10 flex h-16 shrink-0 items-center border-b ${pageTheme.header}`}
-          >
-            <div className="flex w-full items-center justify-between gap-3 px-4">
-              <div className="flex items-center gap-2">
-                <SidebarTrigger className="-ml-1" />
-                <Separator
-                  orientation="vertical"
-                  className="mr-2 data-[orientation=vertical]:h-4"
-                />
-                <Breadcrumb>
-                  <BreadcrumbList>
-                    <BreadcrumbItem className="hidden md:block">
-                      <BreadcrumbLink
-                        className={`text-sm ${pageTheme.muted}`}
-                        href="#"
-                      >
-                        Admin dashboard
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator className="hidden md:block" />
-                    <BreadcrumbItem>
-                      <BreadcrumbPage className={`text-sm ${pageTheme.muted}`}>
-                        Assign Task
-                      </BreadcrumbPage>
-                    </BreadcrumbItem>
-                  </BreadcrumbList>
-                </Breadcrumb>
-              </div>
-
-              <button
-                type="button"
-                aria-label="Toggle theme"
-                className={`inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors ${pageTheme.button}`}
-                onClick={() => setTheme((currentTheme) => !currentTheme)}
-              >
-                {isDarkTheme ? (
-                  <Moon className="h-4 w-4" />
-                ) : (
-                  <Sun className="h-4 w-4" />
-                )}
-              </button>
+    <>
+      <DashboardShell
+        sidebar={<AppSidebar />}
+        sectionLabel="Admin dashboard"
+        pageLabel="Assign Task"
+        pageTheme={pageTheme}
+        isDarkTheme={isDarkTheme}
+        onToggleTheme={() => setTheme((currentTheme) => !currentTheme)}
+      >
+        <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 lg:p-6">
+          <section className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-normal">
+                Assign Tasks
+              </h1>
+              <p className={`mt-1 max-w-2xl text-sm ${pageTheme.muted}`}>
+                Review accepted complaints, choose the right employee, and keep
+                every assignment moving from one place.
+              </p>
             </div>
-          </header>
 
-          <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 lg:p-6">
-            <section className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-              <div>
-                <h1 className="text-2xl font-bold tracking-normal">
-                  Assign Tasks
-                </h1>
-                <p className={`mt-1 max-w-2xl text-sm ${pageTheme.muted}`}>
-                  Review accepted complaints, choose the right employee, and
-                  keep every assignment moving from one place.
-                </p>
-              </div>
+            <div className="relative w-full xl:w-[30rem]">
+              <Search
+                className={`absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 ${pageTheme.muted}`}
+              />
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search accepted complaints"
+                className={`h-12 w-full rounded-none border py-2 pl-12 pr-4 text-sm outline-none transition-colors focus-visible:ring-2 ${pageTheme.field}`}
+              />
 
-              <div className="relative w-full xl:w-[30rem]">
-                <Search
-                  className={`absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 ${pageTheme.muted}`}
-                />
-                <input
-                  type="search"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search accepted complaints"
-                  className={`h-12 w-full rounded-none border py-2 pl-12 pr-4 text-sm outline-none transition-colors focus-visible:ring-2 ${pageTheme.field}`}
-                />
+              <SearchSuggestions
+                items={suggestions}
+                getKey={(item, index) => item?._id || index}
+                getLabel={(item) => item?.subject || "Untitled complaint"}
+                onSelect={(item) => setSearch(item?.subject || "")}
+                className={pageTheme.panel}
+                itemClassName={pageTheme.suggestionHover}
+              />
+            </div>
+          </section>
 
-                {suggestions.length > 0 ? (
-                  <div
-                    className={`absolute left-0 top-full z-50 mt-1 w-full overflow-hidden border shadow-lg ${pageTheme.panel}`}
-                  >
-                    {suggestions.map((item) => (
-                      <button
-                        key={item?._id}
-                        type="button"
-                        className={`block w-full px-4 py-3 text-left text-sm transition-colors ${pageTheme.suggestionHover}`}
-                        onClick={() => setSearch(item?.subject || "")}
-                      >
-                        {item?.subject || "Untitled complaint"}
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            </section>
+          <DashboardStats
+            stats={stats}
+            cardClassName={pageTheme.card}
+            mutedClassName={pageTheme.muted}
+          />
 
-            <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {stats.map((stat) => (
-                <article
-                  key={stat.label}
-                  className={`min-h-24 rounded-lg border p-4 ${pageTheme.card}`}
-                >
-                  <p className={`text-sm font-medium ${pageTheme.muted}`}>
-                    {stat.label}
-                  </p>
-                  <div className="mt-3 flex items-end justify-between gap-3">
-                    <h2 className={`text-2xl font-bold ${stat.accent}`}>
-                      {stat.value}
-                    </h2>
-                    <span className={`text-right text-xs ${pageTheme.muted}`}>
-                      {stat.detail}
-                    </span>
-                  </div>
-                </article>
-              ))}
-            </section>
-
-            <section
-              className={`overflow-hidden rounded-lg border ${pageTheme.panel}`}
-            >
-              <div
-                className={`border-b px-4 py-4 sm:px-5 ${pageTheme.divider}`}
-              >
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h2 className="text-lg font-bold">Accepted Complaints</h2>
-                    <p className={`mt-1 text-sm ${pageTheme.muted}`}>
-                      Select a complaint to create or update its task
-                      assignment.
-                    </p>
-                  </div>
-                  <p className={`text-sm ${pageTheme.muted}`}>
-                    {isComplaintsLoading
-                      ? "Loading complaints"
-                      : `${filteredComplaints.length} of ${acceptedComplaints.length} shown`}
+          <section
+            className={`overflow-hidden rounded-lg border ${pageTheme.panel}`}
+          >
+            <div className={`border-b px-4 py-4 sm:px-5 ${pageTheme.divider}`}>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-lg font-bold">Accepted Complaints</h2>
+                  <p className={`mt-1 text-sm ${pageTheme.muted}`}>
+                    Select a complaint to create or update its task assignment.
                   </p>
                 </div>
+                <p className={`text-sm ${pageTheme.muted}`}>
+                  {isComplaintsLoading
+                    ? "Loading complaints"
+                    : `${filteredComplaints.length} of ${acceptedComplaints.length} shown`}
+                </p>
               </div>
+            </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[1080px] border-separate border-spacing-0 text-left text-sm">
-                  <thead className={pageTheme.tableHead}>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[1080px] border-separate border-spacing-0 text-left text-sm">
+                <thead className={pageTheme.tableHead}>
+                  <tr>
+                    <th className="border-b border-inherit px-5 py-4 font-semibold">
+                      Name
+                    </th>
+                    <th className="border-b border-inherit px-5 py-4 font-semibold">
+                      Email
+                    </th>
+                    <th className="border-b border-inherit px-5 py-4 font-semibold">
+                      Subject
+                    </th>
+                    <th className="border-b border-inherit px-5 py-4 font-semibold">
+                      Status
+                    </th>
+                    <th className="border-b border-inherit px-5 py-4 font-semibold">
+                      Accepted Date
+                    </th>
+                    <th className="border-b border-inherit px-5 py-4 font-semibold">
+                      Deadline
+                    </th>
+                    <th className="border-b border-inherit px-5 py-4 font-semibold">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {isComplaintsLoading ? (
                     <tr>
-                      <th className="border-b border-inherit px-5 py-4 font-semibold">
-                        Name
-                      </th>
-                      <th className="border-b border-inherit px-5 py-4 font-semibold">
-                        Email
-                      </th>
-                      <th className="border-b border-inherit px-5 py-4 font-semibold">
-                        Subject
-                      </th>
-                      <th className="border-b border-inherit px-5 py-4 font-semibold">
-                        Status
-                      </th>
-                      <th className="border-b border-inherit px-5 py-4 font-semibold">
-                        Accepted Date
-                      </th>
-                      <th className="border-b border-inherit px-5 py-4 font-semibold">
-                        Deadline
-                      </th>
-                      <th className="border-b border-inherit px-5 py-4 font-semibold">
-                        Action
-                      </th>
+                      <td
+                        colSpan={7}
+                        className={`px-5 py-12 text-center ${pageTheme.muted}`}
+                      >
+                        Loading accepted complaints...
+                      </td>
                     </tr>
-                  </thead>
+                  ) : filteredComplaints.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={7}
+                        className={`px-5 py-12 text-center ${pageTheme.muted}`}
+                      >
+                        {search
+                          ? "No accepted complaints match your search."
+                          : "No accepted complaints found."}
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredComplaints.map((complaint) => {
+                      const statusKey = getStatusKey(complaint?.status);
+                      const isAssigned = statusKey === "assigned";
 
-                  <tbody>
-                    {isComplaintsLoading ? (
-                      <tr>
-                        <td
-                          colSpan={7}
-                          className={`px-5 py-12 text-center ${pageTheme.muted}`}
+                      return (
+                        <tr
+                          key={complaint?._id || complaint?.email}
+                          className={`transition-colors ${pageTheme.tableRow}`}
                         >
-                          Loading accepted complaints...
-                        </td>
-                      </tr>
-                    ) : filteredComplaints.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={7}
-                          className={`px-5 py-12 text-center ${pageTheme.muted}`}
-                        >
-                          {search
-                            ? "No accepted complaints match your search."
-                            : "No accepted complaints found."}
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredComplaints.map((complaint) => {
-                        const statusKey = getStatusKey(complaint?.status);
-                        const isAssigned = statusKey === "assigned";
-
-                        return (
-                          <tr
-                            key={complaint?._id || complaint?.email}
-                            className={`transition-colors ${pageTheme.tableRow}`}
-                          >
-                            <td className="border-b border-inherit px-5 py-4 font-medium">
-                              {complaint?.customerId?.name ||
-                                complaint?.name ||
-                                "-"}
-                            </td>
-                            <td className="border-b border-inherit px-5 py-4">
-                              {complaint?.customerId?.email ||
-                                complaint?.email ||
-                                "-"}
-                            </td>
-                            <td className="max-w-xs border-b border-inherit px-5 py-4">
-                              {complaint?.subject || "-"}
-                            </td>
-                            <td className="border-b border-inherit px-5 py-4">
-                              <span
-                                className={`inline-flex whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold ${getStatusBadgeClass(
-                                  complaint?.status,
-                                  isDarkTheme,
-                                )}`}
-                              >
-                                {formatStatusLabel(complaint?.status)}
-                              </span>
-                            </td>
-                            <td className="whitespace-nowrap border-b border-inherit px-5 py-4">
-                              {formatDate(
-                                complaint?.acceptedDate || complaint?.createdAt,
-                              )}
-                            </td>
-                            <td className="whitespace-nowrap border-b border-inherit px-5 py-4">
-                              {complaint?.deadline
-                                ? formatDate(complaint.deadline)
-                                : "Not assigned yet"}
-                            </td>
-                            <td className="border-b border-inherit px-5 py-4">
-                              <Button
-                                type="button"
-                                className="h-9 rounded-none bg-blue-600 px-4 text-white hover:bg-blue-700"
-                                onClick={() =>
-                                  openAssignTaskModal(complaint?._id || "")
-                                }
-                              >
-                                {isAssigned ? "Re-assign" : "Assign"}
-                              </Button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          </main>
-        </SidebarInset>
-      </SidebarProvider>
+                          <td className="border-b border-inherit px-5 py-4 font-medium">
+                            {complaint?.customerId?.name ||
+                              complaint?.name ||
+                              "-"}
+                          </td>
+                          <td className="border-b border-inherit px-5 py-4">
+                            {complaint?.customerId?.email ||
+                              complaint?.email ||
+                              "-"}
+                          </td>
+                          <td className="max-w-xs border-b border-inherit px-5 py-4">
+                            {complaint?.subject || "-"}
+                          </td>
+                          <td className="border-b border-inherit px-5 py-4">
+                            <span
+                              className={`inline-flex whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold ${getStatusBadgeClass(
+                                complaint?.status,
+                                isDarkTheme,
+                              )}`}
+                            >
+                              {formatStatusLabel(complaint?.status)}
+                            </span>
+                          </td>
+                          <td className="whitespace-nowrap border-b border-inherit px-5 py-4">
+                            {formatDate(
+                              complaint?.acceptedDate || complaint?.createdAt,
+                            )}
+                          </td>
+                          <td className="whitespace-nowrap border-b border-inherit px-5 py-4">
+                            {complaint?.deadline
+                              ? formatDate(complaint.deadline)
+                              : "Not assigned yet"}
+                          </td>
+                          <td className="border-b border-inherit px-5 py-4">
+                            <Button
+                              type="button"
+                              className="h-9 rounded-none bg-blue-600 px-4 text-white hover:bg-blue-700"
+                              onClick={() =>
+                                openAssignTaskModal(complaint?._id || "")
+                              }
+                            >
+                              {isAssigned ? "Re-assign" : "Assign"}
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </main>
+      </DashboardShell>
 
       <Sheet
         open={assignTaskModalOpen}
@@ -776,6 +695,6 @@ export default function Page() {
           </form>
         </SheetContent>
       </Sheet>
-    </div>
+    </>
   );
 }

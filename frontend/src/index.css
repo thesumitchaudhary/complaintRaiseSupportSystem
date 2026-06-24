@@ -176,6 +176,13 @@
 }
 
 @layer base {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+    background-color: #f8fbff;
+  }
+
   * {
     @apply border-border outline-ring/50;
   }

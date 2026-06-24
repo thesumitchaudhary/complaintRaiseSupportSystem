@@ -2,7 +2,6 @@ import { useCallback } from "react";
 import { ShieldAlert } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-hot-toast";
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
 import { TeamSwitcher } from "@/components/team-switcher";
@@ -27,15 +26,20 @@ const user = {
   avatar: "/avatars/shadcn.jpg",
 };
 
+const showToast = async (type, message) => {
+  const { toast } = await import("react-hot-toast");
+  toast[type](message);
+};
+
 export function RoleSidebar({ items, logout, ...props }) {
   const navigate = useNavigate();
   const handleLogoutSuccess = useCallback(() => {
-    toast.success("Logout successful");
+    showToast("success", "Logout successful");
     navigate("/");
   }, [navigate]);
   const handleLogoutError = useCallback((error) => {
     console.error(error);
-    toast.error("Unable to log out");
+    showToast("error", "Unable to log out");
   }, []);
   const logoutMutation = useMutation({
     mutationFn: logout,

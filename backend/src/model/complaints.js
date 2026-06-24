@@ -195,4 +195,6 @@
     }
   );
 
+  complaintSchema.index({ customerId: 1, raisedDate: -1 });
+
   export default mongoose.model("complaint", complaintSchema);

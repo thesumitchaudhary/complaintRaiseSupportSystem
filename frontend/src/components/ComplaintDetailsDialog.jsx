@@ -1,5 +1,5 @@
 import { X } from "lucide-react";
-import { Dialog as DialogPrimitive } from "radix-ui";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { formatDate, formatStatusLabel } from "../lib/complaints";
 
 const getStatusClasses = (status, isDarkTheme) => {

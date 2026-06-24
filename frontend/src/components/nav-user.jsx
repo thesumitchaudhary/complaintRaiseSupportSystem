@@ -14,14 +14,9 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import {
-  CaretUpDownIcon,
-  // SparkleIcon,
-  CheckCircleIcon,
-  // CreditCardIcon,
-  // BellIcon,
-  SignOutIcon,
-} from "@phosphor-icons/react";
+import { CaretUpDown as CaretUpDownIcon } from "@phosphor-icons/react/dist/csr/CaretUpDown";
+import { CheckCircle as CheckCircleIcon } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { SignOut as SignOutIcon } from "@phosphor-icons/react/dist/csr/SignOut";
 import { useQuery } from "@tanstack/react-query";
 import { showloggedinuser } from "../services/index.js";
 

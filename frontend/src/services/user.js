@@ -168,6 +168,10 @@ export const getRaisedComplaint = async (filters = {}) => {
           ...(normalizedFilters.search
             ? { search: normalizedFilters.search }
             : {}),
+          ...(normalizedFilters.page ? { page: normalizedFilters.page } : {}),
+          ...(normalizedFilters.limit
+            ? { limit: normalizedFilters.limit }
+            : {}),
         }
       : {};
 
