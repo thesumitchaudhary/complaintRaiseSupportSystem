@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import {
   CalendarDays,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Moon,
   PlusCircle,
   Search,
@@ -46,6 +48,8 @@ const renderHighlightedText = (value, searchTerm) => {
   return <HighlightedText value={value} searchTerm={searchTerm} />;
 };
 
+const PAGE_SIZE = 2;
+
 export default function Page() {
   const [theme, setTheme] = useState(false);
   const [complaintModalOpen, setComplaintModalOpen] = useState(false);
@@ -55,6 +59,7 @@ export default function Page() {
   const [selectedRaisedDate, setSelectedRaisedDate] = useState(null);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [selectedComplaint, setSelectedComplaint] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const isDarkTheme = theme;
   const raisedDateParams = useMemo(
@@ -119,6 +124,20 @@ export default function Page() {
   }, [complaints, debouncedSearch]);
 
   const totalComplaints = complaints.length;
+  const filteredComplaintCount = filteredComplaints.length;
+  const totalPages = Math.max(Math.ceil(filteredComplaintCount / PAGE_SIZE), 1);
+  const activePage = Math.min(currentPage, totalPages);
+  const paginatedComplaints = useMemo(() => {
+    const pageStart = (activePage - 1) * PAGE_SIZE;
+
+    return filteredComplaints.slice(pageStart, pageStart + PAGE_SIZE);
+  }, [activePage, filteredComplaints]);
+  const firstShownComplaint =
+    filteredComplaintCount > 0 ? (activePage - 1) * PAGE_SIZE + 1 : 0;
+  const lastShownComplaint = Math.min(
+    activePage * PAGE_SIZE,
+    filteredComplaintCount,
+  );
   const resolvedComplaints = complaints.filter((ticket) =>
     ["completed", "resolved"].includes(
       String(ticket?.status || "").toLowerCase(),
@@ -137,6 +156,7 @@ export default function Page() {
     setRaisedDateFilter("all");
     setSelectedRaisedDate(null);
     setDatePickerOpen(false);
+    setCurrentPage(1);
   };
 
   const pageTheme = isDarkTheme
@@ -340,7 +360,10 @@ export default function Page() {
                   <Input
                     type="search"
                     value={search}
-                    onChange={(event) => setSearch(event.target.value)}
+                    onChange={(event) => {
+                      setSearch(event.target.value);
+                      setCurrentPage(1);
+                    }}
                     placeholder="Search complaints"
                     className={`pl-9 ${pageTheme.field}`}
                   />
@@ -354,7 +377,10 @@ export default function Page() {
                           key={item?._id}
                           type="button"
                           className={`block w-full px-3 py-2 text-left text-sm transition-colors ${pageTheme.suggestionHover}`}
-                          onClick={() => setSearch(item?.subject || "")}
+                          onClick={() => {
+                            setSearch(item?.subject || "");
+                            setCurrentPage(1);
+                          }}
                         >
                           {renderHighlightedText(
                             item?.subject || "Untitled complaint",
@@ -395,6 +421,7 @@ export default function Page() {
                             setRaisedDateFilter(event.target.value);
                             setSelectedRaisedDate(null);
                             setDatePickerOpen(false);
+                            setCurrentPage(1);
                           }}
                           className={`h-10 min-w-0 flex-1 rounded-md border px-3 text-sm outline-none transition-colors ${pageTheme.field}`}
                         >
@@ -429,6 +456,7 @@ export default function Page() {
                             setSelectedRaisedDate(date);
                             setRaisedDateFilter("custom");
                             setDatePickerOpen(false);
+                            setCurrentPage(1);
                           }}
                           className="mx-auto"
                         />
@@ -480,16 +508,16 @@ export default function Page() {
                   <p className={`text-sm ${pageTheme.muted}`}>
                     {isLoading
                       ? "Loading complaints"
-                      : `${filteredComplaints.length} of ${totalComplaints} shown`}
+                      : `${firstShownComplaint}-${lastShownComplaint} of ${filteredComplaintCount} shown`}
                   </p>
                 </div>
               </div>
 
               <div className="overflow-x-auto">
-                {filteredComplaints.length > 0 ? (
+                {filteredComplaintCount > 0 ? (
                   <DataTable
                     columns={complaintColumns}
-                    data={filteredComplaints}
+                    data={paginatedComplaints}
                     tableClassName="min-w-[760px] border-separate border-spacing-0 text-left text-sm"
                     headerClassName={pageTheme.tableHead}
                     rowClassName={`transition-colors ${pageTheme.row}`}
@@ -504,6 +532,52 @@ export default function Page() {
                   </div>
                 )}
               </div>
+
+              <nav
+                className={`flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 ${pageTheme.divider}`}
+                aria-label="Complaint pagination"
+              >
+                <span className={`text-sm ${pageTheme.muted}`}>
+                  {PAGE_SIZE} complaints per page
+                </span>
+
+                <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end">
+                  <span
+                    className={`text-sm ${pageTheme.muted}`}
+                    aria-live="polite"
+                  >
+                    Page {activePage} of {totalPages}
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={activePage <= 1 || isLoading}
+                      onClick={() =>
+                        setCurrentPage((page) =>
+                          Math.max(Math.min(page, totalPages) - 1, 1),
+                        )
+                      }
+                      className={`inline-flex h-9 items-center gap-1 rounded-md border px-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${pageTheme.button}`}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Previous
+                    </button>
+                    <button
+                      type="button"
+                      disabled={activePage >= totalPages || isLoading}
+                      onClick={() =>
+                        setCurrentPage((page) =>
+                          Math.min(page + 1, totalPages),
+                        )
+                      }
+                      className={`inline-flex h-9 items-center gap-1 rounded-md border px-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${pageTheme.button}`}
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </nav>
             </section>
           </main>
         </SidebarInset>

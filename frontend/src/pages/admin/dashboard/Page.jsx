@@ -1,5 +1,11 @@
 import { useMemo, useState } from "react";
-import { CalendarDays, ChevronDown, Search } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Search,
+} from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { AppSidebar } from "../../../components/admin-app-sidebar";
 import { DashboardShell } from "../../../components/DashboardShell";
@@ -30,6 +36,8 @@ const renderHighlightedText = (value, searchTerm, highlightClassName) => {
   );
 };
 
+const PAGE_SIZE = 3;
+
 export default function Page() {
   const [theme, setTheme] = useState(false);
   const [search, setSearch] = useState("");
@@ -40,6 +48,7 @@ export default function Page() {
   const [raisedDateFilter, setRaisedDateFilter] = useState("all");
   const [selectedRaisedDate, setSelectedRaisedDate] = useState(null);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const isDarkTheme = theme;
 
@@ -147,7 +156,20 @@ export default function Page() {
   const pendingComplaints = complaints.filter(
     (complaint) => String(complaint?.status || "").toLowerCase() === "pending",
   ).length;
-  const recentComplaints = filteredComplaints.slice(0, 5);
+  const filteredComplaintCount = filteredComplaints.length;
+  const totalPages = Math.max(Math.ceil(filteredComplaintCount / PAGE_SIZE), 1);
+  const activePage = Math.min(currentPage, totalPages);
+  const paginatedComplaints = useMemo(() => {
+    const pageStart = (activePage - 1) * PAGE_SIZE;
+
+    return filteredComplaints.slice(pageStart, pageStart + PAGE_SIZE);
+  }, [activePage, filteredComplaints]);
+  const firstShownComplaint =
+    filteredComplaintCount > 0 ? (activePage - 1) * PAGE_SIZE + 1 : 0;
+  const lastShownComplaint = Math.min(
+    activePage * PAGE_SIZE,
+    filteredComplaintCount,
+  );
 
   const complaintColumns = useMemo(
     () => [
@@ -215,6 +237,7 @@ export default function Page() {
     setRaisedDateFilter("all");
     setSelectedRaisedDate(null);
     setDatePickerOpen(false);
+    setCurrentPage(1);
   };
 
   const stats = [
@@ -253,181 +276,317 @@ export default function Page() {
       isDarkTheme={isDarkTheme}
       onToggleTheme={() => setTheme((currentTheme) => !currentTheme)}
     >
-      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 lg:p-6">
-            <section className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-              <div>
-                <h1 className="text-2xl font-bold tracking-normal">
-                  Admin Dashboard
-                </h1>
-                <p className={`mt-1 max-w-2xl text-sm ${pageTheme.muted}`}>
-                  Review employees, users, and complaint activity in one place.
-                </p>
-              </div>
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-3 sm:p-4 lg:p-6">
+        <section className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-normal">
+              Admin Dashboard
+            </h1>
+            <p className={`mt-1 max-w-2xl text-sm ${pageTheme.muted}`}>
+              Review employees, users, and complaint activity in one place.
+            </p>
+          </div>
 
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="relative w-full sm:w-80">
-                  <Search
-                    className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`}
-                  />
-                  <input
-                    type="search"
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Search complaints"
-                    className={`h-10 w-full rounded-md border py-2 pl-9 pr-3 text-sm outline-none transition-colors focus-visible:ring-2 ${pageTheme.field}`}
-                  />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative w-full sm:w-80">
+              <Search
+                className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`}
+              />
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setCurrentPage(1);
+                }}
+                placeholder="Search complaints"
+                className={`h-10 w-full rounded-md border py-2 pl-9 pr-3 text-sm outline-none transition-colors focus-visible:ring-2 ${pageTheme.field}`}
+              />
 
-                  {suggestions.length > 0 ? (
-                    <div
-                      className={`absolute left-0 top-full z-50 mt-1 w-full rounded-md border shadow-lg ${pageTheme.panel}`}
+              {suggestions.length > 0 ? (
+                <div
+                  className={`absolute left-0 top-full z-50 mt-1 w-full rounded-md border shadow-lg ${pageTheme.panel}`}
+                >
+                  {suggestions.map((item) => (
+                    <button
+                      key={item?._id}
+                      type="button"
+                      className={`block w-full px-3 py-2 text-left text-sm transition-colors ${pageTheme.suggestionHover}`}
+                      onClick={() => {
+                        setSearch(item?.subject || "");
+                        setCurrentPage(1);
+                      }}
                     >
-                      {suggestions.map((item) => (
-                        <button
-                          key={item?._id}
-                          type="button"
-                          className={`block w-full px-3 py-2 text-left text-sm transition-colors ${pageTheme.suggestionHover}`}
-                          onClick={() => setSearch(item?.subject || "")}
-                        >
+                      {renderHighlightedText(
+                        item?.subject || "Untitled complaint",
+                        search,
+                        pageTheme.highlight,
+                      )}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="relative w-full sm:w-64">
+              <CalendarDays
+                className={`pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`}
+              />
+              <button
+                type="button"
+                aria-expanded={datePickerOpen}
+                aria-label="Filter complaints by raised date"
+                onClick={() => setDatePickerOpen((open) => !open)}
+                className={`h-10 w-full rounded-md border py-2 pl-9 pr-9 text-left text-sm outline-none transition-colors ${pageTheme.field}`}
+              >
+                {raisedDateFilterLabel}
+              </button>
+              <ChevronDown
+                className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`}
+              />
+
+              {datePickerOpen ? (
+                <div
+                  className={`absolute right-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-lg border p-3 shadow-xl ${pageTheme.panel}`}
+                >
+                  <div className="flex gap-2">
+                    <select
+                      aria-label="Choose a quick raised date filter"
+                      value={raisedDateFilter}
+                      onChange={(event) => {
+                        setRaisedDateFilter(event.target.value);
+                        setSelectedRaisedDate(null);
+                        setDatePickerOpen(false);
+                        setCurrentPage(1);
+                      }}
+                      className={`h-10 min-w-0 flex-1 rounded-md border px-3 text-sm outline-none transition-colors ${pageTheme.field}`}
+                    >
+                      {raisedDateFilter === "custom" ? (
+                        <option value="custom">Custom date</option>
+                      ) : null}
+                      {raisedDateFilterOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+
+                    <button
+                      type="button"
+                      disabled={!hasActiveDateFilter}
+                      onClick={clearRaisedDateFilter}
+                      className={`h-10 rounded-md border px-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${pageTheme.button}`}
+                    >
+                      Clear
+                    </button>
+                  </div>
+
+                  <div
+                    className={`mt-3 rounded-md border ${pageTheme.divider}`}
+                  >
+                    <Calendar
+                      mode="single"
+                      selected={selectedRaisedDate || undefined}
+                      onSelect={(date) => {
+                        if (!date) return;
+                        setSelectedRaisedDate(date);
+                        setRaisedDateFilter("custom");
+                        setDatePickerOpen(false);
+                        setCurrentPage(1);
+                      }}
+                      className="mx-auto"
+                    />
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </section>
+
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {stats.map((stat) => (
+            <article
+              key={stat.label}
+              className={`rounded-lg border p-4 ${pageTheme.card}`}
+            >
+              <p className={`text-sm font-medium ${pageTheme.muted}`}>
+                {stat.label}
+              </p>
+              <div className="mt-2 flex items-end justify-between gap-3">
+                <h2 className={`text-2xl font-bold ${stat.accent}`}>
+                  {stat.value}
+                </h2>
+                <span className={`text-xs ${pageTheme.muted}`}>
+                  {stat.detail}
+                </span>
+              </div>
+            </article>
+          ))}
+        </section>
+
+        <section
+          className={`overflow-hidden rounded-lg border ${pageTheme.panel}`}
+        >
+          <div className={`border-b px-4 py-4 sm:px-5 ${pageTheme.divider}`}>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="text-lg font-bold">Recent Complaints</h2>
+              <p className={`text-sm ${pageTheme.muted}`}>
+                {isLoading
+                  ? "Loading complaints"
+                  : `${firstShownComplaint}-${lastShownComplaint} of ${filteredComplaintCount} shown`}
+              </p>
+            </div>
+          </div>
+
+          <div className="hidden overflow-x-auto md:block">
+            <DataTable
+              columns={complaintColumns}
+              data={paginatedComplaints}
+              isLoading={isLoading}
+              emptyMessage={
+                search || hasActiveDateFilter
+                  ? "No complaints match your filters."
+                  : "No complaints found."
+              }
+              tableClassName="min-w-[760px] border-separate border-spacing-0 text-left text-sm"
+              headerClassName={pageTheme.tableHead}
+              headerCellClassName="border-b border-inherit px-4 py-3 font-semibold"
+              rowClassName={`transition-colors ${pageTheme.tableRow}`}
+              cellClassName="border-b border-inherit px-4 py-3"
+              emptyClassName={`px-4 py-12 ${pageTheme.muted}`}
+            />
+          </div>
+
+          <div className="md:hidden">
+            {isLoading ? (
+              <p
+                className={`px-4 py-12 text-center text-sm ${pageTheme.muted}`}
+              >
+                Loading complaints...
+              </p>
+            ) : filteredComplaintCount === 0 ? (
+              <p
+                className={`px-4 py-12 text-center text-sm ${pageTheme.muted}`}
+              >
+                {search || hasActiveDateFilter
+                  ? "No complaints match your filters."
+                  : "No complaints found."}
+              </p>
+            ) : (
+              <div className={`divide-y ${pageTheme.divider}`}>
+                {paginatedComplaints.map((complaint) => (
+                  <article
+                    key={complaint?._id || complaint?.email}
+                    className="px-4 py-4"
+                  >
+                    <header className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="truncate text-sm font-semibold">
                           {renderHighlightedText(
-                            item?.subject || "Untitled complaint",
-                            search,
+                            complaint?.subject || "-",
+                            debouncedSearch,
                             pageTheme.highlight,
                           )}
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-
-                <div className="relative w-full sm:w-64">
-                  <CalendarDays
-                    className={`pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`}
-                  />
-                  <button
-                    type="button"
-                    aria-expanded={datePickerOpen}
-                    aria-label="Filter complaints by raised date"
-                    onClick={() => setDatePickerOpen((open) => !open)}
-                    className={`h-10 w-full rounded-md border py-2 pl-9 pr-9 text-left text-sm outline-none transition-colors ${pageTheme.field}`}
-                  >
-                    {raisedDateFilterLabel}
-                  </button>
-                  <ChevronDown
-                    className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`}
-                  />
-
-                  {datePickerOpen ? (
-                    <div
-                      className={`absolute right-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-lg border p-3 shadow-xl ${pageTheme.panel}`}
-                    >
-                      <div className="flex gap-2">
-                        <select
-                          aria-label="Choose a quick raised date filter"
-                          value={raisedDateFilter}
-                          onChange={(event) => {
-                            setRaisedDateFilter(event.target.value);
-                            setSelectedRaisedDate(null);
-                            setDatePickerOpen(false);
-                          }}
-                          className={`h-10 min-w-0 flex-1 rounded-md border px-3 text-sm outline-none transition-colors ${pageTheme.field}`}
+                        </h3>
+                        <p
+                          className={`mt-1 truncate text-xs ${pageTheme.muted}`}
                         >
-                          {raisedDateFilter === "custom" ? (
-                            <option value="custom">Custom date</option>
-                          ) : null}
-                          {raisedDateFilterOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-
-                        <button
-                          type="button"
-                          disabled={!hasActiveDateFilter}
-                          onClick={clearRaisedDateFilter}
-                          className={`h-10 rounded-md border px-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${pageTheme.button}`}
-                        >
-                          Clear
-                        </button>
+                          {renderHighlightedText(
+                            complaint?.customerId?.name || "-",
+                            debouncedSearch,
+                            pageTheme.highlight,
+                          )}
+                        </p>
                       </div>
-
-                      <div
-                        className={`mt-3 rounded-md border ${pageTheme.divider}`}
+                      <span
+                        className={`inline-flex shrink-0 rounded-md px-2 py-1 text-xs font-semibold ${getStatusBadgeClass(
+                          complaint?.status,
+                          isDarkTheme,
+                        )}`}
                       >
-                        <Calendar
-                          mode="single"
-                          selected={selectedRaisedDate || undefined}
-                          onSelect={(date) => {
-                            if (!date) return;
-                            setSelectedRaisedDate(date);
-                            setRaisedDateFilter("custom");
-                            setDatePickerOpen(false);
-                          }}
-                          className="mx-auto"
-                        />
+                        {renderHighlightedText(
+                          formatStatusLabel(complaint?.status),
+                          debouncedSearch,
+                          pageTheme.highlight,
+                        )}
+                      </span>
+                    </header>
+
+                    <dl className="mt-4 grid gap-3 text-sm">
+                      <div className="min-w-0">
+                        <dt
+                          className={`text-xs font-medium ${pageTheme.muted}`}
+                        >
+                          Email
+                        </dt>
+                        <dd className="mt-1 break-words">
+                          {renderHighlightedText(
+                            complaint?.customerId?.email || "-",
+                            debouncedSearch,
+                            pageTheme.highlight,
+                          )}
+                        </dd>
                       </div>
-                    </div>
-                  ) : null}
-                </div>
+                      <div>
+                        <dt
+                          className={`text-xs font-medium ${pageTheme.muted}`}
+                        >
+                          Date
+                        </dt>
+                        <dd className="mt-1">
+                          {formatDate(
+                            complaint?.raisedDate || complaint?.createdAt,
+                          )}
+                        </dd>
+                      </div>
+                    </dl>
+                  </article>
+                ))}
               </div>
-            </section>
+            )}
+          </div>
 
-            <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {stats.map((stat) => (
-                <article
-                  key={stat.label}
-                  className={`rounded-lg border p-4 ${pageTheme.card}`}
-                >
-                  <p className={`text-sm font-medium ${pageTheme.muted}`}>
-                    {stat.label}
-                  </p>
-                  <div className="mt-2 flex items-end justify-between gap-3">
-                    <h2 className={`text-2xl font-bold ${stat.accent}`}>
-                      {stat.value}
-                    </h2>
-                    <span className={`text-xs ${pageTheme.muted}`}>
-                      {stat.detail}
-                    </span>
-                  </div>
-                </article>
-              ))}
-            </section>
+          <nav
+            className={`flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 ${pageTheme.divider}`}
+            aria-label="Complaint pagination"
+          >
+            <span className={`text-sm ${pageTheme.muted}`}>
+              {PAGE_SIZE} complaints per page
+            </span>
 
-            <section
-              className={`overflow-hidden rounded-lg border ${pageTheme.panel}`}
-            >
-              <div
-                className={`border-b px-4 py-4 sm:px-5 ${pageTheme.divider}`}
-              >
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <h2 className="text-lg font-bold">Recent Complaints</h2>
-                  <p className={`text-sm ${pageTheme.muted}`}>
-                    {isLoading
-                      ? "Loading complaints"
-                      : `${recentComplaints.length} of ${filteredComplaints.length} shown`}
-                  </p>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto">
-                <DataTable
-                  columns={complaintColumns}
-                  data={recentComplaints}
-                  isLoading={isLoading}
-                  emptyMessage={
-                    search || hasActiveDateFilter
-                      ? "No complaints match your filters."
-                      : "No complaints found."
+            <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end">
+              <span className={`text-sm ${pageTheme.muted}`} aria-live="polite">
+                Page {activePage} of {totalPages}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={activePage <= 1 || isLoading}
+                  onClick={() =>
+                    setCurrentPage((page) =>
+                      Math.max(Math.min(page, totalPages) - 1, 1),
+                    )
                   }
-                  tableClassName="min-w-[760px] border-separate border-spacing-0 text-left text-sm"
-                  headerClassName={pageTheme.tableHead}
-                  headerCellClassName="border-b border-inherit px-4 py-3 font-semibold"
-                  rowClassName={`transition-colors ${pageTheme.tableRow}`}
-                  cellClassName="border-b border-inherit px-4 py-3"
-                  emptyClassName={`px-4 py-12 ${pageTheme.muted}`}
-                />
+                  className={`inline-flex h-9 items-center gap-1 rounded-md border px-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${pageTheme.button}`}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  disabled={activePage >= totalPages || isLoading}
+                  onClick={() =>
+                    setCurrentPage((page) => Math.min(page + 1, totalPages))
+                  }
+                  className={`inline-flex h-9 items-center gap-1 rounded-md border px-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${pageTheme.button}`}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </button>
               </div>
-            </section>
+            </div>
+          </nav>
+        </section>
       </main>
     </DashboardShell>
   );

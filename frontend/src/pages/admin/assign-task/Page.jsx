@@ -1,10 +1,12 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppSidebar } from "../../../components/admin-app-sidebar";
 import { Button } from "../../../components/ui/button";
 import { DashboardShell } from "../../../components/DashboardShell";
 import { DashboardStats } from "../../../components/DashboardStats";
+import { DataTable } from "../../../components/DataTable";
+import { HighlightedText } from "../../../components/HighlightedText";
 import { SearchSuggestions } from "../../../components/SearchSuggestions";
 import { Input } from "../../../components/ui/input";
 import {
@@ -38,6 +40,18 @@ const initialAssignTaskForm = {
   notes: "",
 };
 
+const ASSIGN_TASK_PAGE_SIZE = 3;
+
+const renderHighlightedText = (value, searchTerm, highlightClassName) => {
+  return (
+    <HighlightedText
+      value={value}
+      searchTerm={searchTerm}
+      className={highlightClassName}
+    />
+  );
+};
+
 export default function Page() {
   const [theme, setTheme] = useState(false);
   const [assignTaskModalOpen, setAssignTaskModalOpen] = useState(false);
@@ -63,6 +77,7 @@ export default function Page() {
         button: "border-blue-900/70 text-slate-100 hover:bg-slate-800",
         suggestionHover: "hover:bg-slate-800",
         details: "border-blue-900/60 bg-slate-950/70",
+        highlight: "bg-yellow-300/30 text-yellow-100",
       }
     : {
         shell: "bg-[#f8fbff] text-[#001a3a]",
@@ -78,6 +93,7 @@ export default function Page() {
         button: "border-[#b8d8ff] text-[#12365c] hover:bg-[#eef6ff]",
         suggestionHover: "hover:bg-[#eef6ff]",
         details: "border-[#b8d8ff] bg-[#eef6ff]",
+        highlight: "bg-yellow-200 text-[#001a3a]",
       };
 
   useDocumentTheme(isDarkTheme);
@@ -133,6 +149,7 @@ export default function Page() {
         complaint?.email,
         complaint?.subject,
         complaint?.status,
+        formatStatusLabel(complaint?.status),
       ]
         .filter(Boolean)
         .join(" ")
@@ -236,13 +253,103 @@ export default function Page() {
     });
   };
 
-  const openAssignTaskModal = (complaintId) => {
+  const openAssignTaskModal = useCallback((complaintId) => {
     setAssignTaskForm((currentForm) => ({
       ...currentForm,
       complaintId,
     }));
     setAssignTaskModalOpen(true);
-  };
+  }, []);
+
+  const complaintColumns = useMemo(
+    () => [
+      {
+        key: "name",
+        header: "Name",
+        cellClassName: "font-medium",
+        render: (complaint) =>
+          renderHighlightedText(
+            complaint?.customerId?.name || complaint?.name || "-",
+            debouncedSearch,
+            pageTheme.highlight,
+          ),
+      },
+      {
+        key: "email",
+        header: "Email",
+        render: (complaint) =>
+          renderHighlightedText(
+            complaint?.customerId?.email || complaint?.email || "-",
+            debouncedSearch,
+            pageTheme.highlight,
+          ),
+      },
+      {
+        key: "subject",
+        header: "Subject",
+        cellClassName: "max-w-xs",
+        render: (complaint) =>
+          renderHighlightedText(
+            complaint?.subject || "-",
+            debouncedSearch,
+            pageTheme.highlight,
+          ),
+      },
+      {
+        key: "status",
+        header: "Status",
+        render: (complaint) => (
+          <span
+            className={`inline-flex whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold ${getStatusBadgeClass(
+              complaint?.status,
+              isDarkTheme,
+            )}`}
+          >
+            {renderHighlightedText(
+              formatStatusLabel(complaint?.status),
+              debouncedSearch,
+              pageTheme.highlight,
+            )}
+          </span>
+        ),
+      },
+      {
+        key: "acceptedDate",
+        header: "Accepted Date",
+        cellClassName: "whitespace-nowrap",
+        render: (complaint) =>
+          formatDate(complaint?.acceptedDate || complaint?.createdAt),
+      },
+      {
+        key: "deadline",
+        header: "Deadline",
+        cellClassName: "whitespace-nowrap",
+        render: (complaint) =>
+          complaint?.deadline
+            ? formatDate(complaint.deadline)
+            : "Not assigned yet",
+      },
+      {
+        key: "action",
+        header: "Action",
+        render: (complaint) => {
+          const statusKey = getStatusKey(complaint?.status);
+          const isAssigned = statusKey === "assigned";
+
+          return (
+            <Button
+              type="button"
+              className="h-9 rounded-none bg-blue-600 px-4 text-white hover:bg-blue-700"
+              onClick={() => openAssignTaskModal(complaint?._id || "")}
+            >
+              {isAssigned ? "Re-assign" : "Assign"}
+            </Button>
+          );
+        },
+      },
+    ],
+    [debouncedSearch, isDarkTheme, openAssignTaskModal, pageTheme.highlight],
+  );
 
   return (
     <>
@@ -281,7 +388,13 @@ export default function Page() {
               <SearchSuggestions
                 items={suggestions}
                 getKey={(item, index) => item?._id || index}
-                getLabel={(item) => item?.subject || "Untitled complaint"}
+                getLabel={(item) =>
+                  renderHighlightedText(
+                    item?.subject || "Untitled complaint",
+                    search,
+                    pageTheme.highlight,
+                  )
+                }
                 onSelect={(item) => setSearch(item?.subject || "")}
                 className={pageTheme.panel}
                 itemClassName={pageTheme.suggestionHover}
@@ -315,114 +428,33 @@ export default function Page() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1080px] border-separate border-spacing-0 text-left text-sm">
-                <thead className={pageTheme.tableHead}>
-                  <tr>
-                    <th className="border-b border-inherit px-5 py-4 font-semibold">
-                      Name
-                    </th>
-                    <th className="border-b border-inherit px-5 py-4 font-semibold">
-                      Email
-                    </th>
-                    <th className="border-b border-inherit px-5 py-4 font-semibold">
-                      Subject
-                    </th>
-                    <th className="border-b border-inherit px-5 py-4 font-semibold">
-                      Status
-                    </th>
-                    <th className="border-b border-inherit px-5 py-4 font-semibold">
-                      Accepted Date
-                    </th>
-                    <th className="border-b border-inherit px-5 py-4 font-semibold">
-                      Deadline
-                    </th>
-                    <th className="border-b border-inherit px-5 py-4 font-semibold">
-                      Action
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {isComplaintsLoading ? (
-                    <tr>
-                      <td
-                        colSpan={7}
-                        className={`px-5 py-12 text-center ${pageTheme.muted}`}
-                      >
-                        Loading accepted complaints...
-                      </td>
-                    </tr>
-                  ) : filteredComplaints.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={7}
-                        className={`px-5 py-12 text-center ${pageTheme.muted}`}
-                      >
-                        {search
-                          ? "No accepted complaints match your search."
-                          : "No accepted complaints found."}
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredComplaints.map((complaint) => {
-                      const statusKey = getStatusKey(complaint?.status);
-                      const isAssigned = statusKey === "assigned";
-
-                      return (
-                        <tr
-                          key={complaint?._id || complaint?.email}
-                          className={`transition-colors ${pageTheme.tableRow}`}
-                        >
-                          <td className="border-b border-inherit px-5 py-4 font-medium">
-                            {complaint?.customerId?.name ||
-                              complaint?.name ||
-                              "-"}
-                          </td>
-                          <td className="border-b border-inherit px-5 py-4">
-                            {complaint?.customerId?.email ||
-                              complaint?.email ||
-                              "-"}
-                          </td>
-                          <td className="max-w-xs border-b border-inherit px-5 py-4">
-                            {complaint?.subject || "-"}
-                          </td>
-                          <td className="border-b border-inherit px-5 py-4">
-                            <span
-                              className={`inline-flex whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold ${getStatusBadgeClass(
-                                complaint?.status,
-                                isDarkTheme,
-                              )}`}
-                            >
-                              {formatStatusLabel(complaint?.status)}
-                            </span>
-                          </td>
-                          <td className="whitespace-nowrap border-b border-inherit px-5 py-4">
-                            {formatDate(
-                              complaint?.acceptedDate || complaint?.createdAt,
-                            )}
-                          </td>
-                          <td className="whitespace-nowrap border-b border-inherit px-5 py-4">
-                            {complaint?.deadline
-                              ? formatDate(complaint.deadline)
-                              : "Not assigned yet"}
-                          </td>
-                          <td className="border-b border-inherit px-5 py-4">
-                            <Button
-                              type="button"
-                              className="h-9 rounded-none bg-blue-600 px-4 text-white hover:bg-blue-700"
-                              onClick={() =>
-                                openAssignTaskModal(complaint?._id || "")
-                              }
-                            >
-                              {isAssigned ? "Re-assign" : "Assign"}
-                            </Button>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+              <DataTable
+                columns={complaintColumns}
+                data={filteredComplaints}
+                getRowKey={(complaint, index) =>
+                  complaint?._id || complaint?.email || index
+                }
+                isLoading={isComplaintsLoading}
+                loadingMessage="Loading accepted complaints..."
+                emptyMessage={
+                  search
+                    ? "No accepted complaints match your search."
+                    : "No accepted complaints found."
+                }
+                tableClassName="min-w-[1080px] border-separate border-spacing-0 text-left text-sm"
+                headerClassName={pageTheme.tableHead}
+                headerCellClassName="border-b border-inherit px-5 py-4 font-semibold"
+                rowClassName={`transition-colors ${pageTheme.tableRow}`}
+                cellClassName="border-b border-inherit px-5 py-4"
+                emptyClassName={`px-5 py-12 ${pageTheme.muted}`}
+                enablePagination
+                pageSize={ASSIGN_TASK_PAGE_SIZE}
+                pageSizeLabel={`${ASSIGN_TASK_PAGE_SIZE} complaints per page`}
+                paginationLabel="Accepted complaints pagination"
+                paginationClassName={`border-t ${pageTheme.divider}`}
+                paginationButtonClassName={pageTheme.button}
+                paginationTextClassName={pageTheme.muted}
+              />
             </div>
           </section>
         </main>

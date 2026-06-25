@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Moon, Search, Sun } from "lucide-react";
+import { ChevronLeft, ChevronRight, Moon, Search, Sun } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { AddEmployeeModal } from "../../../components/AddEmployeeModal";
 import { AppSidebar } from "../../../components/admin-app-sidebar";
@@ -19,6 +19,7 @@ import {
   SidebarTrigger,
 } from "../../../components/ui/sidebar";
 import { DataTable } from "../../../components/DataTable";
+import { HighlightedText } from "../../../components/HighlightedText";
 import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
 import { useDocumentTheme } from "../../../hooks/useDocumentTheme";
 import { formatDate } from "../../../lib/complaints";
@@ -33,10 +34,23 @@ const getTaskCounts = (row) => {
   };
 };
 
+const renderHighlightedText = (value, searchTerm, highlightClassName) => {
+  return (
+    <HighlightedText
+      value={value}
+      searchTerm={searchTerm}
+      className={highlightClassName}
+    />
+  );
+};
+
+const EMPLOYEE_PAGE_SIZE = 3;
+
 export default function Page() {
   const [theme, setTheme] = useState(false);
   const [employeeModalOpen, setEmployeeModalOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const debouncedSearch = useDebouncedValue(search);
 
   const isDarkTheme = theme;
@@ -66,6 +80,24 @@ export default function Page() {
         .slice(0, 5)
     : [];
 
+  const filteredEmployeeCount = filteredEmployees.length;
+  const totalPages = Math.max(
+    Math.ceil(filteredEmployeeCount / EMPLOYEE_PAGE_SIZE),
+    1,
+  );
+  const activePage = Math.min(currentPage, totalPages);
+  const paginatedEmployees = useMemo(() => {
+    const pageStart = (activePage - 1) * EMPLOYEE_PAGE_SIZE;
+
+    return filteredEmployees.slice(pageStart, pageStart + EMPLOYEE_PAGE_SIZE);
+  }, [activePage, filteredEmployees]);
+  const firstShownEmployee =
+    filteredEmployeeCount > 0 ? (activePage - 1) * EMPLOYEE_PAGE_SIZE + 1 : 0;
+  const lastShownEmployee = Math.min(
+    activePage * EMPLOYEE_PAGE_SIZE,
+    filteredEmployeeCount,
+  );
+
   const totalEmployees = employeeRows.length;
   const totalAssignedTasks = employeeRows.reduce(
     (total, row) => total + (Array.isArray(row?.tasks) ? row.tasks.length : 0),
@@ -91,6 +123,7 @@ export default function Page() {
         muted: "text-slate-400",
         button: "border-blue-900/70 text-slate-100 hover:bg-slate-800",
         suggestionHover: "hover:bg-slate-800",
+        highlight: "bg-yellow-300/30 text-yellow-100",
       }
     : {
         shell: "bg-[#f8fbff] text-[#001a3a]",
@@ -105,6 +138,7 @@ export default function Page() {
         muted: "text-[#4e678a]",
         button: "border-[#b8d8ff] text-[#12365c] hover:bg-[#eef6ff]",
         suggestionHover: "hover:bg-[#eef6ff]",
+        highlight: "bg-yellow-200 text-[#001a3a]",
       };
 
   const employeeColumns = useMemo(
@@ -113,18 +147,33 @@ export default function Page() {
         key: "name",
         header: "Name",
         cellClassName: "font-medium",
-        render: (row) => row?.employee?.name || "-",
+        render: (row) =>
+          renderHighlightedText(
+            row?.employee?.name || "-",
+            debouncedSearch,
+            pageTheme.highlight,
+          ),
       },
       {
         key: "email",
         header: "Email",
-        render: (row) => row?.employee?.email || "-",
+        render: (row) =>
+          renderHighlightedText(
+            row?.employee?.email || "-",
+            debouncedSearch,
+            pageTheme.highlight,
+          ),
       },
       {
         key: "joinDate",
         header: "Join Date",
         cellClassName: "whitespace-nowrap",
-        render: (row) => formatDate(row?.employee?.createdAt),
+        render: (row) =>
+          renderHighlightedText(
+            formatDate(row?.employee?.createdAt),
+            debouncedSearch,
+            pageTheme.highlight,
+          ),
       },
       {
         key: "pendingTasks",
@@ -169,7 +218,7 @@ export default function Page() {
         },
       },
     ],
-    [isDarkTheme],
+    [debouncedSearch, isDarkTheme, pageTheme.highlight],
   );
 
   const stats = [
@@ -285,7 +334,10 @@ export default function Page() {
                     type="search"
                     role="combobox"
                     value={search}
-                    onChange={(event) => setSearch(event.target.value)}
+                    onChange={(event) => {
+                      setSearch(event.target.value);
+                      setCurrentPage(1);
+                    }}
                     placeholder="Search employees"
                     autoComplete="off"
                     aria-autocomplete="list"
@@ -312,15 +364,26 @@ export default function Page() {
                             <button
                               type="button"
                               className={`flex w-full min-w-0 flex-col px-4 py-3 text-left text-sm transition-colors sm:block ${pageTheme.suggestionHover}`}
-                              onClick={() => setSearch(employee?.name || "")}
+                              onClick={() => {
+                                setSearch(employee?.name || "");
+                                setCurrentPage(1);
+                              }}
                             >
                               <span className="truncate font-medium">
-                                {employee?.name || "-"}
+                                {renderHighlightedText(
+                                  employee?.name || "-",
+                                  search,
+                                  pageTheme.highlight,
+                                )}
                               </span>
                               <span
                                 className={`truncate sm:ml-2 ${pageTheme.muted}`}
                               >
-                                {employee?.email || ""}
+                                {renderHighlightedText(
+                                  employee?.email || "",
+                                  search,
+                                  pageTheme.highlight,
+                                )}
                               </span>
                             </button>
                           </li>
@@ -390,7 +453,7 @@ export default function Page() {
                   >
                     {isEmployeesLoading
                       ? "Loading employees"
-                      : `${filteredEmployees.length} of ${employeeRows.length} shown`}
+                      : `${firstShownEmployee}-${lastShownEmployee} of ${filteredEmployeeCount} shown`}
                   </p>
                 </div>
               </header>
@@ -409,7 +472,7 @@ export default function Page() {
                   </p>
                 ) : (
                   <ul aria-label="Employees" className="divide-y">
-                    {filteredEmployees.map((row, index) => {
+                    {paginatedEmployees.map((row, index) => {
                       const employee = row?.employee || {};
                       const { pending, completed } = getTaskCounts(row);
 
@@ -421,14 +484,22 @@ export default function Page() {
                           <article className="space-y-4 p-4">
                             <header className="min-w-0">
                               <h3 className="truncate font-semibold">
-                                {employee?.name || "-"}
+                                {renderHighlightedText(
+                                  employee?.name || "-",
+                                  debouncedSearch,
+                                  pageTheme.highlight,
+                                )}
                               </h3>
                               {employee?.email ? (
                                 <a
                                   href={`mailto:${employee.email}`}
                                   className={`block break-all text-sm ${pageTheme.muted}`}
                                 >
-                                  {employee.email}
+                                  {renderHighlightedText(
+                                    employee.email,
+                                    debouncedSearch,
+                                    pageTheme.highlight,
+                                  )}
                                 </a>
                               ) : (
                                 <p
@@ -490,7 +561,7 @@ export default function Page() {
               >
                 <DataTable
                   columns={employeeColumns}
-                  data={filteredEmployees}
+                  data={paginatedEmployees}
                   getRowKey={(row, index) =>
                     row?.employee?._id || row?.employee?.email || index
                   }
@@ -509,6 +580,54 @@ export default function Page() {
                   emptyClassName={`px-5 py-12 ${pageTheme.muted}`}
                 />
               </div>
+
+              {!isEmployeesLoading && filteredEmployeeCount > 0 ? (
+                <nav
+                  className={`flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 ${pageTheme.divider}`}
+                  aria-label="Employee pagination"
+                >
+                  <span className={`text-sm ${pageTheme.muted}`}>
+                    {EMPLOYEE_PAGE_SIZE} employees per page
+                  </span>
+
+                  <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end">
+                    <span
+                      className={`text-sm ${pageTheme.muted}`}
+                      aria-live="polite"
+                    >
+                      Page {activePage} of {totalPages}
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={activePage <= 1}
+                        onClick={() =>
+                          setCurrentPage((page) =>
+                            Math.max(Math.min(page, totalPages) - 1, 1),
+                          )
+                        }
+                        className={`inline-flex h-9 items-center gap-1 rounded-md border px-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${pageTheme.button}`}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Previous
+                      </button>
+                      <button
+                        type="button"
+                        disabled={activePage >= totalPages}
+                        onClick={() =>
+                          setCurrentPage((page) =>
+                            Math.min(page + 1, totalPages),
+                          )
+                        }
+                        className={`inline-flex h-9 items-center gap-1 rounded-md border px-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${pageTheme.button}`}
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </nav>
+              ) : null}
             </section>
           </main>
         </SidebarInset>

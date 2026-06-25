@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import {
   CalendarDays,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   EllipsisVertical,
   Loader2,
   Search,
@@ -49,6 +51,8 @@ const renderHighlightedText = (value, searchTerm, highlightClassName) => {
   );
 };
 
+const PAGE_SIZE = 2;
+
 export default function Page() {
   const [theme, setTheme] = useState(false);
   const [search, setSearch] = useState("");
@@ -56,6 +60,7 @@ export default function Page() {
   const [raisedDateFilter, setRaisedDateFilter] = useState("all");
   const [selectedRaisedDate, setSelectedRaisedDate] = useState(null);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const isDarkTheme = theme;
   const queryClient = useQueryClient();
@@ -176,6 +181,20 @@ export default function Page() {
   }, [complaints, search]);
 
   const totalComplaints = complaints.length;
+  const filteredComplaintCount = filteredComplaints.length;
+  const totalPages = Math.max(Math.ceil(filteredComplaintCount / PAGE_SIZE), 1);
+  const activePage = Math.min(currentPage, totalPages);
+  const paginatedComplaints = useMemo(() => {
+    const pageStart = (activePage - 1) * PAGE_SIZE;
+
+    return filteredComplaints.slice(pageStart, pageStart + PAGE_SIZE);
+  }, [activePage, filteredComplaints]);
+  const firstShownComplaint =
+    filteredComplaintCount > 0 ? (activePage - 1) * PAGE_SIZE + 1 : 0;
+  const lastShownComplaint = Math.min(
+    activePage * PAGE_SIZE,
+    filteredComplaintCount,
+  );
   const resolvedComplaints = complaints.filter((complaint) =>
     ["completed", "resolved"].includes(getStatusKey(complaint?.status)),
   ).length;
@@ -190,6 +209,7 @@ export default function Page() {
     setRaisedDateFilter("all");
     setSelectedRaisedDate(null);
     setDatePickerOpen(false);
+    setCurrentPage(1);
   };
 
   const summaryCards = [
@@ -222,6 +242,65 @@ export default function Page() {
   const isMutating =
     updateStatusMutation.isPending || deleteComplaintMutation.isPending;
 
+  const renderComplaintActions = (complaint) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          aria-label={`Open actions for ${complaint?.subject || "complaint"}`}
+          className={`h-9 w-9 rounded-md p-0 ${pageTheme.button}`}
+        >
+          <EllipsisVertical className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className={`w-40 ${pageTheme.menu}`} align="end">
+        <DropdownMenuGroup>
+          <DropdownMenuItem
+            onClick={() =>
+              updateStatusMutation.mutate({
+                id: complaint?._id,
+                status: "pending",
+              })
+            }
+          >
+            Pending
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() =>
+              updateStatusMutation.mutate({
+                id: complaint?._id,
+                status: "in_progress",
+              })
+            }
+          >
+            In Progress
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() =>
+              updateStatusMutation.mutate({
+                id: complaint?._id,
+                status: "completed",
+              })
+            }
+          >
+            Resolved
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className={
+              isDarkTheme
+                ? "text-red-300 focus:text-red-200"
+                : "text-red-600 focus:text-red-700"
+            }
+            onClick={() => deleteComplaintMutation.mutate(complaint?._id)}
+          >
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
     <DashboardShell
       sidebar={<AppSidebar />}
@@ -247,262 +326,387 @@ export default function Page() {
       ) : null}
 
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 lg:p-6">
-            <section className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-              <div>
-                <h1 className="text-2xl font-bold tracking-normal">
-                  Complaints overview
-                </h1>
-                <p className={`mt-1 max-w-2xl text-sm ${pageTheme.muted}`}>
-                  Track every customer complaint and update the latest status in
-                  one place.
-                </p>
-              </div>
+        <section className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-normal">
+              Complaints overview
+            </h1>
+            <p className={`mt-1 max-w-2xl text-sm ${pageTheme.muted}`}>
+              Track every customer complaint and update the latest status in one
+              place.
+            </p>
+          </div>
 
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="relative w-full sm:w-96">
-                  <Search
-                    className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`}
-                  />
-                  <input
-                    type="search"
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Search complaints"
-                    className={`h-10 w-full rounded-md border py-2 pl-9 pr-3 text-sm outline-none transition-colors focus-visible:ring-2 ${pageTheme.field}`}
-                  />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative w-full sm:w-96">
+              <Search
+                className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`}
+              />
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setCurrentPage(1);
+                }}
+                placeholder="Search complaints"
+                className={`h-10 w-full rounded-md border py-2 pl-9 pr-3 text-sm outline-none transition-colors focus-visible:ring-2 ${pageTheme.field}`}
+              />
 
-                  {suggestions.length > 0 ? (
-                    <div
-                      className={`absolute left-0 top-full z-50 mt-1 w-full rounded-md border shadow-lg ${pageTheme.panel}`}
+              {suggestions.length > 0 ? (
+                <div
+                  className={`absolute left-0 top-full z-50 mt-1 w-full rounded-md border shadow-lg ${pageTheme.panel}`}
+                >
+                  {suggestions.map((item) => (
+                    <button
+                      key={item?._id}
+                      type="button"
+                      className={`block w-full px-3 py-2 text-left text-sm transition-colors ${pageTheme.suggestionHover}`}
+                      onClick={() => {
+                        setSearch(item?.subject || "");
+                        setCurrentPage(1);
+                      }}
                     >
-                      {suggestions.map((item) => (
-                        <button
-                          key={item?._id}
-                          type="button"
-                          className={`block w-full px-3 py-2 text-left text-sm transition-colors ${pageTheme.suggestionHover}`}
-                          onClick={() => setSearch(item?.subject || "")}
-                        >
+                      {renderHighlightedText(
+                        item?.subject || "Untitled complaint",
+                        search,
+                        pageTheme.highlight,
+                      )}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="relative w-full sm:w-64">
+              <CalendarDays
+                className={`pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`}
+              />
+              <button
+                type="button"
+                aria-expanded={datePickerOpen}
+                aria-label="Filter complaints by raised date"
+                onClick={() => setDatePickerOpen((open) => !open)}
+                className={`h-10 w-full rounded-md border py-2 pl-9 pr-9 text-left text-sm outline-none transition-colors ${pageTheme.field}`}
+              >
+                {raisedDateFilterLabel}
+              </button>
+              <ChevronDown
+                className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`}
+              />
+
+              {datePickerOpen ? (
+                <div
+                  className={`absolute right-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-lg border p-3 shadow-xl ${pageTheme.panel}`}
+                >
+                  <div className="flex gap-2">
+                    <select
+                      aria-label="Choose a quick raised date filter"
+                      value={raisedDateFilter}
+                      onChange={(event) => {
+                        setRaisedDateFilter(event.target.value);
+                        setSelectedRaisedDate(null);
+                        setDatePickerOpen(false);
+                        setCurrentPage(1);
+                      }}
+                      className={`h-10 min-w-0 flex-1 rounded-md border px-3 text-sm outline-none transition-colors ${pageTheme.field}`}
+                    >
+                      {raisedDateFilter === "custom" ? (
+                        <option value="custom">Custom date</option>
+                      ) : null}
+                      {raisedDateFilterOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+
+                    <button
+                      type="button"
+                      disabled={!hasActiveDateFilter}
+                      onClick={clearRaisedDateFilter}
+                      className={`h-10 rounded-md border px-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${pageTheme.button}`}
+                    >
+                      Clear
+                    </button>
+                  </div>
+
+                  <div
+                    className={`mt-3 rounded-md border ${pageTheme.divider}`}
+                  >
+                    <Calendar
+                      mode="single"
+                      selected={selectedRaisedDate || undefined}
+                      onSelect={(date) => {
+                        if (!date) return;
+                        setSelectedRaisedDate(date);
+                        setRaisedDateFilter("custom");
+                        setDatePickerOpen(false);
+                        setCurrentPage(1);
+                      }}
+                      className="mx-auto"
+                    />
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </section>
+
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {summaryCards.map((card) => (
+            <article
+              key={card.label}
+              className={`min-h-32 rounded-lg border p-5 ${pageTheme.card}`}
+            >
+              <p className={`text-sm font-medium ${pageTheme.muted}`}>
+                {card.label}
+              </p>
+              <div className="mt-6 flex items-end justify-between gap-3">
+                <h2 className={`text-3xl font-bold ${card.accent}`}>
+                  {card.value}
+                </h2>
+                <span className={`text-xs ${pageTheme.muted}`}>
+                  {card.detail}
+                </span>
+              </div>
+            </article>
+          ))}
+        </section>
+
+        <section
+          className={`overflow-hidden rounded-lg border ${pageTheme.panel}`}
+        >
+          <div className={`border-b px-4 py-4 sm:px-5 ${pageTheme.divider}`}>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="text-lg font-bold">All Complaints</h2>
+              <p className={`text-sm ${pageTheme.muted}`}>
+                {isLoading
+                  ? "Loading complaints"
+                  : `${firstShownComplaint}-${lastShownComplaint} of ${filteredComplaintCount} shown`}
+              </p>
+            </div>
+          </div>
+
+          <div className="hidden overflow-x-auto md:block">
+            <table className="w-full min-w-[1040px] border-separate border-spacing-0 text-left text-sm">
+              <thead className={pageTheme.tableHead}>
+                <tr>
+                  <th className="border-b border-inherit px-5 py-4 font-semibold">
+                    Name
+                  </th>
+                  <th className="border-b border-inherit px-5 py-4 font-semibold">
+                    Email
+                  </th>
+                  <th className="border-b border-inherit px-5 py-4 font-semibold">
+                    Subject
+                  </th>
+                  <th className="border-b border-inherit px-5 py-4 font-semibold">
+                    Message
+                  </th>
+                  <th className="border-b border-inherit px-5 py-4 font-semibold">
+                    Raised Date
+                  </th>
+                  <th className="border-b border-inherit px-5 py-4 font-semibold">
+                    Status
+                  </th>
+                  <th className="border-b border-inherit px-5 py-4 font-semibold">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {isLoading ? (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      className={`px-5 py-12 text-center ${pageTheme.muted}`}
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Loading complaints...
+                      </span>
+                    </td>
+                  </tr>
+                ) : filteredComplaintCount === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      className={`px-5 py-12 text-center ${pageTheme.muted}`}
+                    >
+                      {search || hasActiveDateFilter
+                        ? "No complaints match your filters."
+                        : "No complaints found."}
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedComplaints.map((complaint) => (
+                    <tr
+                      key={complaint?._id || complaint?.email}
+                      className={`transition-colors ${pageTheme.tableRow}`}
+                    >
+                      <td className="border-b border-inherit px-5 py-4 font-medium">
+                        {renderHighlightedText(
+                          complaint?.customerId?.name || complaint?.name || "-",
+                          debouncedSearch,
+                          pageTheme.highlight,
+                        )}
+                      </td>
+                      <td className="border-b border-inherit px-5 py-4">
+                        {renderHighlightedText(
+                          complaint?.customerId?.email ||
+                            complaint?.email ||
+                            "-",
+                          debouncedSearch,
+                          pageTheme.highlight,
+                        )}
+                      </td>
+                      <td className="border-b border-inherit px-5 py-4">
+                        {renderHighlightedText(
+                          complaint?.subject || "-",
+                          debouncedSearch,
+                          pageTheme.highlight,
+                        )}
+                      </td>
+                      <td className="max-w-sm border-b border-inherit px-5 py-4">
+                        <p className="line-clamp-2">
                           {renderHighlightedText(
-                            item?.subject || "Untitled complaint",
-                            search,
+                            complaint?.message || "-",
+                            debouncedSearch,
                             pageTheme.highlight,
                           )}
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-
-                <div className="relative w-full sm:w-64">
-                  <CalendarDays
-                    className={`pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`}
-                  />
-                  <button
-                    type="button"
-                    aria-expanded={datePickerOpen}
-                    aria-label="Filter complaints by raised date"
-                    onClick={() => setDatePickerOpen((open) => !open)}
-                    className={`h-10 w-full rounded-md border py-2 pl-9 pr-9 text-left text-sm outline-none transition-colors ${pageTheme.field}`}
-                  >
-                    {raisedDateFilterLabel}
-                  </button>
-                  <ChevronDown
-                    className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 ${pageTheme.muted}`}
-                  />
-
-                  {datePickerOpen ? (
-                    <div
-                      className={`absolute right-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-lg border p-3 shadow-xl ${pageTheme.panel}`}
-                    >
-                      <div className="flex gap-2">
-                        <select
-                          aria-label="Choose a quick raised date filter"
-                          value={raisedDateFilter}
-                          onChange={(event) => {
-                            setRaisedDateFilter(event.target.value);
-                            setSelectedRaisedDate(null);
-                            setDatePickerOpen(false);
-                          }}
-                          className={`h-10 min-w-0 flex-1 rounded-md border px-3 text-sm outline-none transition-colors ${pageTheme.field}`}
+                        </p>
+                      </td>
+                      <td className="whitespace-nowrap border-b border-inherit px-5 py-4">
+                        {formatDate(
+                          complaint?.raisedDate || complaint?.createdAt,
+                        )}
+                      </td>
+                      <td className="border-b border-inherit px-5 py-4">
+                        <span
+                          className={`inline-flex whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold ${getStatusBadgeClass(
+                            complaint?.status,
+                            isDarkTheme,
+                          )}`}
                         >
-                          {raisedDateFilter === "custom" ? (
-                            <option value="custom">Custom date</option>
-                          ) : null}
-                          {raisedDateFilterOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-
-                        <button
-                          type="button"
-                          disabled={!hasActiveDateFilter}
-                          onClick={clearRaisedDateFilter}
-                          className={`h-10 rounded-md border px-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${pageTheme.button}`}
-                        >
-                          Clear
-                        </button>
-                      </div>
-
-                      <div
-                        className={`mt-3 rounded-md border ${pageTheme.divider}`}
-                      >
-                        <Calendar
-                          mode="single"
-                          selected={selectedRaisedDate || undefined}
-                          onSelect={(date) => {
-                            if (!date) return;
-                            setSelectedRaisedDate(date);
-                            setRaisedDateFilter("custom");
-                            setDatePickerOpen(false);
-                          }}
-                          className="mx-auto"
-                        />
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            </section>
-
-            <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {summaryCards.map((card) => (
-                <article
-                  key={card.label}
-                  className={`min-h-32 rounded-lg border p-5 ${pageTheme.card}`}
-                >
-                  <p className={`text-sm font-medium ${pageTheme.muted}`}>
-                    {card.label}
-                  </p>
-                  <div className="mt-6 flex items-end justify-between gap-3">
-                    <h2 className={`text-3xl font-bold ${card.accent}`}>
-                      {card.value}
-                    </h2>
-                    <span className={`text-xs ${pageTheme.muted}`}>
-                      {card.detail}
-                    </span>
-                  </div>
-                </article>
-              ))}
-            </section>
-
-            <section
-              className={`overflow-hidden rounded-lg border ${pageTheme.panel}`}
-            >
-              <div
-                className={`border-b px-4 py-4 sm:px-5 ${pageTheme.divider}`}
-              >
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <h2 className="text-lg font-bold">All Complaints</h2>
-                  <p className={`text-sm ${pageTheme.muted}`}>
-                    {isLoading
-                      ? "Loading complaints"
-                      : `${filteredComplaints.length} of ${totalComplaints} shown`}
-                  </p>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[1040px] border-separate border-spacing-0 text-left text-sm">
-                  <thead className={pageTheme.tableHead}>
-                    <tr>
-                      <th className="border-b border-inherit px-5 py-4 font-semibold">
-                        Name
-                      </th>
-                      <th className="border-b border-inherit px-5 py-4 font-semibold">
-                        Email
-                      </th>
-                      <th className="border-b border-inherit px-5 py-4 font-semibold">
-                        Subject
-                      </th>
-                      <th className="border-b border-inherit px-5 py-4 font-semibold">
-                        Message
-                      </th>
-                      <th className="border-b border-inherit px-5 py-4 font-semibold">
-                        Raised Date
-                      </th>
-                      <th className="border-b border-inherit px-5 py-4 font-semibold">
-                        Status
-                      </th>
-                      <th className="border-b border-inherit px-5 py-4 font-semibold">
-                        Action
-                      </th>
+                          {renderHighlightedText(
+                            formatStatusLabel(complaint?.status),
+                            debouncedSearch,
+                            pageTheme.highlight,
+                          )}
+                        </span>
+                      </td>
+                      <td className="border-b border-inherit px-5 py-4">
+                        {renderComplaintActions(complaint)}
+                      </td>
                     </tr>
-                  </thead>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
-                  <tbody>
-                    {isLoading ? (
-                      <tr>
-                        <td
-                          colSpan={7}
-                          className={`px-5 py-12 text-center ${pageTheme.muted}`}
+          <div className="md:hidden">
+            {isLoading ? (
+              <div
+                className={`flex items-center justify-center gap-2 px-4 py-12 text-sm ${pageTheme.muted}`}
+              >
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading complaints...
+              </div>
+            ) : filteredComplaintCount === 0 ? (
+              <p
+                className={`px-4 py-12 text-center text-sm ${pageTheme.muted}`}
+              >
+                {search || hasActiveDateFilter
+                  ? "No complaints match your filters."
+                  : "No complaints found."}
+              </p>
+            ) : (
+              <div className={`divide-y ${pageTheme.divider}`}>
+                {paginatedComplaints.map((complaint) => (
+                  <article
+                    key={complaint?._id || complaint?.email}
+                    className="px-4 py-4"
+                  >
+                    <header className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="truncate text-sm font-semibold">
+                          {renderHighlightedText(
+                            complaint?.subject || "-",
+                            debouncedSearch,
+                            pageTheme.highlight,
+                          )}
+                        </h3>
+                        <p
+                          className={`mt-1 truncate text-xs ${pageTheme.muted}`}
                         >
-                          <span className="inline-flex items-center gap-2">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Loading complaints...
-                          </span>
-                        </td>
-                      </tr>
-                    ) : filteredComplaints.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={7}
-                          className={`px-5 py-12 text-center ${pageTheme.muted}`}
+                          {renderHighlightedText(
+                            complaint?.customerId?.name ||
+                              complaint?.name ||
+                              "-",
+                            debouncedSearch,
+                            pageTheme.highlight,
+                          )}
+                        </p>
+                      </div>
+                      {renderComplaintActions(complaint)}
+                    </header>
+
+                    <dl className="mt-4 grid gap-3 text-sm">
+                      <div className="min-w-0">
+                        <dt
+                          className={`text-xs font-medium ${pageTheme.muted}`}
                         >
-                          {search || hasActiveDateFilter
-                            ? "No complaints match your filters."
-                            : "No complaints found."}
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredComplaints.map((complaint) => (
-                        <tr
-                          key={complaint?._id || complaint?.email}
-                          className={`transition-colors ${pageTheme.tableRow}`}
+                          Email
+                        </dt>
+                        <dd className="mt-1 break-words">
+                          {renderHighlightedText(
+                            complaint?.customerId?.email ||
+                              complaint?.email ||
+                              "-",
+                            debouncedSearch,
+                            pageTheme.highlight,
+                          )}
+                        </dd>
+                      </div>
+                      <div className="min-w-0">
+                        <dt
+                          className={`text-xs font-medium ${pageTheme.muted}`}
                         >
-                          <td className="border-b border-inherit px-5 py-4 font-medium">
-                            {renderHighlightedText(
-                              complaint?.customerId?.name ||
-                                complaint?.name ||
-                                "-",
-                              debouncedSearch,
-                              pageTheme.highlight,
-                            )}
-                          </td>
-                          <td className="border-b border-inherit px-5 py-4">
-                            {renderHighlightedText(
-                              complaint?.customerId?.email ||
-                                complaint?.email ||
-                                "-",
-                              debouncedSearch,
-                              pageTheme.highlight,
-                            )}
-                          </td>
-                          <td className="border-b border-inherit px-5 py-4">
-                            {renderHighlightedText(
-                              complaint?.subject || "-",
-                              debouncedSearch,
-                              pageTheme.highlight,
-                            )}
-                          </td>
-                          <td className="max-w-sm border-b border-inherit px-5 py-4">
-                            <p className="line-clamp-2">
-                              {renderHighlightedText(
-                                complaint?.message || "-",
-                                debouncedSearch,
-                                pageTheme.highlight,
-                              )}
-                            </p>
-                          </td>
-                          <td className="whitespace-nowrap border-b border-inherit px-5 py-4">
+                          Message
+                        </dt>
+                        <dd className="mt-1 line-clamp-3">
+                          {renderHighlightedText(
+                            complaint?.message || "-",
+                            debouncedSearch,
+                            pageTheme.highlight,
+                          )}
+                        </dd>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <dt
+                            className={`text-xs font-medium ${pageTheme.muted}`}
+                          >
+                            Raised Date
+                          </dt>
+                          <dd className="mt-1">
                             {formatDate(
                               complaint?.raisedDate || complaint?.createdAt,
                             )}
-                          </td>
-                          <td className="border-b border-inherit px-5 py-4">
+                          </dd>
+                        </div>
+                        <div>
+                          <dt
+                            className={`text-xs font-medium ${pageTheme.muted}`}
+                          >
+                            Status
+                          </dt>
+                          <dd className="mt-1">
                             <span
-                              className={`inline-flex whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold ${getStatusBadgeClass(
+                              className={`inline-flex rounded-md px-2 py-1 text-xs font-semibold ${getStatusBadgeClass(
                                 complaint?.status,
                                 isDarkTheme,
                               )}`}
@@ -513,78 +717,57 @@ export default function Page() {
                                 pageTheme.highlight,
                               )}
                             </span>
-                          </td>
-                          <td className="border-b border-inherit px-5 py-4">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className={`h-9 w-9 rounded-md p-0 ${pageTheme.button}`}
-                                >
-                                  <EllipsisVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent
-                                className={`w-40 ${pageTheme.menu}`}
-                                align="end"
-                              >
-                                <DropdownMenuGroup>
-                                  <DropdownMenuItem
-                                    onClick={() =>
-                                      updateStatusMutation.mutate({
-                                        id: complaint?._id,
-                                        status: "pending",
-                                      })
-                                    }
-                                  >
-                                    Pending
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() =>
-                                      updateStatusMutation.mutate({
-                                        id: complaint?._id,
-                                        status: "in_progress",
-                                      })
-                                    }
-                                  >
-                                    In Progress
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() =>
-                                      updateStatusMutation.mutate({
-                                        id: complaint?._id,
-                                        status: "completed",
-                                      })
-                                    }
-                                  >
-                                    Resolved
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    className={
-                                      isDarkTheme
-                                        ? "text-red-300 focus:text-red-200"
-                                        : "text-red-600 focus:text-red-700"
-                                    }
-                                    onClick={() =>
-                                      deleteComplaintMutation.mutate(
-                                        complaint?._id,
-                                      )
-                                    }
-                                  >
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuGroup>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                          </dd>
+                        </div>
+                      </div>
+                    </dl>
+                  </article>
+                ))}
               </div>
-            </section>
+            )}
+          </div>
+
+          <nav
+            className={`flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 ${pageTheme.divider}`}
+            aria-label="Complaint pagination"
+          >
+            <span className={`text-sm ${pageTheme.muted}`}>
+              {PAGE_SIZE} complaints per page
+            </span>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end">
+              <span className={`text-sm ${pageTheme.muted}`} aria-live="polite">
+                Page {activePage} of {totalPages}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={activePage <= 1 || isLoading}
+                  onClick={() =>
+                    setCurrentPage((page) =>
+                      Math.max(Math.min(page, totalPages) - 1, 1),
+                    )
+                  }
+                  className={`inline-flex h-9 items-center gap-1 rounded-md border px-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${pageTheme.button}`}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  disabled={activePage >= totalPages || isLoading}
+                  onClick={() =>
+                    setCurrentPage((page) => Math.min(page + 1, totalPages))
+                  }
+                  className={`inline-flex h-9 items-center gap-1 rounded-md border px-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${pageTheme.button}`}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </nav>
+        </section>
       </main>
     </DashboardShell>
   );
