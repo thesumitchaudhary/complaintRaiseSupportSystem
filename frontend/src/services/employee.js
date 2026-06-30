@@ -53,9 +53,11 @@ export const employeeLogout = async () => {
   }
 };
 
-export const showAssignedComplaint = async () => {
+export const showAssignedComplaint = async ({ search } = {}) => {
   try {
-    const response = await api.get("/employee/showAssignedComplaint");
+    const response = await api.get("/employee/showAssignedComplaint", {
+      params: search ? { search } : {},
+    });
     return response.data;
   } catch (error) {
     console.log("Failed to show Assigned Complaint", error.response?.status);

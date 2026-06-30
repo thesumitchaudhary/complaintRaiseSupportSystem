@@ -1,7 +1,109 @@
+import bcrypt from "bcrypt";
+import dotenv from "dotenv";
+import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 
 import complaint from "../model/complaints.js";
 import userModel from "../model/userModel.js";
+
+dotenv.config();
+
+export const employeeHome = (req, res) => {
+    res.send("hey it's working right now");
+};
+
+export const createEmployee = async (req, res) => {
+    try {
+        const { name, email, password, confirmPassword } = req.body;
+
+        if (!name || !email || !password || !confirmPassword) {
+            return res.status(401).json({ success: false, message: "hey name, email,password and confirmPassword is mandatory" });
+        }
+
+        if (password != confirmPassword) {
+            return res.status(401).json({ message: false, message: "passowrd is not match" });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hash = await bcrypt.hash(password, salt);
+
+        const employee = await userModel.create({
+            name,
+            email,
+            role: "employee",
+            password: hash,
+        });
+
+        const token = jwt.sign(
+            { id: employee._id, name: employee.name, email: employee.email, role: employee.role },
+            process.env.JWT_SECRET
+        );
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            sameSite: "lax",
+            path: "/",
+        });
+
+        return res.status(200).json({ success: true, message: "hey employee create successfully", result: employee });
+    }
+    catch (error) {
+        return res.status(500).json({ success: false, message: "Internal server Error", error: error.message });
+    }
+};
+
+export const loginEmployee = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(401).json({ success: false, message: "hey email and password is mandatory" });
+        }
+
+        const employee = await userModel.findOne({ email });
+
+        if (!employee) {
+            return res.status(401).json({ success: false, message: "employee is not exist" });
+        }
+
+        const isMatch = await bcrypt.compare(password, employee.password);
+
+        if (!isMatch) {
+            return res.status(401).json({ success: false, message: "Invalid Credentials" });
+        }
+
+        const token = jwt.sign(
+            { id: employee._id, name: employee.name, email: employee.email, role: employee.role },
+            process.env.JWT_SECRET
+        );
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            sameSite: "lax",
+            path: "/",
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Login successful",
+            employee: { id: employee._id, name: employee.name, email: employee.email, role: employee.role },
+        });
+    }
+    catch (error) {
+        return res.status(500).json({ success: false, message: "Internal servver Error", error: error.message });
+    }
+};
+
+export const logoutEmployee = (req, res) => {
+    try {
+        res.clearCookie("token", { path: "/" });
+
+        return res.status(200).json({ success: true, message: "logout is successfully" });
+    }
+    catch (error) {
+        return res.status(500).json({ success: false, message: "Internal servver Error", error: error.message });
+    }
+};
 
 const normalizeWorkStatus = (status = "in_progress") => {
     const value = String(status).trim().toLowerCase();
@@ -14,9 +116,12 @@ const normalizeWorkStatus = (status = "in_progress") => {
     return "";
 };
 
+const escapeRegex = (value = "") => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 export const getAssignedComplaints = async (req, res) => {
     try {
         const id = req.user.id;
+        const search = String(req.query.search || "").trim().slice(0, 100);
 
         const employee = await userModel.findOne({ _id: id, role: "employee" });
 
@@ -27,10 +132,38 @@ export const getAssignedComplaints = async (req, res) => {
             });
         }
 
+        const query = {
+            assignedEmployee: id,
+        };
+
+        if (search) {
+            const searchRegex = new RegExp(escapeRegex(search), "i");
+            const matchingCustomers = await userModel
+                .find({
+                    role: "user",
+                    $or: [{ name: searchRegex }, { email: searchRegex }],
+                })
+                .select("_id")
+                .lean();
+            const matchingCustomerIds = matchingCustomers.map((user) => user._id);
+
+            query.$or = [
+                { subject: searchRegex },
+                { message: searchRegex },
+                { status: searchRegex },
+                { priority: searchRegex },
+                { serviceType: searchRegex },
+                { "task.title": searchRegex },
+                { "task.notes": searchRegex },
+            ];
+
+            if (matchingCustomerIds.length > 0) {
+                query.$or.push({ customerId: { $in: matchingCustomerIds } });
+            }
+        }
+
         const assignedComplaints = await complaint
-            .find({
-                assignedEmployee: id,
-            })
+            .find(query)
             .populate("customerId", "name email")
             .populate("assignedBy", "name email")
             .sort({ createdAt: -1 });
