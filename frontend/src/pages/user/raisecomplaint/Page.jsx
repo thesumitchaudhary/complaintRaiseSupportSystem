@@ -34,6 +34,7 @@ import {
 import { DataTable } from "../../../components/DataTable";
 import { RaiseComplaintModal } from "../../../components/RaiseComplaintModal";
 import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
+import { useDocumentTheme } from "../../../hooks/useDocumentTheme";
 import {
   formatDate,
   getComplaintSearchText,
@@ -62,6 +63,7 @@ export default function Page() {
   const [currentPage, setCurrentPage] = useState(1);
 
   const isDarkTheme = theme;
+  useDocumentTheme(isDarkTheme);
   const raisedDateParams = useMemo(
     () => getRaisedDateParams(raisedDateFilter, selectedRaisedDate),
     [raisedDateFilter, selectedRaisedDate],

@@ -5,23 +5,23 @@ import { employeeLogout } from "../services/employee";
 const items = [
   {
     title: "All Task",
-    url: "/Employee/AllTaskPage",
+    url: "/employee-alltaskpage",
     icon: <ClipboardList />,
     isActive: true,
   },
   {
     title: "Pending Task",
-    url: "/Employee/TaskPendingPage",
+    url: "/employee-taskpendingpage",
     icon: <Clock3 />,
   },
   {
     title: "In Progress Task",
-    url: "/Employee/TaskInprogressPage",
+    url: "/employee-taskinprogresspage",
     icon: <LoaderCircle />,
   },
   {
     title: "Completed Tasks",
-    url: "/Employee/TaskCompletedPage",
+    url: "/employee-taskcompletedpage",
     icon: <BadgeCheck />,
   },
 ];

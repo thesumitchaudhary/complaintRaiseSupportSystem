@@ -66,11 +66,11 @@ const UserLogin = ({ closeUserLogin, theme }) => {
       localStorage.setItem("role", loggedInRole);
 
       if (loggedInRole === "admin") {
-        navigate("/Admin/Dashboard");
+        navigate("/admin-dashboard");
       } else if (loggedInRole === "employee") {
-        navigate("/Employee/AllTaskPage");
+        navigate("/employee-alltaskpage");
       } else {
-        navigate("/User/Dashboard");
+        navigate("/user-dashboard");
       }
 
       toast.success("Login successful");
@@ -110,7 +110,7 @@ const UserLogin = ({ closeUserLogin, theme }) => {
     onSuccess: () => {
       toast.success("Email verified successfully");
       setRegister(false);
-      navigate("/User/Dashboard");
+      navigate("/user-dashboard");
       setOTP("");
       setRegPassword("");
       setRegConfirmedPassword("");

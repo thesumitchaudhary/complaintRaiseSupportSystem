@@ -1,23 +1,27 @@
-import { LayoutDashboard, MessageSquareWarning } from "lucide-react";
+import {
+  LayoutDashboard,
+  MessageSquareWarning,
+  ScrollText,
+} from "lucide-react";
 import { RoleSidebar } from "./RoleSidebar";
 import { userLogout } from "../services/user";
 
 const items = [
   {
     title: "Dashboard",
-    url: "/User/Dashboard",
+    url: "/user-dashboard",
     icon: <LayoutDashboard />,
     isActive: true,
   },
   {
     title: "Raise Complaints",
-    url: "/User/RaiseComplaint",
+    url: "/user-raisecomplaint",
     icon: <MessageSquareWarning />,
   },
   {
     title: "Complaints History",
-    url: "/User/ComplaintHistory",
-    icon: <MessageSquareWarning />,
+    url: "/user-complainthistory",
+    icon: <ScrollText />,
   },
 ];
 

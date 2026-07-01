@@ -15,51 +15,51 @@ const ROUTE_METADATA = {
     title: "Reset Password | Support System",
     description: "Securely reset your Support System account password.",
   },
-  "/user/dashboard": {
+  "/user-dashboard": {
     title: "Customer Dashboard | Support System",
     description: "View your customer support dashboard and complaint activity.",
   },
-  "/user/raisecomplaint": {
+  "/user-raisecomplaint": {
     title: "Raise a Complaint | Support System",
     description: "Create and manage a customer support complaint.",
   },
-  "/user/complainthistory": {
+  "/user-complainthistory": {
     title: "Complaint History | Support System",
     description: "Review the status and history of your support complaints.",
   },
-  "/admin/dashboard": {
+  "/admin-dashboard": {
     title: "Admin Dashboard | Support System",
     description: "Manage support operations from the administrator dashboard.",
   },
-  "/admin/employee": {
+  "/admin-employee": {
     title: "Employee Management | Support System",
     description: "Manage support employees and team access.",
   },
-  "/admin/assigntask": {
+  "/admin-assigntask": {
     title: "Assign Support Tasks | Support System",
     description: "Assign customer complaints to support employees.",
   },
-  "/admin/complaints": {
+  "/admin-complaints": {
     title: "Complaint Management | Support System",
     description: "Review and manage customer support complaints.",
   },
-  "/admin/user": {
+  "/admin-user": {
     title: "User Management | Support System",
     description: "Manage registered Support System users.",
   },
-  "/employee/alltaskpage": {
+  "/employee-alltaskpage": {
     title: "Assigned Tasks | Support System",
     description: "Review all customer support tasks assigned to your account.",
   },
-  "/employee/taskcompletedpage": {
+  "/employee-taskcompletedpage": {
     title: "Completed Tasks | Support System",
     description: "Review your completed customer support tasks.",
   },
-  "/employee/taskinprogresspage": {
+  "/employee-taskinprogresspage": {
     title: "Tasks in Progress | Support System",
     description: "Review customer support tasks currently in progress.",
   },
-  "/employee/taskpendingpage": {
+  "/employee-taskpendingpage": {
     title: "Pending Tasks | Support System",
     description: "Review customer support tasks waiting for action.",
   },

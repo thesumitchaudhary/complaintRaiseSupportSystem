@@ -7,10 +7,10 @@ import UserDashboardPage from "../pages/user/dashboard/Page";
 const Home = lazy(() => import("../pages/Home"));
 const ResetPassword = lazy(() => import("../pages/ResetPassword"));
 const NotFound = lazy(() => import("../pages/NotFound"));
-const UserRaiseComplainPage = lazy(
+const UserRaiseComplaintPage = lazy(
   () => import("../pages/user/raisecomplaint/Page"),
 );
-const UserCompaintHistoryPage = lazy(
+const UserComplaintHistoryPage = lazy(
   () => import("../pages/user/complaint-history/Page"),
 );
 const AdminDashboardPage = lazy(() => import("../pages/admin/dashboard/Page"));
@@ -28,7 +28,7 @@ const EmployeeAllTaskPage = lazy(
 const EmployeeTaskCompletedPage = lazy(
   () => import("../pages/employee/completed/Page"),
 );
-const EmployeeTaskInprogressPage = lazy(
+const EmployeeTaskInProgressPage = lazy(
   () => import("../pages/employee/in-progress/Page"),
 );
 const EmployeeTaskPendingPage = lazy(
@@ -57,54 +57,54 @@ const Routers = () => {
           <Routes>
             <Route path={"/"} element={<Home />} />
             <Route
-              path={"/dashboad"}
-              element={<Navigate to="/dashboard" replace />}
+              path={"/dashboard"}
+              element={<Navigate to="/user-dashboard" replace />}
             />
             <Route path={"/reset-password"} element={<ResetPassword />} />
 
             {/* this is for user dashboard blocks */}
-            <Route path={"/User/Dashboard"} element={<UserDashboardPage />} />
+            <Route path={"/user-dashboard"} element={<UserDashboardPage />} />
             <Route
-              path={"/User/RaiseComplaint"}
-              element={<UserRaiseComplainPage />}
+              path={"/user-raisecomplaint"}
+              element={<UserRaiseComplaintPage />}
             />
             <Route
-              path={"/User/ComplaintHistory"}
-              element={<UserCompaintHistoryPage />}
+              path={"/user-complainthistory"}
+              element={<UserComplaintHistoryPage />}
             />
 
             {/* this is for admin dashboard blocks */}
-            <Route path={"/Admin/Dashboard"} element={<AdminDashboardPage />} />
+            <Route path={"/admin-dashboard"} element={<AdminDashboardPage />} />
             <Route
-              path={"/Admin/Addservice"}
-              element={<Navigate to="/Admin/Dashboard" replace />}
+              path={"/admin-addservice"}
+              element={<Navigate to="/admin-dashboard" replace />}
             />
-            <Route path={"/Admin/Employee"} element={<AdminEmployeePage />} />
+            <Route path={"/admin-employee"} element={<AdminEmployeePage />} />
             <Route
-              path={"/Admin/Assigntask"}
+              path={"/admin-assigntask"}
               element={<AdminAssignTaskPage />}
             />
             <Route
-              path={"/Admin/Complaints"}
+              path={"/admin-complaints"}
               element={<AdminComplaintsPage />}
             />
-            <Route path={"/Admin/User"} element={<AdminUsersPage />} />
+            <Route path={"/admin-user"} element={<AdminUsersPage />} />
 
             {/* this is for employee dashboard blocks */}
             <Route
-              path={"/Employee/AllTaskPage"}
+              path={"/employee-alltaskpage"}
               element={<EmployeeAllTaskPage />}
             />
             <Route
-              path={"/Employee/TaskCompletedPage"}
+              path={"/employee-taskcompletedpage"}
               element={<EmployeeTaskCompletedPage />}
             />
             <Route
-              path={"/Employee/TaskInprogressPage"}
-              element={<EmployeeTaskInprogressPage />}
+              path={"/employee-taskinprogresspage"}
+              element={<EmployeeTaskInProgressPage />}
             />
             <Route
-              path={"/Employee/TaskPendingPage"}
+              path={"/employee-taskpendingpage"}
               element={<EmployeeTaskPendingPage />}
             />
 

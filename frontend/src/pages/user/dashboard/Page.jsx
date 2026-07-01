@@ -20,6 +20,7 @@ import {
   SidebarTrigger,
 } from "../../../components/ui/sidebar";
 import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
+import { useDocumentTheme } from "../../../hooks/useDocumentTheme";
 import {
   formatDate,
   formatStatusLabel,
@@ -88,6 +89,7 @@ export default function Page() {
   const [currentPage, setCurrentPage] = useState(1);
 
   const isDarkTheme = theme;
+  useDocumentTheme(isDarkTheme);
 
   const pageTheme = isDarkTheme
     ? {
